@@ -1,0 +1,57 @@
+version: '2'
+services:
+  # wekancli:
+  #   image: concafe/wekan-cli:0.0.1
+  #   container_name: wekan-cli
+  #   # build:
+  #   #   context: ../../../
+  #   #   dockerfile: ./Dockerfile.integration
+  #   command: sh integration_e2e.sh
+  #   restart: "no"
+  #   environment:
+  #     - WEKAN_USER=e2euser
+  #     - WEKAN_URL=wekan-e2e-app:8080
+  #     - WEKAN_PWD=e2euser123
+  #   networks:
+  #     - wekan-e2e-tier
+  wekandb:
+    image: mongo:4.4
+    command: mongod --logpath /dev/null --oplogSize 128 --quiet
+    networks:
+      - wekan-e2e-tier
+    expose:
+      - 27017
+    volumes:
+      - wekan-e2e-db:/data/db
+      - wekan-e2e-db-dump:/dump
+  wekan:
+    image: quay.io/wekan/wekan:v6.11
+    container_name: wekan-e2e-app
+    restart: always
+    networks:
+      - wekan-e2e-tier
+    ports:
+      - 9999:8080
+    environment:
+      - MONGO_URL=mongodb://wekandb:27017/wekan
+      - ROOT_URL=https://localhost
+      - WITH_API=true
+      - RICHER_CARD_COMMENT_EDITOR=false
+      - CARD_OPENED_WEBHOOK_ENABLED=false
+      - BIGEVENTS_PATTERN=NONE
+      - BROWSER_POLICY_ENABLED=true
+      - DEBUG=false
+      - ORACLE_OIM_ENABLED=false
+      - OAUTH2_ENABLED=false
+      - OAUTH2_LOGIN_STYLE=redirect
+    depends_on:
+      - wekandb
+volumes:
+  wekan-e2e-db:
+    driver: local
+  wekan-e2e-db-dump:
+    driver: local
+
+networks:
+  wekan-e2e-tier:
+    driver: bridge

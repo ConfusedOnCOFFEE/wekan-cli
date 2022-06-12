@@ -1,0 +1,40 @@
+[package]
+name = "wekan-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+bench = false
+
+[features]
+store = []
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = '...'  # Platform-specific.
+debug-assertions = false
+overflow-checks = false
+lto = false
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
+
+[dependencies]
+chrono = "0.4"
+reqwest = { version = "0.11", features = ["json", "multipart" ] }
+futures = { version = "0.3.21" }
+tokio = { version = "1.18.2", features = ["full"] }
+serde = { version = "1.0", features = ["derive"]}
+serde_json = { version = "1.0" }
+serde_yaml = { version = "0.8.21" }
+async-trait = { version = "0.1.7" }
+clap = { version = "3.0.14", features = ["derive", "env", "yaml"] }
+wekan-common = { path = "../wekan-common" }
+log = "0.4.0"
+env_logger = "0.8.4"
+wekan-core-derive = { path = "../wekan-core-derive"}
+# [dependencies.yaml-rust]
+# git = "https://github.com/chyh1990/yaml-rust.git"

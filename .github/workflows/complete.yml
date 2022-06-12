@@ -1,0 +1,27 @@
+name: Build, clippy, fmt, test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cd crates/wekan-cli && cargo build --verbose
+    - name: Clippy
+      run: cd crates/wekan-cli && cargo clippy -- -Dwarnings
+    - name: Format
+      run: cd crates/wekan-cli && cargo fmt -- --check
+    - name: Run tests
+      run: cd crates/wekan-cli && cargo test --verbose

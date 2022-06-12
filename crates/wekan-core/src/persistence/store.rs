@@ -1,0 +1,54 @@
+use serde::{Serialize, Deserialize};
+use async_trait::async_trait;
+use log::debug;
+use super::config::FileWriter;
+use crate::config::{UserConfig, ConfigRequester};
+use wekan_common::artifact::common::StoreTrait;
+use chrono::prelude::*;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct Entry<T> {
+    pub age: String,
+    pub parent: String,
+    pub payload: T,
+}
+
+#[async_trait]
+pub trait Butler: ConfigRequester<UserConfig> {
+    fn get_path(&self) -> String {
+        match self.get_config().context {
+            Some(p) => Self::get_default_path() + &p + "/",
+            None => Self::get_default_path()
+        }
+    }
+
+    fn get_default_path() -> String {
+        match std::env::var("WEKAN_CLI_CONFIG_PATH") {
+            Ok(config_path_env) => config_path_env,
+            Err(_e) => {
+                let home = std::env::var("HOME").unwrap();
+                home + "/.config/wekan-cli/"
+            }
+        }
+    }
+}
+
+#[async_trait]
+pub trait Store: ConfigRequester<UserConfig> {
+    async fn write_into_context<'de, T: StoreTrait + Deserialize<'de>>(&self, partial_context: T, id: &str) {
+        let entry = { Entry {
+            age: Utc::now().to_string(),
+            parent: id.to_string(),
+            payload: partial_context
+        }};
+        debug!("Complete Entry: {:?}", entry);
+        let mut path = entry.payload.get_type().to_string().to_owned();
+        if entry.parent.to_string().is_empty() {
+            path.push_str("s");
+        } else {
+            path.push_str(&entry.parent);
+        }
+        debug!("Path: {:?}", path);
+        self.get_config().write(path.to_string(), entry).await;
+    }
+}

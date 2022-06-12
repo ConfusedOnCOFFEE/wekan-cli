@@ -1,0 +1,11 @@
+FROM rust:1.61
+
+WORKDIR /usr/src/myapp
+COPY . .
+WORKDIR /usr/src/myapp/crates/wekan-cli
+RUN cargo install --features integration --path .
+RUN chmod +x e2e/entrypoint.sh && \
+    mkdir /log && \
+    touch /log/stdout.log && \
+    touch /log/stderr.log
+CMD ["wekan-cli"]

@@ -1,0 +1,4 @@
+/target
+*~
+.emacs.desktop
+.emacs.desktop.lock

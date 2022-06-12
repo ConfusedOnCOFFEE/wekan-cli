@@ -1,0 +1,49 @@
+wekan-cli-list 0.1.0
+Manage lists
+
+USAGE:
+    wekan-cli list [OPTIONS] --board <BOARD> [NAME] [SUBCOMMAND]
+
+ARGS:
+    <NAME>    List name
+
+OPTIONS:
+    -b, --board <BOARD>    Board name
+    -h, --help             Print help information
+    -q, --quiet            Less output per occurrence
+    -r, --raw              Show the details of the object
+    -v, --verbose          More output per occurrence
+    -V, --version          Print version information
+
+SUBCOMMANDS:
+    create     Create artifact
+    details    Show details
+    help       Print this message or the help of the given subcommand(s)
+    inspect    Describe Artifact by id
+    ls         List Artifacts
+    rm         Remove artifact
+This artifact contains no childs.
+The next recommended workflows:
+Create a card with 'card -b [BOARD-NAME] -l [LIST-NAME] create [CARD-NAME] --description [CARD-DESCRIPTION]'
+New List created.
+The next recommended workflows:
+See the details of a list or create a card for it with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]'
+ID     TITLE
+AAAA   Test
+Artifact printed
+The next recommended workflows:
+Get or update details of an artifact.
+ID     TITLE    MODIFIED AT                CREATED AT
+AAAA   Test
+Following lists are available:
+ID     TITLE
+AAAA   Templates
+AAAA   Test
+Artifact printed
+The next recommended workflows:
+Get or update details of an artifact.
+ID     TITLE    MODIFIED AT                CREATED AT
+AAAA   Test
+board details completed.
+The next recommended workflows:
+Update the specified artifact with the subcommand 'update'

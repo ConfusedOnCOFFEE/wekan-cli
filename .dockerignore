@@ -1,0 +1,6 @@
+.git
+target/
+crates/wekan-cli/target/
+crates/wekan-common/target/
+crates/wekan-core/target/
+crates/wekan-core-derive/target/

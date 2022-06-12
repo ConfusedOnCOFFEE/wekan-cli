@@ -1,0 +1,58 @@
+`{
+  "_id": "3JMBNFZ7eQRrbMpyT",
+  "title": "Code-Archive",
+  "permission": "private",
+  "sort": 7,
+  "slug": "code-archive",
+  "archived": false,
+  "createdAt": "2021-10-10T16:19:09.436Z",
+  "modifiedAt": "2021-11-26T14:51:32.315Z",
+  "stars": 0,
+  "members": [
+    {
+      "userId": "4gnspeTdawTxE9WA7",
+      "isAdmin": true,
+      "isActive": true,
+      "isNoComments": false,
+      "isCommentOnly": false,
+      "isWorker": false
+    },
+    {
+      "userId": "7Ek25gDhdTLoE6DXM",
+      "isAdmin": false,
+      "isActive": true,
+      "isNoComments": false,
+      "isCommentOnly": false,
+      "isWorker": false
+    }
+  ],
+  "color": "belize",
+  "subtasksDefaultBoardId": null,
+  "subtasksDefaultListId": null,
+  "dateSettingsDefaultBoardId": null,
+  "dateSettingsDefaultListId": null,
+  "allowsSubtasks": true,
+  "allowsAttachments": true,
+  "allowsChecklists": true,
+  "allowsComments": true,
+  "allowsDescriptionTitle": true,
+  "allowsDescriptionText": true,
+  "allowsCardNumber": false,
+  "allowsActivities": true,
+  "allowsLabels": true,
+  "allowsCreator": true,
+  "allowsAssignee": true,
+  "allowsMembers": true,
+  "allowsRequestedBy": true,
+  "allowsCardSortingByNumber": true,
+  "allowsAssignedBy": true,
+  "allowsReceivedDate": true,
+  "allowsStartDate": true,
+  "allowsEndDate": true,
+  "allowsDueDate": true,
+  "presentParentTask": "no-parent",
+  "isOvertime": false,
+  "type": "board"
+}
+
+"{"_id":"3JMBNFZ7eQRrbMpyT","title":"Code-Archive","permission":"private","sort":7,"slug":"code-archive","archived":false,"createdAt":"2021-10-10T16:19:09.436Z","modifiedAt":"2021-11-26T14:51:32.315Z","stars":0,"members":[{"userId":"4gnspeTdawTxE9WA7","isAdmin":true,"isActive":true,"isNoComments":false,"isCommentOnly":false,"isWorker":false},{"userId":"7Ek25gDhdTLoE6DXM","isAdmin":false,"isActive":true,"isNoComments":false,"isCommentOnly":false,"isWorker":false}],"color":"belize","subtasksDefaultBoardId":null,"subtasksDefaultListId":null,"dateSettingsDefaultBoardId":null,"dateSettingsDefaultListId":null,"allowsSubtasks":true,"allowsAttachments":true,"allowsChecklists":true,"allowsComments":true,"allowsDescriptionTitle":true,"allowsDescriptionText":true,"allowsCardNumber":false,"allowsActivities":true,"allowsLabels":true,"allowsCreator":true,"allowsAssignee":true,"allowsMembers":true,"allowsRequestedBy":true,"allowsCardSortingByNumber":true,"allowsAssignedBy":true,"allowsReceivedDate":true,"allowsStartDate":true,"allowsEndDate":true,"allowsDueDate":true,"presentParentTask":"no-parent","isOvertime":false,"type":"board"}
