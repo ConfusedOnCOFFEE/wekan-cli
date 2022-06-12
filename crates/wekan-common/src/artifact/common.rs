@@ -167,7 +167,7 @@ impl SortedArtifact for Vec<Artifact> {
         match self.first() {
             Some(v) => {
                 if v.get_type() == t {
-                    v.get_type().to_owned()
+                    v.get_type()
                 } else {
                     panic!("Not an artifact variant")
                 }

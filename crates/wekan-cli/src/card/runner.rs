@@ -200,14 +200,8 @@ impl Runner {
                         let update_card = UpdateCard {
                             title: update_args.title.to_owned(),
                             description: update_args.description.to_owned(),
-                            due_at: match &update_args.due_at {
-                                Some(d) => Some(d.to_string()),
-                                None => None
-                            },
-                            end_at: match &update_args.end_at {
-                                Some(e) => Some(e.to_string()),
-                                None => None
-                            },
+                            due_at: update_args.due_at.as_ref().map(|d| d.to_string()),
+                            end_at: update_args.end_at.as_ref().map(|d| d.to_string()),
                             labels: match &update_args.labels {
                                 Some(l) => {
                                     let v: Vec<&str> = l.split_terminator(',').collect();

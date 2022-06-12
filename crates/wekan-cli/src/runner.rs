@@ -374,7 +374,7 @@ impl<'a> Runner {
                 "board" | "b" => {
                     let mut client =
                         <Client as BoardApi>::new(self.client.config.clone());
-                    match query.find_board_id(v.remove(0), &filter).await {
+                    match query.find_board_id(v.remove(0), filter).await {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
                             <Runner as CliDisplay>::print_details(board, None)
@@ -389,7 +389,7 @@ impl<'a> Runner {
                             self.client.config.clone(),
                             b_id,
                         );
-                        match query.find_list_id(b_id, v.remove(0), &filter).await {
+                        match query.find_list_id(b_id, v.remove(0), filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
                                 <Runner as CliDisplay>::print_details(board, None)
@@ -412,7 +412,7 @@ impl<'a> Runner {
                                     b_id,
                                     l_id,
                                 );
-                                match query.find_card_id(b_id, l_id, v.remove(0), &filter).await {
+                                match query.find_card_id(b_id, l_id, v.remove(0), filter).await {
                                     Ok(c_id) => {
                                         let board = client.get_one::<CDetails>(&c_id).await.unwrap();
                                         <Runner as CliDisplay>::print_details(board, None)
