@@ -135,7 +135,7 @@ impl Query {
                                 }
                             }
                             AType::List => {
-                                if t.minute() + 15 > 60 || Utc::now().minute() > t.minute() + 15 {
+                                if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 15 {
                                     debug!("New request");
                                     self.match_request_to_be_fullfilled(
                                         artifact_variant,
@@ -149,7 +149,7 @@ impl Query {
                                 }
                             }
                             AType::Card => {
-                                if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 5 {
+                                if t.minute() + 2 > 60 || Utc::now().minute() > t.minute() + 5 {
                                     debug!("New request");
                                     self.match_request_to_be_fullfilled(
                                         artifact_variant,
@@ -163,7 +163,7 @@ impl Query {
                                 }
                             }
                             AType::Swimlane => {
-                                if t.minute() + 15 > 60 || Utc::now().minute() > t.minute() + 20 {
+                                if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 20 {
                                     debug!("New request");
                                     self.match_request_to_be_fullfilled(
                                         artifact_variant,

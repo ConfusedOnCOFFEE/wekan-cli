@@ -162,12 +162,7 @@ impl<'a> Runner {
                 Err(e) => Err(e),
             }
         } else {
-            WekanResult::new_exit(
-                "Board name not found in cache or given as argument.",
-                2,
-                None,
-            )
-            .ok()
+            WekanResult::new_exit("Board not found in cache or given as argument.", 2, None).ok()
         }
     }
 
@@ -256,10 +251,10 @@ impl<'a> Runner {
                             <Runner as CliDisplay>::print_table(lists, Vec::new())
                         }
                     }
-                    Err(_e) => Err(CliError::new_msg("Lists don't exist.").as_enum()),
+                    Err(_e) => Err(CliError::new_msg("List name doesn't exist.").as_enum()),
                 }
             }
-            Err(_e) => Err(CliError::new_msg("Name does not exist.").as_enum()),
+            Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
         }
     }
 
@@ -323,7 +318,7 @@ impl<'a> Runner {
                 },
                 _ => WekanResult::new_workflow(
                     "Type does not match.",
-                    "Fix your type or look for the type/id combination.",
+                    "Fix your type or look for the resource_type/resource_complete_id combination.",
                 )
                 .ok(),
             }
@@ -345,65 +340,62 @@ impl<'a> Runner {
         };
         let filter = &self.parser.delegate.filter;
         if v.len() != 2 {
-            WekanResult::new_msg("Format not correct type/id.").ok()
+            WekanResult::new_msg("Format not correct resource_type/resource_name.").ok()
         } else {
-            // filter bad typoes bJdaNK9KmbJqLgRzE
-            let id = v.remove(1);
-            self.verify_id_length(id)?;
+            let name = v.remove(1);
             match v.remove(0) {
                 "board" | "b" => {
                     let mut client = <Client as BoardApi>::new(self.client.config.clone());
-                    match query.find_board_id(v.remove(0), filter).await {
+                    match query.find_board_id(name, filter).await {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
-                            <Runner as CliDisplay>::print_details(board, None)
+                            <Runner as CliDisplay>::print_details(
+                                board,
+                                Some(self.format.to_owned()),
+                            )
                         }
-                        Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
+                        Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
                     }
                 }
                 "list" | "l" => match &d.delegate.board_id {
                     Some(b_id) => {
-                        self.verify_id_length(b_id)?;
                         let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
-                        match query.find_list_id(b_id, v.remove(0), filter).await {
+                        match query.find_list_id(b_id, name, filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
-                                <Runner as CliDisplay>::print_details(board, None)
+                                <Runner as CliDisplay>::print_details(
+                                    board,
+                                    Some(self.format.to_owned()),
+                                )
                             }
                             Err(_e) => {
-                                Err(CliError::new_msg("Board name does not exist").as_enum())
+                                Err(CliError::new_msg("Board name doesn't exist.").as_enum())
                             }
                         }
                     }
-                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
+                    None => WekanResult::new_msg("Board name needs to be supplied.").ok(),
                 },
                 "card" | "c" => match &d.delegate.board_id {
-                    Some(b_id) => {
-                        self.verify_id_length(b_id)?;
-                        match &d.delegate.list_id {
-                            Some(l_id) => {
-                                self.verify_id_length(l_id)?;
-                                let mut client = <Client as CardApi>::new(
-                                    self.client.config.clone(),
-                                    b_id,
-                                    l_id,
-                                );
-                                match query.find_card_id(b_id, l_id, v.remove(0), filter).await {
-                                    Ok(c_id) => {
-                                        let board =
-                                            client.get_one::<CDetails>(&c_id).await.unwrap();
-                                        <Runner as CliDisplay>::print_details(board, None)
-                                    }
-                                    Err(_e) => {
-                                        Err(CliError::new_msg("Board name does not exist")
-                                            .as_enum())
-                                    }
+                    Some(b_id) => match &d.delegate.list_id {
+                        Some(l_id) => {
+                            let mut client =
+                                <Client as CardApi>::new(self.client.config.clone(), b_id, l_id);
+                            match query.find_card_id(b_id, l_id, name, filter).await {
+                                Ok(c_id) => {
+                                    let board = client.get_one::<CDetails>(&c_id).await.unwrap();
+                                    <Runner as CliDisplay>::print_details(
+                                        board,
+                                        Some(self.format.to_owned()),
+                                    )
+                                }
+                                Err(_e) => {
+                                    Err(CliError::new_msg("Card name doesn't exist.").as_enum())
                                 }
                             }
-                            None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
-                    }
-                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
+                        None => WekanResult::new_msg("List name needs to be supplied.").ok(),
+                    },
+                    None => WekanResult::new_msg("Board name needs to be supplied.").ok(),
                 },
                 _ => WekanResult::new_workflow(
                     "Type does not match.",
@@ -418,7 +410,7 @@ impl<'a> Runner {
         if id.len() == 17 {
             Ok(true)
         } else {
-            Err(InputError::new_msg("Id is not of specified length").as_enum())
+            Err(InputError::new_msg("Id is not of specified length. Use -o extended to get the complete id of an artifact.").as_enum())
         }
     }
 }

@@ -1,0 +1,21 @@
+error: The following required arguments were not provided:
+    <--confirm>
+
+USAGE:
+    wekan-cli config remove <--confirm> <PLEASE>
+
+For more information try --help
+error: The following required arguments were not provided:
+    <--confirm>
+
+USAGE:
+    wekan-cli config remove --context <CONTEXT> <--confirm> <--context-confirm> <PLEASE>
+
+For more information try --help
+error: The following required arguments were not provided:
+    <--confirm>
+
+USAGE:
+    wekan-cli config remove --context-confirm <--confirm> <PLEASE>
+
+For more information try --help

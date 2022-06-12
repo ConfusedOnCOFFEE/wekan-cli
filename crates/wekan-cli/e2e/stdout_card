@@ -20,30 +20,28 @@ SUBCOMMANDS:
     create     Create card
     details    Show details
     help       Print this message or the help of the given subcommand(s)
-    inspect    Describe Artifact by id
+    inspect    Describe artifact by id
     mv         Move card to the next status
     rm         Remove card from the board
     update     Update card from the board
 Card created.
 The next recommended workflows:
 Move card or update card.
-Description: description
-ID     TITLE         MODIFIED AT                CREATED AT
+ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   test-card
-card details completed.
+----
 The next recommended workflows:
 Update the specified artifact with the subcommand 'update'
-ID     TITLE    MODIFIED AT                CREATED AT
+ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   Test
 Following cards are available:
 ID     TITLE
 AAAA   test-card
-Artifact printed
+----
 The next recommended workflows:
 Get or update details of an artifact.
-Description: description
-ID     TITLE         MODIFIED AT                CREATED AT
+ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   test-card
-card details completed.
+----
 The next recommended workflows:
 Update the specified artifact with the subcommand 'update'

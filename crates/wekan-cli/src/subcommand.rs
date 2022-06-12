@@ -89,19 +89,3 @@ pub struct Table {
     #[clap(short = 'f', long, help = "Filter by b:,l:")]
     pub filter: Option<String>,
 }
-// const PORT_RANGE: RangeInclusive<usize> = 1..=65535;
-
-// fn port_in_range(s: &str) -> Result<usize, String> {
-//     let port: usize = s
-//         .parse()
-//         .map_err(|_| format!("`{}` isn't a port number", s))?;
-//     if PORT_RANGE.contains(&port) {
-//         Ok(port)
-//     } else {
-//         Err(format!(
-//             "Port not in range {}-{}",
-//             PORT_RANGE.start(),
-//             PORT_RANGE.end()
-//         ))
-//     }
-// }

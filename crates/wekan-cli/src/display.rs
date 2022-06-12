@@ -78,7 +78,7 @@ pub trait CliDisplay {
         match format {
             Some(f) => {
                 debug!("{:?}", f);
-                if f.starts_with("long") {
+                if f.starts_with("long") || f.starts_with("extended") || f.starts_with("extd") {
                     debug!("Format is long.");
                     headline.push_str(&" ".repeat(artifact_details.get_id().len()));
                     id_to_print.push_str(&artifact_details.get_id());
@@ -120,10 +120,8 @@ pub trait CliDisplay {
             modified_at,
             created_at
         );
-        let mut details_type = artifact_details.get_type().to_string();
-        details_type.push_str(" details completed.");
         WekanResult::new_workflow(
-            &details_type.to_string(),
+            "----",
             "Update the specified artifact with the subcommand 'update'",
         )
         .ok()
@@ -145,6 +143,8 @@ pub trait CliDisplay {
                             println!("{:?}", r);
                         } else if format.contains("elisp") {
                             println!("{}", r);
+                        } else if format.contains("extended") {
+                            println!("{}   {}", r.get_id(), r.get_title());
                         } else {
                             let tmp = r.get_id().to_owned();
                             let (_first, _last) = tmp.split_at(4);
@@ -159,7 +159,7 @@ pub trait CliDisplay {
                             break WekanResult::new_msg(&String::new()).ok();
                         } else {
                             break WekanResult::new_workflow(
-                                "Artifact printed",
+                                "----",
                                 "Get or update details of an artifact.",
                             )
                             .ok();
@@ -215,7 +215,7 @@ pub trait CliDisplay {
                 }
             }
         };
-        WekanResult::new_msg("Table printed").ok()
+        WekanResult::new_msg("----").ok()
     }
     fn transform_to_exit(result: Result<WekanResult, Error>) -> i8 {
         debug!("transform_to_exit");

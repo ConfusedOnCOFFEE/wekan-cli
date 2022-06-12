@@ -121,6 +121,36 @@ Not so sure, if that is a good way right now, but it could help if I upgrade to 
 All the ENV variables can be used in any combination, but MFILTER only filters non-third party modules.
 
 
+## DEVELOPMENT
+
+## TESTS
+
+### E2E
+
+I call E2E, the one, who are tested against an isolated environment, which cleans itself up after each run.
+
+`./manager e2e` does exacly that. But first you need to create a user. Change directory to crates/wekan-cli/e2e and run `docker-compose up -d`. Visit `http://localhost:9999`and register a user. If you don't want to change everything, use testuser:testuser123.
+If you have done this, you can run `./manager.sh e2e` and at the end, you can run `docker logs wekan-cli`. Hopefully, it will look like this:
+
+```sh
+STDOUT: Login success.
+STDERR: Login success.
+STDOUT: BOARD success.
+STDERR: BOARD success.
+STDOUT: LIST success.
+STDERR: LIST success.
+STDOUT: CARD success.
+STDERR: CARD success.
+STDOUT: DESCRIBE success.
+STDERR: DESCRIBE success.
+STDOUT: CONTEXT success.
+STDERR: CONTEXT success.
+STDOUT: DELETE success.
+STDERR: DELETE success.
+STDOUT: CONFIG success.
+STDERR: CONFIG success
+```
+
 ## THANK YOU
 
 Obviously, a lot of the usually research and thanks for the wonderful documentation from the RUST community, the rust book and especially the RUST compiler.  <3

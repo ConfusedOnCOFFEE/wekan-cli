@@ -18,7 +18,7 @@ SUBCOMMANDS:
     create     Create artifact
     details    Show details
     help       Print this message or the help of the given subcommand(s)
-    inspect    Describe Artifact by id
+    inspect    Describe artifact by id
     ls         List Artifacts
     rm         Remove artifact
 New board created.
@@ -27,15 +27,15 @@ Create a list with 'list -b <BOARD_NAME> create [LIST_NAME]
 ID     TITLE
 AAAA   Templates
 AAAA   Test
-Artifact printed
+----
 The next recommended workflows:
 Get or update details of an artifact.
-ID     TITLE    MODIFIED AT                CREATED AT
+ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   Test
 Following lists are available:
 ID     TITLE
 AAAA   Templates
 AAAA   Test
-Artifact printed
+----
 The next recommended workflows:
 Get or update details of an artifact.

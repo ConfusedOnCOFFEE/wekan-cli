@@ -92,23 +92,6 @@ impl Context for Client {
         }
     }
 }
-// #[async_trait]
-// impl FileWriter for Context {
-//     async fn write<'de, T: Send + Deserialize<'de> + Serialize>(&self, path: String, artifact: T) {
-//         let s: String = serde_yaml::to_string(&artifact).unwrap();
-//         let config_path = self.get_path();
-//         debug!("write to file: {}{}", config_path, path);
-//         if !config_path.is_empty()  {
-//             match fs::create_dir_all(config_path.to_owned()) {
-//                 Ok(_created) => {
-//                     let mut file = File::create(config_path.to_owned() + &path.to_owned()).await.unwrap();
-//                     file.write_all(s.as_bytes()).await.unwrap();
-//                 },
-//                 Err(_e) => panic!("Directory couldn't be created. Are you sure about the env WEKAN_CONFIG_PATH?")
-//             }
-//         }
-//     }
-// }
 
 #[async_trait]
 pub trait ReadContext {

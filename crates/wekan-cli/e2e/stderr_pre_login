@@ -1,0 +1,3 @@
+Something went wrong. For more information use WEKAN_LOG, verbose argument or WEKAN_BACKTRACE=1. Trying to make sense of the error and showing user friendly output:
+Probably host down or Port not open.
+Either payload failure or authentication issue.

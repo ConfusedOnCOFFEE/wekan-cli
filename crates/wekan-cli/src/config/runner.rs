@@ -39,7 +39,7 @@ impl Runner {
                     Ok(_v) => WekanResult::new_msg("Context and store deleted.").ok(),
                     Err(e) => {
                         trace!("{:?}", e);
-                        CliError::new_msg("Context clearage didn't work").err()
+                        CliError::new_msg("Context removal didn't work").err()
                     }
                 }
             }
@@ -51,10 +51,10 @@ impl Runner {
         let path_to_be_deleted = <UserConfig as Butler>::get_default_path();
         info!("{:?}", path_to_be_deleted);
         match tokio::fs::remove_dir_all(path_to_be_deleted).await {
-            Ok(_v) => WekanResult::new_msg("Config completly cleared").ok(),
+            Ok(_v) => WekanResult::new_msg("wekan-cli config removed.").ok(),
             Err(e) => {
                 trace!("{:?}", e);
-                CliError::new_msg("Path couldn't be deleted. Do it manually").err()
+                CliError::new_msg("Path couldn't be deleted. Do it manually please.").err()
             }
         }
     }
@@ -73,16 +73,21 @@ impl BaseCommand<Args, Client> for Runner {
 #[clap(version = "0.1.0", about = "Remove config or contexts.")]
 pub struct RemoveConfig {
     #[clap(
+        requires = "remove_complete",
+        validator = only_config_allowed,
+    )]
+    pub please: String,
+    #[clap(
         short = 'f',
         long,
-        group = "clear_context_arg",
+        group = "remove_complete",
         parse(from_flag),
         help = "Confirm deletion"
     )]
     pub confirm: bool,
     #[clap(
         short = 'c',
-        requires = "clear_context_arg",
+        requires = "remove_context",
         long,
         help = "Select context to remove"
     )]
@@ -91,7 +96,7 @@ pub struct RemoveConfig {
         short = 'y',
         long,
         parse(from_flag),
-        group = "clear_context_arg",
+        group = "remove_context",
         help = "Confirm context selection"
     )]
     pub context_confirm: bool,
@@ -124,5 +129,14 @@ impl RootCommand for Runner {
             "Only subcommands are possible. Name field is unused in this build version.",
         )
         .err()
+    }
+}
+
+#[cfg(feature = "store")]
+fn only_config_allowed(s: &str) -> Result<(), String> {
+    if s.contains("please") && s.len() == 6 {
+        Ok(())
+    } else {
+        Err(String::from("If you want to remove, say please."))
     }
 }

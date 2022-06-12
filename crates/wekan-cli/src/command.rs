@@ -55,7 +55,7 @@ pub struct Root {
     )]
     #[cfg(feature = "store")]
     pub no_store: bool,
-    #[clap(short = 'o', long, help = "Output format: rust, elisp, long")]
+    #[clap(short = 'o', long, help = "Output format: rust, elisp, long, extended")]
     pub format: Option<String>,
     #[clap(
         short = 'f',
