@@ -6,19 +6,17 @@ use reqwest::{
     header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     Client as ReqClient, Response as RResponse,
 };
-use wekan_common::{
-    validation::authentication::{Credentials, Token, TokenHeader},
-};
+use wekan_common::validation::authentication::{Credentials, Token, TokenHeader};
 
 use crate::{
-    error::kind::{CoreOk, Error},
     config::AddressConfig,
+    error::kind::{CoreOk, Error},
 };
 
 #[cfg(feature = "store")]
-use wekan_common::validation::authentication::StoreToken;
-#[cfg(feature = "store")]
 use log::info;
+#[cfg(feature = "store")]
+use wekan_common::validation::authentication::StoreToken;
 
 #[async_trait]
 pub trait Login: AddressConfig {

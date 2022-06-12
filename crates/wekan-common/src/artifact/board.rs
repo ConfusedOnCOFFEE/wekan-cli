@@ -1,4 +1,4 @@
-use super::common::{Base, BaseDetails, SortedArtifact, AType, StoreTrait};
+use super::common::{AType, Base, BaseDetails, SortedArtifact, StoreTrait};
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 

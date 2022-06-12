@@ -1,16 +1,10 @@
+use super::{authentication::TokenManager, preflight_request::Client as PFRClient};
+use crate::config::{AddressConfig, UserConfig};
+use crate::error::kind::Error;
 use async_trait::async_trait;
 use log::{debug, trace};
-use serde::{Serialize, Deserialize};
-use super::{
-    authentication::TokenManager,
-    preflight_request::Client as PFRClient
-};
-use crate::config::{AddressConfig, UserConfig};
-use reqwest::{
-    Response as RResponse,
-};
-use crate::error::kind::Error;
-
+use reqwest::Response as RResponse;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(transparent)]
@@ -84,7 +78,7 @@ pub trait HttpClient: TokenManager {
             Err(e) => {
                 trace!("client.put: {:?}", e);
                 Err(Error::Http(e))
-            },
+            }
         }
     }
 
@@ -99,7 +93,7 @@ pub trait HttpClient: TokenManager {
             Err(e) => {
                 trace!("{:?}", e);
                 Err(Error::Http(e))
-            },
+            }
         }
     }
 }

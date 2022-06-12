@@ -1,13 +1,9 @@
 use async_trait::async_trait;
 use log::debug;
 
-use wekan_common::{
-    artifact::common::{AType, Artifact, SortedArtifact},
-};
+use wekan_common::artifact::common::{AType, Artifact, SortedArtifact};
 
-use crate::{
-    error::kind::Error,
-};
+use crate::error::kind::Error;
 
 #[async_trait]
 pub trait Unwrapper {

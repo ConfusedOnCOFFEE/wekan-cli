@@ -2,10 +2,10 @@ use async_trait::async_trait;
 //use clap::YamlLoader;
 // use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt}};
 use crate::{
-    resolver::Query,
     error::kind::{Error, StoreError},
+    resolver::Query,
 };
-use wekan_common::artifact::common::{AType, Artifact, SortedArtifact, Base};
+use wekan_common::artifact::common::{AType, Artifact, Base, SortedArtifact};
 use wekan_core::persistence::store::{Butler, Entry};
 // use std::fs;
 use log::{debug, info, trace};
@@ -17,7 +17,7 @@ pub trait Store {
     async fn request_artifacts(
         &self,
         artifact_variant: AType,
-        id: &str
+        id: &str,
     ) -> Result<Entry<Vec<Artifact>>, Error>;
     async fn load_artifacts(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error>;
     async fn load_last_used_artifact(&self, id: &str) -> Result<String, Error>;
@@ -33,7 +33,7 @@ impl Store for Query {
         let artifact = Artifact {
             _id: id.to_string(),
             title: String::new(),
-            r#type: artifact_variant
+            r#type: artifact_variant,
         };
         info!("request_artifacts");
         trace!("{:?}", artifact);

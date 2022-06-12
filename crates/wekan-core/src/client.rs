@@ -1,9 +1,6 @@
-use crate::config::{
-    AddressConfig,
-    UserConfig
-};
+use crate::config::{AddressConfig, UserConfig};
 #[cfg(feature = "store")]
-use crate::config::{OptionalConfig, ConfigRequester};
+use crate::config::{ConfigRequester, OptionalConfig};
 #[cfg(feature = "store")]
 use async_trait::async_trait;
 use wekan_common::validation::authentication::Token;

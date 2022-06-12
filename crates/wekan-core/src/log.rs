@@ -51,8 +51,8 @@ impl Log for Logger {
                                 if record.target().ends_with(&m) {
                                     Logger::print_by_level(record);
                                 }
-                            },
-                            Err(_e) => Logger::print_by_level(record)
+                            }
+                            Err(_e) => Logger::print_by_level(record),
                         }
                     }
                 }

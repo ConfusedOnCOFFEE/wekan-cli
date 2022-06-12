@@ -1,16 +1,17 @@
-use crate::{error::kind::Error, subcommand::{Table, Get, Describe, Inspect}, result::kind::WekanResult};
+use crate::{
+    error::kind::Error,
+    result::kind::WekanResult,
+    subcommand::{Describe, Get, Inspect, Table},
+};
 use async_trait::async_trait;
-use wekan_common::artifact::common::Artifact;
+use clap::{Args, Parser, Subcommand};
 use clap_verbosity_flag::{ErrorLevel, Verbosity};
-use clap::{Subcommand, Parser, Args};
+use wekan_common::artifact::common::Artifact;
 
 use crate::{
-    board::argument::Args as BArg,
-    card::argument::Args as CArg,
+    board::argument::Args as BArg, card::argument::Args as CArg, config::argument::Args as Config,
     list::argument::Args as LArg,
-    config::argument::Args as Config,
 };
-
 
 /// Wekan CLI
 #[derive(Parser, Debug)]
@@ -21,7 +22,6 @@ pub struct WekanParser {
     #[clap(subcommand)]
     pub command: RootCmds,
 }
-
 
 /// The following commands are available:
 #[derive(Subcommand, Debug, Clone)]
@@ -36,8 +36,6 @@ pub enum RootCmds {
     Inspect(Inspect),
     Ps(LArg),
 }
-
-
 
 #[derive(Args, Debug)]
 #[clap(name = "wekan-cli", version = "0.1.0", about = "Common artifact args.")]
@@ -103,7 +101,6 @@ pub trait RootCommand {
         WekanResult::new_msg("Not implemented.").ok()
     }
 }
-
 
 #[async_trait]
 pub trait CommonRunsSimplified {

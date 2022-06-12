@@ -1,8 +1,8 @@
 pub mod board;
 pub mod card;
 pub mod cli;
-pub mod config;
 pub mod command;
+pub mod config;
 pub mod display;
 pub mod error;
 pub mod list;

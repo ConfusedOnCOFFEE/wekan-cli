@@ -1,18 +1,13 @@
 use super::store::Butler;
 use crate::{
-    error::kind::Error,
     config::{MandatoryConfig, UserConfig},
-};
-use std::fs;
-use tokio::{
-    fs::File,
-    io::{
-        AsyncWriteExt,
-    }
+    error::kind::Error,
 };
 use async_trait::async_trait;
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
+use std::fs;
+use tokio::{fs::File, io::AsyncWriteExt};
 
 #[async_trait]
 impl Butler for UserConfig {}
@@ -24,7 +19,6 @@ pub trait PersistenceConfig {
     );
     async fn write_config(&self, config: UserConfig);
     async fn read_config(&self) -> Result<UserConfig, Error>;
-
 }
 #[async_trait]
 impl PersistenceConfig for UserConfig {
@@ -74,13 +68,17 @@ impl FileWriter for UserConfig {
         let s: String = serde_yaml::to_string(&artifact).unwrap();
         let config_path = self.get_path();
         debug!("write to file: {}{}", config_path, path);
-        if !config_path.is_empty()  {
+        if !config_path.is_empty() {
             match fs::create_dir_all(config_path.to_owned()) {
                 Ok(_created) => {
-                    let mut file = File::create(config_path.to_owned() + &path.to_owned()).await.unwrap();
+                    let mut file = File::create(config_path.to_owned() + &path.to_owned())
+                        .await
+                        .unwrap();
                     file.write_all(s.as_bytes()).await.unwrap();
-                },
-                Err(_e) => panic!("Directory couldn't be created. Are you sure about the env WEKAN_CONFIG_PATH?")
+                }
+                Err(_e) => panic!(
+                    "Directory couldn't be created. Are you sure about the env WEKAN_CONFIG_PATH?"
+                ),
             }
         }
     }

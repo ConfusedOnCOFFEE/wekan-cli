@@ -26,13 +26,13 @@ elif [ "${cmd}" == "clippy:macro" ]; then
     cargo clippy -- -Dwarnings
 elif [ "${cmd}" == "fmt" ]; then
     cd crates/wekan-cli
-    cargo fmt -- --check
+    cargo fmt
     cd ../crates/wekan-core
-    cargo fmt -- --check
+    cargo fmt
     cd ../crates/wekan-core-derive
-    cargo fmt -- --check
+    cargo fmt
     cd ../crates/wekan-common
-    cargo fmt -- --check
+    cargo fmt
 elif [ "${cmd}" == "test" ]; then
     cd crates/wekan-cli
     cargo test

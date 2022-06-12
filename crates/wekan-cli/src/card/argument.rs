@@ -1,7 +1,7 @@
-use crate::subcommand::{Inspect, Details};
+use crate::subcommand::{Details, Inspect};
+use chrono::prelude::*;
 use clap::{Args as ClapArgs, Subcommand};
 use std::path::PathBuf;
-use chrono::prelude::*;
 
 #[derive(ClapArgs, Debug, Clone)]
 #[clap(version = "0.1.0", about = "Manage tasks")]
@@ -30,7 +30,7 @@ pub enum Command {
     #[clap(name = "mv")]
     Move(CardMoveArgs),
     Inspect(Inspect),
-    Details(Details)
+    Details(Details),
 }
 
 #[derive(ClapArgs, Debug, Clone)]
@@ -76,7 +76,13 @@ pub struct UpdateArgs {
     pub due_at: Option<String>,
     #[clap(short, long, validator = valid_time, help = "Format: Gregorian in format (YYYY-MM-DD)")]
     pub end_at: Option<String>,
-    #[clap(short = 'c', long, parse(from_os_str), value_name = "FILE", help = "Read a YAML file to update the card")]
+    #[clap(
+        short = 'c',
+        long,
+        parse(from_os_str),
+        value_name = "FILE",
+        help = "Read a YAML file to update the card"
+    )]
     pub card_file: Option<PathBuf>,
 }
 impl RemoveArgs {
@@ -105,14 +111,13 @@ impl CardCreateArgs {
     }
 }
 
-
 fn valid_time(s: &str) -> Result<Date<Utc>, String> {
     if s.len() > 10 {
         Err(String::from("Day format is too long"))
     } else {
         match NaiveDate::parse_from_str(s, "%Y-%m-%e") {
             Ok(d) => Ok(Date::from_utc(d, Utc)),
-            Err(_e) => Err(String::from("Not a correct date format YYYY-MM-DD"))
+            Err(_e) => Err(String::from("Not a correct date format YYYY-MM-DD")),
         }
     }
 }

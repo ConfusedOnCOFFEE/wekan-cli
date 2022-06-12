@@ -1,8 +1,8 @@
 use crate::{
     command::{BaseCommand, RootCommand},
-    error::kind::{CliError, Transform, Error},
-    result::kind::WekanResult,
     display::CliDisplay,
+    error::kind::{CliError, Error, Transform},
+    result::kind::WekanResult,
 };
 
 use super::{
@@ -15,14 +15,12 @@ use log::{info, trace};
 use wekan_core::client::LoginClient as Client;
 
 #[cfg(feature = "store")]
-use crate::{
-    config::{context::Context, credentials::ClearConfig}
-};
+use crate::config::{context::Context, credentials::ClearConfig};
 #[cfg(feature = "store")]
 use clap::Args as ClapArgs;
 
 #[cfg(feature = "store")]
-use wekan_core::{persistence::store::Butler, config::UserConfig};
+use wekan_core::{config::UserConfig, persistence::store::Butler};
 
 #[derive(Debug, Clone)]
 pub struct Runner {
@@ -122,6 +120,9 @@ impl RootCommand for Runner {
     }
     #[cfg(not(feature = "store"))]
     async fn use_rootcommand(&mut self, _name: &str) -> Result<WekanResult, Error> {
-        CliError::new_msg("Only subcommands are possible. Name field is unused in this build version.").err()
+        CliError::new_msg(
+            "Only subcommands are possible. Name field is unused in this build version.",
+        )
+        .err()
     }
 }

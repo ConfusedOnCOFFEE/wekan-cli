@@ -14,7 +14,6 @@ pub fn derive_unwrapper(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     proc_macro::TokenStream::from(output)
 }
 
-
 #[proc_macro_derive(UnauthenticationClient)]
 pub fn derive_unauthorized_client(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -118,7 +117,6 @@ pub fn derive_artifact_client(input: proc_macro::TokenStream) -> proc_macro::Tok
     // panic!("{:?}", proc_macro2::TokenStream::to_string(&output));
     proc_macro::TokenStream::from(output)
 }
-
 
 #[proc_macro_derive(TokenConfig)]
 pub fn derive_token_config(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

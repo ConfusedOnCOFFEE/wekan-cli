@@ -50,7 +50,10 @@ pub struct Create {
     pub title: String,
 }
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Describe artfifact by k8 syntax (type/name)")]
+#[clap(
+    version = "0.1.0",
+    about = "Describe artfifact by k8 syntax (type/name)"
+)]
 pub struct Delegate {
     #[clap(short = 'b', long, group = "card_arg", help = "Board id")]
     pub board_id: Option<String>,
@@ -67,7 +70,10 @@ pub struct Inspect {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Describe artfifact by k8 syntax (type/name)")]
+#[clap(
+    version = "0.1.0",
+    about = "Describe artfifact by k8 syntax (type/name)"
+)]
 pub struct Describe {
     /// Artifact type and name (format: type/name)
     pub resource: String,
@@ -81,7 +87,7 @@ pub struct Table {
     /// Board name
     pub name: String,
     #[clap(short = 'f', long, help = "Filter by b:,l:")]
-    pub filter: Option<String>
+    pub filter: Option<String>,
 }
 // const PORT_RANGE: RangeInclusive<usize> = 1..=65535;
 

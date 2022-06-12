@@ -1,6 +1,6 @@
 #[cfg(feature = "store")]
 use chrono::{prelude::*, DateTime};
-use log::{debug, info, trace, error};
+use log::{debug, error, info, trace};
 use regex::Regex;
 use wekan_common::{
     artifact::common::{AType, Artifact, Base, QueryTrait, SortedArtifact},
@@ -8,8 +8,8 @@ use wekan_common::{
 };
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, SwimlaneApi},
-    http::operation::Artifacts,
     config::UserConfig,
+    http::operation::Artifacts,
 };
 
 #[cfg(feature = "store")]
@@ -109,7 +109,13 @@ impl Query {
             self.match_request_to_be_fullfilled(artifact_variant, board_id, list_id)
                 .await
         } else {
-            match <Self as Store>::request_artifacts(self, artifact_variant.clone(), &(board_id.to_owned() + list_id)).await {
+            match <Self as Store>::request_artifacts(
+                self,
+                artifact_variant.clone(),
+                &(board_id.to_owned() + list_id),
+            )
+            .await
+            {
                 Ok(o) => match o.age.parse::<DateTime<Utc>>() {
                     Ok(t) => {
                         trace!("{:?}", o.payload);
@@ -169,7 +175,7 @@ impl Query {
                                     debug!("Take store");
                                     Ok(o.payload)
                                 }
-                            },
+                            }
                             _ => {
                                 error!("Not a AType or empty list");
                                 Ok(Vec::new())
@@ -361,7 +367,10 @@ impl Query {
     }
 
     fn starts_with(artifact_id: &str, user_identfifier: &str) -> bool {
-        debug!("Artifact: {:?} - Title: {:?}", user_identfifier, artifact_id);
+        debug!(
+            "Artifact: {:?} - Title: {:?}",
+            user_identfifier, artifact_id
+        );
         artifact_id.starts_with(&user_identfifier)
     }
 }

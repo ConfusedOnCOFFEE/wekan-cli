@@ -1,11 +1,11 @@
 use crate::{
-    resolver::Query,
-    subcommand::CommonCommand as Command,
     command::WekanParser,
+    display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     list::argument::Args,
+    resolver::Query,
     result::kind::WekanResult,
-    display::CliDisplay,
+    subcommand::CommonCommand as Command,
 };
 use clap::Parser;
 use log::{debug, info, trace};

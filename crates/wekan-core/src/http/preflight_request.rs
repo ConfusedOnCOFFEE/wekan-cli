@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use log::{debug, trace};
 
-use crate::{error::kind::Error, config::AddressConfig};
+use crate::{config::AddressConfig, error::kind::Error};
 use reqwest::{header::HeaderMap, Client as ReqClient, Response};
 
 #[async_trait]

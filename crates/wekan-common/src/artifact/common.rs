@@ -1,6 +1,6 @@
+use crate::error::kind::ParseError;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use crate::error::kind::ParseError;
 #[derive(Deserialize, Serialize, Debug, Clone, Eq)]
 pub struct Artifact {
     pub _id: String,
@@ -25,7 +25,7 @@ impl From<String> for AType {
             "swimlane" => AType::Swimlane,
             "artifact" => AType::Empty,
             "template-container" => AType::Empty,
-            _ => panic!("AType for {:?} not implemented.", fixed)
+            _ => panic!("AType for {:?} not implemented.", fixed),
         }
     }
 }
@@ -43,11 +43,10 @@ impl From<AType> for String {
             AType::List => "list".to_string(),
             AType::Card => "card".to_string(),
             AType::Swimlane => "swimmlane".to_string(),
-            AType::Empty => "artifact".to_string()
+            AType::Empty => "artifact".to_string(),
         }
     }
 }
-
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum AType {
@@ -55,7 +54,7 @@ pub enum AType {
     Board,
     List,
     Card,
-    Swimlane
+    Swimlane,
 }
 
 impl ToString for AType {
@@ -65,10 +64,9 @@ impl ToString for AType {
             AType::List => "list".to_string(),
             AType::Card => "card".to_string(),
             AType::Swimlane => "swimmlane".to_string(),
-            AType::Empty => "artifact".to_string()
+            AType::Empty => "artifact".to_string(),
         }
     }
-
 }
 
 impl FromStr for AType {
@@ -81,7 +79,7 @@ impl FromStr for AType {
             "card" | "cardType-card" => Ok(AType::Card),
             "swimlane" => Ok(AType::Swimlane),
             "template-container" => Ok(AType::Empty),
-            _ => Err(ParseError::new("Not a Wekan kind"))
+            _ => Err(ParseError::new("Not a Wekan kind")),
         }
     }
 }
@@ -109,7 +107,6 @@ pub trait BaseDetails {
     fn get_modified_at(&self) -> String;
     fn get_created_at(&self) -> String;
 }
-
 
 pub trait MostDetails {
     fn get_description(&self) -> String;
@@ -142,7 +139,10 @@ impl std::fmt::Display for Artifact {
 }
 
 pub trait QueryTrait: SortedArtifact + Base + std::fmt::Debug {}
-pub trait StoreTrait: SortedArtifact + Base + Clone + std::marker::Send + std::marker::Sync + std::fmt::Debug + Serialize {}
+pub trait StoreTrait:
+    SortedArtifact + Base + Clone + std::marker::Send + std::marker::Sync + std::fmt::Debug + Serialize
+{
+}
 
 impl QueryTrait for Artifact {}
 impl StoreTrait for Artifact {}
@@ -171,8 +171,8 @@ impl SortedArtifact for Vec<Artifact> {
                 } else {
                     panic!("Not an artifact variant")
                 }
-            },
-            None => panic!("Not an artifact variant")
+            }
+            None => panic!("Not an artifact variant"),
         }
     }
 }
@@ -180,13 +180,13 @@ impl Base for Vec<Artifact> {
     fn get_title(&self) -> String {
         match self.first() {
             Some(_v) => "s".to_string(),
-            None => panic!("Not an artifact variant")
+            None => panic!("Not an artifact variant"),
         }
     }
     fn get_id(&self) -> String {
         match self.first() {
             Some(_v) => "s".to_string(),
-            None => panic!("Not an artifact variant")
+            None => panic!("Not an artifact variant"),
         }
     }
 
@@ -194,7 +194,12 @@ impl Base for Vec<Artifact> {
         self.get_id()
     }
 }
-impl<Artifact: Clone + Base + QueryTrait + std::marker::Sync + Serialize + std::marker::Send> StoreTrait for Vec<Artifact> where Vec<Artifact>: Base + SortedArtifact {}
+impl<Artifact: Clone + Base + QueryTrait + std::marker::Sync + Serialize + std::marker::Send>
+    StoreTrait for Vec<Artifact>
+where
+    Vec<Artifact>: Base + SortedArtifact,
+{
+}
 impl PartialOrd for Artifact {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))

@@ -1,4 +1,4 @@
-use wekan_cli::{runner::Runner, display::CliDisplay};
+use wekan_cli::{display::CliDisplay, runner::Runner};
 
 #[tokio::main]
 async fn main() {

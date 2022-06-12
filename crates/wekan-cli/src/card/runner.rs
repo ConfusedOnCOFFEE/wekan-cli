@@ -3,25 +3,31 @@ use log::{debug, info, trace};
 use wekan_common::{
     artifact::{
         card::Details,
-        common::{Artifact, Base, AType},
+        common::{AType, Artifact, Base},
     },
-    http::{artifact::ResponseOk, card::{CreateCard, MoveCard, UpdateCard}},
+    http::{
+        artifact::ResponseOk,
+        card::{CreateCard, MoveCard, UpdateCard},
+    },
     validation::{authentication::TokenHeader, constraint::CardConstraint as Constraint},
 };
 use wekan_core::{
     client::{CardApi, Client},
-    http::{operation::{Artifacts, Operation}}
+    http::operation::{Artifacts, Operation},
 };
 use wekan_core_derive::Unwrapper as DeriveUnwrapper;
 
 use crate::{
-    resolver::Query,
-    subcommand::Inspect,
-    card::argument::{Args, Command, CardCreateArgs as Create, CardMoveArgs as Move, RemoveArgs as Remove, UpdateArgs as Update},
+    card::argument::{
+        Args, CardCreateArgs as Create, CardMoveArgs as Move, Command, RemoveArgs as Remove,
+        UpdateArgs as Update,
+    },
     command::{CommonRuns, RootCommand, SubCommand},
-    error::kind::{CliError, Error, Transform},
-    result::kind::WekanResult,
     display::CliDisplay,
+    error::kind::{CliError, Error, Transform},
+    resolver::Query,
+    result::kind::WekanResult,
+    subcommand::Inspect,
 };
 #[derive(DeriveUnwrapper)]
 pub struct Runner {
@@ -30,26 +36,34 @@ pub struct Runner {
     pub constraint: Constraint,
     pub format: String,
     pub query: Query,
-    pub filter: Option<String>
+    pub filter: Option<String>,
 }
 impl Runner {
-    pub fn new(args: Args, client: Client, constraint: Constraint, format: String, query: Query, filter: Option<String>) -> Self {
+    pub fn new(
+        args: Args,
+        client: Client,
+        constraint: Constraint,
+        format: String,
+        query: Query,
+        filter: Option<String>,
+    ) -> Self {
         Self {
             args,
             client,
             constraint,
             format,
             query,
-            filter
+            filter,
         }
     }
     async fn get_details(&mut self, name: &str) -> Result<WekanResult, Error> {
-        match self.query
+        match self
+            .query
             .find_card_id(
                 &self.constraint.board.as_ref().unwrap()._id,
                 &self.constraint.list.as_ref().unwrap()._id,
                 name,
-                &self.filter
+                &self.filter,
             )
             .await
         {
@@ -57,7 +71,7 @@ impl Runner {
                 let card = Artifact {
                     _id: card_id,
                     title: name.to_string(),
-                    r#type: AType::Card
+                    r#type: AType::Card,
                 };
                 self.details(&card).await
             }
@@ -68,7 +82,11 @@ impl Runner {
     async fn run_create(&mut self, create_args: &Create) -> Result<WekanResult, Error> {
         info!("Create");
         let args = create_args.clone();
-        match self.query.find_swimlane_id(&self.constraint.board.as_ref().unwrap()._id, &self.filter).await {
+        match self
+            .query
+            .find_swimlane_id(&self.constraint.board.as_ref().unwrap()._id, &self.filter)
+            .await
+        {
             Ok(swimlane_id) => {
                 let create_card = CreateCard {
                     author_id: self.client.get_user_id(),
@@ -86,27 +104,19 @@ impl Runner {
                     Ok(o) => {
                         debug!("CreadCard response");
                         trace!("Created card: {:?}", o);
-                        WekanResult::new_workflow(
-                            "Card created.",
-                            "Move card or update card.",
-                        )
-                        .ok()
+                        WekanResult::new_workflow("Card created.", "Move card or update card.").ok()
                     }
-                    Err(_e) => {
-                        CliError::new_msg("Card creation failed.").err()
-                    }
+                    Err(_e) => CliError::new_msg("Card creation failed.").err(),
                 }
             }
-            Err(_e) => CliError::new_msg(
-                "List can not be matched to swimmlane.",
-            )
-            .err(),
+            Err(_e) => CliError::new_msg("List can not be matched to swimmlane.").err(),
         }
     }
 
     async fn run_remove(&mut self, remove_args: &Remove) -> Result<WekanResult, Error> {
         info!("Remove");
-        match self.query
+        match self
+            .query
             .find_card_id(
                 &self.constraint.board.as_ref().unwrap()._id,
                 &self.constraint.list.as_ref().unwrap()._id,
@@ -117,14 +127,8 @@ impl Runner {
         {
             Ok(card_id) => {
                 debug!("Found card it to remove");
-                match self
-                    .client
-                    .delete::<ResponseOk>(&card_id)
-                    .await
-                {
-                    Ok(_o) => {
-                        WekanResult::new_msg("Delete successfull.").ok()
-                    }
+                match self.client.delete::<ResponseOk>(&card_id).await {
+                    Ok(_o) => WekanResult::new_msg("Delete successfull.").ok(),
                     Err(e) => {
                         trace!("{:?}", e);
                         CliError::new_msg("Deletion failed").err()
@@ -138,9 +142,18 @@ impl Runner {
     async fn run_move(&mut self, move_args: &Move) -> Result<WekanResult, Error> {
         info!("move");
         debug!("{:?}", move_args.list);
-        match self.query.find_list_id(&self.constraint.board.as_ref().unwrap()._id, &move_args.list, &self.filter).await {
+        match self
+            .query
+            .find_list_id(
+                &self.constraint.board.as_ref().unwrap()._id,
+                &move_args.list,
+                &self.filter,
+            )
+            .await
+        {
             Ok(l_id) => {
-                match self.query
+                match self
+                    .query
                     .find_card_id(
                         &self.constraint.board.as_ref().unwrap()._id,
                         &self.constraint.list.as_ref().unwrap()._id,
@@ -150,28 +163,24 @@ impl Runner {
                     .await
                 {
                     Ok(card_id) => {
-                        let updated_card = MoveCard {
-                            list_id: l_id
-                        };
+                        let updated_card = MoveCard { list_id: l_id };
                         match self
                             .client
                             .put::<MoveCard, ResponseOk>(&card_id, &updated_card)
                             .await
                         {
-                            Ok(_o) => {
-                                WekanResult::new_workflow(
-                                    "Card moved.",
-                                    "Update card with more details.",
-                                )
-                                .ok()
-                            }
-                            Err(_e) => CliError::new_msg("Card update failed.").err()
+                            Ok(_o) => WekanResult::new_workflow(
+                                "Card moved.",
+                                "Update card with more details.",
+                            )
+                            .ok(),
+                            Err(_e) => CliError::new_msg("Card update failed.").err(),
                         }
-                    },
-                    Err(_e) => CliError::new_msg("Card couldn't be found.").err()
+                    }
+                    Err(_e) => CliError::new_msg("Card couldn't be found.").err(),
                 }
             }
-            _ => CliError::new_msg("List not found.").err()
+            _ => CliError::new_msg("List not found.").err(),
         }
     }
 
@@ -179,15 +188,12 @@ impl Runner {
         info!("Update");
         match &update_args.card_file {
             Some(_c) => {
-                WekanResult::new_workflow(
-                                    "NOT IMPLEMENTED.",
-                                    "Update explicit fields.",
-                                )
-                                .ok()
-            },
+                WekanResult::new_workflow("NOT IMPLEMENTED.", "Update explicit fields.").ok()
+            }
             None => {
                 info!("update properties");
-                match self.query
+                match self
+                    .query
                     .find_card_id(
                         &self.constraint.board.as_ref().unwrap()._id,
                         &self.constraint.list.as_ref().unwrap()._id,
@@ -205,12 +211,13 @@ impl Runner {
                             labels: match &update_args.labels {
                                 Some(l) => {
                                     let v: Vec<&str> = l.split_terminator(',').collect();
-                                    let new_v: Vec<String> = v.iter().map(|&s| s.to_string()).collect::<Vec<String>>();
+                                    let new_v: Vec<String> =
+                                        v.iter().map(|&s| s.to_string()).collect::<Vec<String>>();
                                     Some(new_v)
-                                },
-                                None => None
+                                }
+                                None => None,
                             },
-                            sort: update_args.sort
+                            sort: update_args.sort,
                         };
                         debug!("Update Payload: {:?}", update_card);
                         match self
@@ -219,18 +226,13 @@ impl Runner {
                             .await
                         {
                             Ok(_o) => {
-                                let card = self
-                                    .client
-                                    .get_one::<Details>(&card_id)
-                                    .await
-                                    .unwrap();
+                                let card = self.client.get_one::<Details>(&card_id).await.unwrap();
                                 <Runner as CliDisplay>::print_most_details(card)
                             }
-                            Err(_e) => CliError::new_msg("Card update failed.").err()
+                            Err(_e) => CliError::new_msg("Card update failed.").err(),
                         }
-                    },
-                    Err(_e) => CliError::new_msg("Card couldn't be found.").err()
-
+                    }
+                    Err(_e) => CliError::new_msg("Card couldn't be found.").err(),
                 }
             }
         }
@@ -238,38 +240,27 @@ impl Runner {
 
     async fn run_details(&mut self) -> Result<WekanResult, Error> {
         match self.args.name.to_owned() {
-            Some(n) => {
-                self.get_details(&n).await
-            },
-            None => CliError::new_msg("Name needs to be supplied.").err()
+            Some(n) => self.get_details(&n).await,
+            None => CliError::new_msg("Name needs to be supplied.").err(),
         }
     }
-
 
     async fn run_inspect(&mut self, inspect: &Inspect) -> Result<WekanResult, Error> {
         info!("Inspect");
         match &inspect.delegate.board_id {
             Some(_b_id) => match &inspect.delegate.list_id {
                 Some(_l_id) => {
-                    let artifact = self
-                        .client
-                        .get_one::<Details>(&inspect.id)
-                        .await
-                        .unwrap();
-                    <Runner as CliDisplay>::print_details(
-                        artifact,
-                        Some("long".to_string()),
-                    )
+                    let artifact = self.client.get_one::<Details>(&inspect.id).await.unwrap();
+                    <Runner as CliDisplay>::print_details(artifact, Some("long".to_string()))
                 }
-                None => WekanResult::new_msg("List id needs to be supplied.").ok()
+                None => WekanResult::new_msg("List id needs to be supplied.").ok(),
             },
-            None => WekanResult::new_msg("Board id needs to be supplied.").ok()
+            None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
         }
     }
 }
 
 impl CliDisplay for Runner {}
-
 
 #[async_trait]
 impl RootCommand for Runner {
@@ -310,18 +301,24 @@ impl SubCommand for Runner {
                 self.constraint.board = Some(Artifact {
                     _id: board_id.to_owned(),
                     title: self.constraint.board.as_ref().unwrap().title.to_owned(),
-                    r#type: AType::Board
+                    r#type: AType::Board,
                 });
-                match self.query
-                    .find_list_id(&self.constraint.board.as_ref().unwrap()._id, &self.args.list, &self.filter)
+                match self
+                    .query
+                    .find_list_id(
+                        &self.constraint.board.as_ref().unwrap()._id,
+                        &self.args.list,
+                        &self.filter,
+                    )
                     .await
                 {
                     Ok(list_id) => {
-                        self.client.set_base(&self.constraint.board.as_ref().unwrap()._id, &list_id);
+                        self.client
+                            .set_base(&self.constraint.board.as_ref().unwrap()._id, &list_id);
                         self.constraint.list = Some(Artifact {
                             _id: list_id.to_owned(),
                             title: self.constraint.list.as_ref().unwrap().title.to_owned(),
-                            r#type: AType::List
+                            r#type: AType::List,
                         });
                         debug!("List id was found");
                         trace!("{:?}", list_id);
@@ -332,9 +329,9 @@ impl SubCommand for Runner {
                                 Command::Move(move_args) => self.run_move(&move_args).await,
                                 Command::Update(update_args) => self.run_update(&update_args).await,
                                 Command::Details(_dt) => self.run_details().await,
-                                Command::Inspect(i) => self.run_inspect(&i).await
+                                Command::Inspect(i) => self.run_inspect(&i).await,
                             },
-                            None => self.run_details().await
+                            None => self.run_details().await,
                         }
                     }
                     Err(_e) => CliError::new_msg("No list match.").err(),

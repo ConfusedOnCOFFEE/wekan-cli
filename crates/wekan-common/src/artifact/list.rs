@@ -1,5 +1,5 @@
+use super::common::{AType, Base, BaseDetails, SortedArtifact, StoreTrait, WipLimit};
 use serde::{Deserialize, Serialize};
-use super::common::{Base, AType, BaseDetails, SortedArtifact, WipLimit, StoreTrait};
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]

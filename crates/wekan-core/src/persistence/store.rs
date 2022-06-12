@@ -1,10 +1,10 @@
-use serde::{Serialize, Deserialize};
-use async_trait::async_trait;
-use log::debug;
 use super::config::FileWriter;
-use crate::config::{UserConfig, ConfigRequester};
-use wekan_common::artifact::common::StoreTrait;
+use crate::config::{ConfigRequester, UserConfig};
+use async_trait::async_trait;
 use chrono::prelude::*;
+use log::debug;
+use serde::{Deserialize, Serialize};
+use wekan_common::artifact::common::StoreTrait;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Entry<T> {
@@ -18,7 +18,7 @@ pub trait Butler: ConfigRequester<UserConfig> {
     fn get_path(&self) -> String {
         match self.get_config().context {
             Some(p) => Self::get_default_path() + &p + "/",
-            None => Self::get_default_path()
+            None => Self::get_default_path(),
         }
     }
 
@@ -35,12 +35,18 @@ pub trait Butler: ConfigRequester<UserConfig> {
 
 #[async_trait]
 pub trait Store: ConfigRequester<UserConfig> {
-    async fn write_into_context<'de, T: StoreTrait + Deserialize<'de>>(&self, partial_context: T, id: &str) {
-        let entry = { Entry {
-            age: Utc::now().to_string(),
-            parent: id.to_string(),
-            payload: partial_context
-        }};
+    async fn write_into_context<'de, T: StoreTrait + Deserialize<'de>>(
+        &self,
+        partial_context: T,
+        id: &str,
+    ) {
+        let entry = {
+            Entry {
+                age: Utc::now().to_string(),
+                parent: id.to_string(),
+                payload: partial_context,
+            }
+        };
         debug!("Complete Entry: {:?}", entry);
         let mut path = entry.payload.get_type().to_string().to_owned();
         if entry.parent.to_string().is_empty() {

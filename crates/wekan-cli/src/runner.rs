@@ -6,21 +6,21 @@ use log::{debug, error, info, trace, Level};
 use wekan_core::log::Logger;
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, LoginClient},
-    http::{operation::Artifacts, preflight_request::Client as PFRClient},
     config::{MandatoryConfig, UserConfig},
+    http::{operation::Artifacts, preflight_request::Client as PFRClient},
 };
 
 use crate::{
-    resolver::Query,
-    subcommand::{Table as TArgs, Describe, Inspect},
     board::{argument::Args as BArgs, runner::Runner as BRunner},
     card::{argument::Args as CArgs, runner::Runner as CRunner},
-    command::{WekanParser, ArtifactCommand, BaseCommand, RootCommand, RootCmds as Command},
-    error::kind::{CliError, Error, InputError, Transform},
-    list::{argument::Args as LArgs, runner::Runner as LRunner},
-    result::kind::WekanResult,
+    command::{ArtifactCommand, BaseCommand, RootCmds as Command, RootCommand, WekanParser},
     config::runner::Runner as ConfigRunner,
     display::CliDisplay,
+    error::kind::{CliError, Error, InputError, Transform},
+    list::{argument::Args as LArgs, runner::Runner as LRunner},
+    resolver::Query,
+    result::kind::WekanResult,
+    subcommand::{Describe, Inspect, Table as TArgs},
 };
 use wekan_common::{
     artifact::common::{AType, Artifact, Base},
@@ -35,12 +35,9 @@ use wekan_common::{
 };
 
 #[cfg(feature = "store")]
-use wekan_core::persistence::{
-    store::Butler
-};
-#[cfg(feature = "store")]
 use crate::config::context::ReadContext;
-
+#[cfg(feature = "store")]
+use wekan_core::persistence::store::Butler;
 
 pub struct Runner {
     pub parser: WekanParser,
@@ -107,7 +104,7 @@ impl<'a> Runner {
 
     async fn run_board(&'a self, board_args: &BArgs) -> Result<WekanResult, Error> {
         let client = <Client as BoardApi>::new(self.client.config.clone());
-        let constraint =  BConstraint {
+        let constraint = BConstraint {
             user: Ok(User {
                 name: *self.client.config.usertoken.as_ref().unwrap().id.to_owned(),
                 token: Some(
@@ -210,7 +207,7 @@ impl<'a> Runner {
             constraint,
             self.format.to_owned(),
             query,
-            filter
+            filter,
         );
         runner.run().await
     }
@@ -251,9 +248,7 @@ impl<'a> Runner {
                                         trace!("{:?}", cards);
                                         cards_of_lists.push(cards)
                                     }
-                                    Err(_e) => {
-                                        cards_of_lists.push(Vec::new())
-                                    }
+                                    Err(_e) => cards_of_lists.push(Vec::new()),
                                 };
                             }
                             <Runner as CliDisplay>::print_table(lists, cards_of_lists)
@@ -280,13 +275,11 @@ impl<'a> Runner {
             self.verify_id_length(id)?;
             match v.remove(0) {
                 "board" | "b" => {
-                    let mut client =
-                        <Client as BoardApi>::new(self.client.config.clone());
+                    let mut client = <Client as BoardApi>::new(self.client.config.clone());
                     match client.get_one::<BDetails>(id).await {
-                        Ok(b) => <Runner as CliDisplay>::print_details(
-                            b,
-                            Some(self.format.to_owned()),
-                        ),
+                        Ok(b) => {
+                            <Runner as CliDisplay>::print_details(b, Some(self.format.to_owned()))
+                        }
                         Err(e) => {
                             error!("Error: {:?}", e);
                             WekanResult::new_msg("Artifact not found.").ok()
@@ -296,20 +289,14 @@ impl<'a> Runner {
                 "list" | "l" => match &i.delegate.board_id {
                     Some(b_id) => {
                         self.verify_id_length(b_id)?;
-                        let mut client = <Client as ListApi>::new(
-                            self.client.config.clone(),
-                            b_id,
-                        );
-                        let artifact =
-                            client.get_one::<LDetails>(v.remove(0)).await.unwrap();
+                        let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
+                        let artifact = client.get_one::<LDetails>(v.remove(0)).await.unwrap();
                         <Runner as CliDisplay>::print_details(
                             artifact,
                             Some(self.format.to_owned()),
                         )
                     }
-                    None => {
-                        WekanResult::new_msg("Board id needs to be supplied.").ok()
-                    }
+                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
                 "card" | "c" => match &i.delegate.board_id {
                     Some(b_id) => {
@@ -322,24 +309,17 @@ impl<'a> Runner {
                                     b_id,
                                     l_id,
                                 );
-                                let artifact = client
-                                    .get_one::<CDetails>(v.remove(2))
-                                    .await
-                                    .unwrap();
+                                let artifact =
+                                    client.get_one::<CDetails>(v.remove(2)).await.unwrap();
                                 <Runner as CliDisplay>::print_details(
                                     artifact,
                                     Some(self.format.to_owned()),
                                 )
                             }
-                            None => WekanResult::new_msg(
-                                "List id needs to be supplied.",
-                            )
-                            .ok(),
+                            None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
                     }
-                    None => {
-                        WekanResult::new_msg("Board id needs to be supplied.").ok()
-                    }
+                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
                 _ => WekanResult::new_workflow(
                     "Type does not match.",
@@ -372,8 +352,7 @@ impl<'a> Runner {
             self.verify_id_length(id)?;
             match v.remove(0) {
                 "board" | "b" => {
-                    let mut client =
-                        <Client as BoardApi>::new(self.client.config.clone());
+                    let mut client = <Client as BoardApi>::new(self.client.config.clone());
                     match query.find_board_id(v.remove(0), filter).await {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
@@ -385,21 +364,18 @@ impl<'a> Runner {
                 "list" | "l" => match &d.delegate.board_id {
                     Some(b_id) => {
                         self.verify_id_length(b_id)?;
-                        let mut client = <Client as ListApi>::new(
-                            self.client.config.clone(),
-                            b_id,
-                        );
+                        let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
                         match query.find_list_id(b_id, v.remove(0), filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
                                 <Runner as CliDisplay>::print_details(board, None)
                             }
-                            Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
+                            Err(_e) => {
+                                Err(CliError::new_msg("Board name does not exist").as_enum())
+                            }
                         }
                     }
-                    None => {
-                        WekanResult::new_msg("Board id needs to be supplied.").ok()
-                    }
+                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
                 "card" | "c" => match &d.delegate.board_id {
                     Some(b_id) => {
@@ -414,21 +390,20 @@ impl<'a> Runner {
                                 );
                                 match query.find_card_id(b_id, l_id, v.remove(0), filter).await {
                                     Ok(c_id) => {
-                                        let board = client.get_one::<CDetails>(&c_id).await.unwrap();
+                                        let board =
+                                            client.get_one::<CDetails>(&c_id).await.unwrap();
                                         <Runner as CliDisplay>::print_details(board, None)
                                     }
-                                    Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
+                                    Err(_e) => {
+                                        Err(CliError::new_msg("Board name does not exist")
+                                            .as_enum())
+                                    }
                                 }
                             }
-                            None => WekanResult::new_msg(
-                                "List id needs to be supplied.",
-                            )
-                            .ok(),
+                            None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
                     }
-                    None => {
-                        WekanResult::new_msg("Board id needs to be supplied.").ok()
-                    }
+                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
                 _ => WekanResult::new_workflow(
                     "Type does not match.",
@@ -453,7 +428,6 @@ impl CliDisplay for Runner {}
 #[cfg(feature = "store")]
 #[async_trait]
 impl ReadContext for UserConfig {
-
     async fn read_context(&self) -> Result<UserConfig, Error> {
         info!("read_context");
         debug!("{:?}", self.get_path().to_owned());

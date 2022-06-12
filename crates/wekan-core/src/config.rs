@@ -48,9 +48,10 @@ impl OptionalConfig for UserConfig {
             UserConfig {
                 address: self.address.clone(),
                 usertoken: self.usertoken.clone(),
-                context: self.context.clone()
+                context: self.context.clone(),
             }
-        }).await;
+        })
+        .await;
         self.usertoken.as_ref().unwrap().to_owned()
     }
 }

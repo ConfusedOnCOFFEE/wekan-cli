@@ -1,4 +1,4 @@
-use super::common::{Base, BaseDetails, AType, SortedArtifact, StoreTrait, MostDetails};
+use super::common::{AType, Base, BaseDetails, MostDetails, SortedArtifact, StoreTrait};
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
@@ -114,20 +114,20 @@ impl MostDetails for Details {
     fn get_description(&self) -> String {
         match &self.description {
             Some(d) => d.to_owned(),
-            None => String::new()
+            None => String::new(),
         }
     }
 
     fn get_due_at(&self) -> String {
         match &self.due_at {
             Some(d) => d.to_owned(),
-            None => String::new()
+            None => String::new(),
         }
     }
     fn get_end_at(&self) -> String {
         match &self.end_at {
             Some(d) => d.to_owned(),
-            None => String::new()
+            None => String::new(),
         }
     }
 }

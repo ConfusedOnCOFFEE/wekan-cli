@@ -27,10 +27,8 @@ impl Card {
 #[serde(tag = "type", rename_all = "camelCase")]
 #[allow(dead_code)]
 pub struct MoveCard {
-    pub list_id: String
+    pub list_id: String,
 }
-
-
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, PartialEq, Serialize, Clone)]

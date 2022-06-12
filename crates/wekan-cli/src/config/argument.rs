@@ -2,9 +2,9 @@ use clap::{Args as ClapArgs, Subcommand};
 
 #[cfg(feature = "store")]
 use super::{
+    context::{DeleteContext, SetContext, UseContext},
     credentials::DeleteCredentials,
-    context::{SetContext, DeleteContext, UseContext},
-    runner::RemoveConfig
+    runner::RemoveConfig,
 };
 
 use super::credentials::SetCredentials;
@@ -36,5 +36,5 @@ pub enum Command {
     DeleteContext(DeleteContext),
     #[cfg(feature = "store")]
     #[clap(name = "remove")]
-    Remove(RemoveConfig)
+    Remove(RemoveConfig),
 }

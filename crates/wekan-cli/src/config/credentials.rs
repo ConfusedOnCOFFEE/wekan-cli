@@ -7,7 +7,7 @@ use wekan_common::validation::authentication::Credentials;
 #[cfg(feature = "store")]
 use wekan_core::persistence::store::Butler;
 use wekan_core::{
-    client::LoginClient as Client, http::authentication::TokenManager, config::Setup,
+    client::LoginClient as Client, config::Setup, http::authentication::TokenManager,
 };
 
 use crate::{
@@ -25,13 +25,14 @@ use std::fs;
 pub struct SetCredentials {
     /// User
     pub user: String,
-    #[clap(
-        short = 'd',
-        long,
-        help = "Use only port if you are on localhost."
-    )]
+    #[clap(short = 'd', long, help = "Use only port if you are on localhost.")]
     pub host: String,
-    #[clap(short = 'i', long, parse(from_flag), help = "Insecure connection. (http)")]
+    #[clap(
+        short = 'i',
+        long,
+        parse(from_flag),
+        help = "Insecure connection. (http)"
+    )]
     pub insecure: bool,
 }
 

@@ -3,12 +3,10 @@ use log::{debug, info, trace};
 use serde::{de::DeserializeOwned, Serialize};
 use wekan_common::{
     artifact::common::{AType, Artifact, Base, SortedArtifact},
-    http::artifact::Response
+    http::artifact::Response,
 };
 
-use crate::{
-    error::kind::Error,
-};
+use crate::error::kind::Error;
 
 use super::client::HttpClient;
 
@@ -94,7 +92,7 @@ pub trait ArtifactClient: HttpClient {
             Err(e) => {
                 trace!("put_artifact: {:?}", e);
                 Err(Error::Http(e))
-            },
+            }
         }
     }
 }

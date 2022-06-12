@@ -1,25 +1,9 @@
-
-
 #[cfg(test)]
 mod http {
-    use reqwest::{
-        Response,
-        Accepts,
-        Url
-    };
-    use hyper::{
-        Response
-    };
-    use wekan_common::login::{
-        Client as LClient
-    };
-    use wekan_core::{
-        config::UserConfig,
-        client::Client,
-        http::{
-            Client as HClient
-        }
-    };
+    use hyper::Response;
+    use reqwest::{Accepts, Response, Url};
+    use wekan_common::login::Client as LClient;
+    use wekan_core::{client::Client, config::UserConfig, http::Client as HClient};
 
     // impl Response for Response {
     //     fn new() -> Response {
@@ -52,7 +36,6 @@ mod http {
     //     UserConfig::set_url();
     // }
 
-
     // #[test]
     // #[should_panic]
     // fn get_user_id_no_id() {
@@ -63,7 +46,6 @@ mod http {
     //     };
     //     assert_eq!(config.get_logged_in_user_id(), "123");
     // }
-
 
     // #[test]
     // fn get_user_id() {
@@ -78,5 +60,4 @@ mod http {
     //     };
     //     assert_eq!(config.get_logged_in_user_id(), "1");
     // }
-
 }

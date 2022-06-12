@@ -16,12 +16,12 @@ use wekan_common::{
 
 use super::argument::Args;
 use crate::{
-    resolver::Query,
-    subcommand::CommonCommand as Command,
-    command::{WekanParser, ArtifactCommand, CommonRunsSimplified, RootCommand},
-    error::kind::{CliError, Error, Transform},
-    result::kind::WekanResult,
+    command::{ArtifactCommand, CommonRunsSimplified, RootCommand, WekanParser},
     display::CliDisplay,
+    error::kind::{CliError, Error, Transform},
+    resolver::Query,
+    result::kind::WekanResult,
+    subcommand::CommonCommand as Command,
 };
 use wekan_core::{
     client::{BoardApi, Client},
@@ -93,7 +93,8 @@ impl RootCommand for Runner {
 #[async_trait]
 impl CommonRunsSimplified for Runner {
     async fn list(&mut self) -> Result<WekanResult, Error> {
-        self.client.set_base(&("users/".to_owned() + &self.client.get_user_id() + "/boards"));
+        self.client
+            .set_base(&("users/".to_owned() + &self.client.get_user_id() + "/boards"));
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
@@ -200,7 +201,7 @@ impl Runner {
                 let board = client.get_one::<Details>(&i.id).await.unwrap();
                 <Runner as CliDisplay>::print_details(board, Some("long".to_string()))
             }
-            Command::Details(_d) => self.details(self.args.name.to_owned()).await
+            Command::Details(_d) => self.details(self.args.name.to_owned()).await,
         }
     }
 
