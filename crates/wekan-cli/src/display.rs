@@ -221,9 +221,8 @@ impl CliDisplay {
                 );
                 #[cfg(not(feature = "integration"))]
                 output.push_str(&self.format(&a.get_title(), 3));
-
                 #[cfg(feature = "integration")]
-                output.push_str(&self.format(String::from("AAAA", 3)));
+                output.push_str(&self.format(&String::from("AAAA"), 3));
                 #[cfg(feature = "integration")]
                 output.push_str(&self.format(&a.get_title(), 3));
                 output.push('\n');
