@@ -10,7 +10,7 @@ use wekan_common::artifact::common::Artifact;
 
 use crate::{
     board::argument::Args as BArg, card::argument::Args as CArg, config::argument::Args as Config,
-    list::argument::Args as LArg,
+    display::CliDisplay, list::argument::Args as LArg,
 };
 
 /// Wekan CLI
@@ -74,7 +74,7 @@ pub struct Root {
 
 #[async_trait]
 pub trait ArtifactCommand<A, H, C> {
-    fn new(args: A, client: H, constraint: C, format: String) -> Self;
+    fn new(args: A, client: H, constraint: C, format: String, display: CliDisplay) -> Self;
 }
 
 #[async_trait]
@@ -109,6 +109,6 @@ pub trait CommonRunsSimplified {
 }
 #[async_trait]
 pub trait CommonRuns {
-    async fn details(&self, a: &Artifact) -> Result<WekanResult, Error>;
-    async fn list<'a>(&self, a: &'a [Artifact]) -> Result<WekanResult, Error>;
+    async fn details(&mut self, a: &Artifact) -> Result<WekanResult, Error>;
+    async fn list<'a>(&mut self, a: &'a [Artifact]) -> Result<WekanResult, Error>;
 }

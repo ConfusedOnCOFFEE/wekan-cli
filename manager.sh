@@ -5,6 +5,9 @@ if [ "${cmd}" == "d" ]; then
     cd crates/wekan-cli
     export EMACSSAVEMODEDIR=.
     emacs
+elif [ "${cmd}" == "test" ]; then
+     cd crates/wekan-cli
+     cargo test -- --nocapture
 elif [ "${cmd}" == "e2e" ]; then
     cd crates/wekan-cli/e2e
     ./e2e.sh ab
@@ -15,7 +18,7 @@ elif [ "${cmd}" == "docker:build" ]; then
     docker build -t concafe/wekan-cli:release .
 elif [ "${cmd}" == "run" ]; then
     docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
-elif [ "${cmd}" == "pre-release" ]; then
+elif [ "${cmd}" == "qa" ]; then
     set -e
     ./manager.sh clippy
     ./manager.sh fmt
@@ -25,18 +28,23 @@ elif [ "${cmd}" == "clippy" ]; then
     ./manager.sh clippy:common
     ./manager.sh clippy:macro
 elif [ "${cmd}" == "clippy:cli" ]; then
+    echo "wekan-cli clippy"
     cd crates/wekan-cli
     cargo clippy -- -Dwarnings
 elif [ "${cmd}" == "clippy:core" ]; then
+    echo "wekan-core clippy"
     cd crates/wekan-core
     cargo clippy -- -Dwarnings
 elif [ "${cmd}" == "clippy:common" ]; then
+    echo "wekan-common clippy"
     cd crates/wekan-common
     cargo clippy -- -Dwarnings
 elif [ "${cmd}" == "clippy:macro" ]; then
+    echo "wekan-core-derive clippy"
     cd crates/wekan-core-derive
     cargo clippy -- -Dwarnings
 elif [ "${cmd}" == "fmt" ]; then
+    echo "fmt crates"
     cd crates/wekan-cli
     cargo fmt
     cd ../wekan-core

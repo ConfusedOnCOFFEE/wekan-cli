@@ -1,7 +1,6 @@
-use crate::config::{AddressConfig, UserConfig};
 #[cfg(feature = "store")]
-use crate::config::{ConfigRequester, OptionalConfig};
-#[cfg(feature = "store")]
+use crate::config::ConfigRequester;
+use crate::config::{AddressConfig, OptionalConfig, UserConfig};
 use async_trait::async_trait;
 use wekan_common::validation::authentication::Token;
 use wekan_core_derive::{ArtifactClient, TokenConfig, TokenManagerClient};
@@ -17,7 +16,6 @@ impl LoginClient {
     }
 }
 
-// #[derive(ArtifactClient(UserConfig), TokenConfig, Clone, Debug)]
 #[derive(ArtifactClient, TokenConfig, Clone, Debug)]
 pub struct Client {
     pub config: UserConfig,
@@ -55,16 +53,16 @@ impl BoardApi for Client {
 }
 
 pub trait ListApi {
-    fn new(config: UserConfig, board_id: &str) -> Self;
+    fn new(config: UserConfig, board_id: String) -> Self;
     fn set_base(&mut self, board_id: &str) -> String;
 }
 
 impl ListApi for Client {
-    fn new(config: UserConfig, board_id: &str) -> Self {
+    fn new(config: UserConfig, board_id: String) -> Self {
         Self {
             config,
-            base: "boards/".to_owned() + board_id + "/lists/",
-            id: board_id.to_string(),
+            base: "boards/".to_owned() + &board_id + "/lists/",
+            id: board_id,
         }
     }
     fn set_base(&mut self, board_id: &str) -> String {
@@ -93,15 +91,15 @@ impl SwimlaneApi for Client {
 }
 
 pub trait CardApi {
-    fn new(config: UserConfig, board_id: &str, list_id: &str) -> Self;
+    fn new(config: UserConfig, board_id: String, list_id: String) -> Self;
     fn set_base(&mut self, board_id: &str, list_id: &str) -> String;
 }
 impl CardApi for Client {
-    fn new(config: UserConfig, board_id: &str, list_id: &str) -> Self {
+    fn new(config: UserConfig, board_id: String, list_id: String) -> Self {
         Self {
             config,
-            base: "boards/".to_owned() + board_id + "/lists/" + list_id + "/cards/",
-            id: board_id.to_string() + list_id,
+            base: "boards/".to_owned() + &board_id + "/lists/" + &list_id + "/cards/",
+            id: board_id + &list_id,
         }
     }
     fn set_base(&mut self, board_id: &str, list_id: &str) -> String {

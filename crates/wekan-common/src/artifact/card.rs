@@ -1,4 +1,10 @@
-use super::common::{AType, Base, BaseDetails, MostDetails, SortedArtifact, StoreTrait};
+use super::common::{
+    AType, Base, BaseDetails, DeserializeExt, IdReturner, MostDetails, SortedArtifact, StoreTrait,
+    WekanDisplay,
+};
+#[cfg(feature = "test")]
+use super::tests::{MockDetails, MockNewResponse};
+use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
@@ -82,17 +88,21 @@ impl Base for Details {
     fn get_title(&self) -> String {
         self.title.to_owned()
     }
+    fn set_id(&mut self, id: &str) -> String {
+        self._id = Some(id.to_owned());
+        self._id.as_ref().unwrap().to_owned()
+    }
+}
+
+impl IdReturner for Details {
     fn get_id(&self) -> String {
         match &self._id {
             Some(i) => i.to_owned(),
             None => String::from("XXXXX"),
         }
     }
-    fn set_id(&mut self, id: &str) -> String {
-        self._id = Some(id.to_owned());
-        self._id.as_ref().unwrap().to_owned()
-    }
 }
+
 impl BaseDetails for Details {
     fn get_archive_at(&self) -> Option<&String> {
         match &self.archived_at {
@@ -150,3 +160,56 @@ impl SortedArtifact for Details {
     }
 }
 impl StoreTrait for Details {}
+impl RequestBody for Details {}
+impl DeserializeExt for Details {}
+#[cfg(feature = "test")]
+impl MockDetails for Details {
+    fn new(id: &str, title: &str, date: &str) -> Self {
+        Self {
+            _id: Some(id.to_string()),
+            title: title.to_string(),
+            archived: None,
+            archived_at: None,
+            parent_id: None,
+            list_id: String::new(),
+            swimlane_id: String::new(),
+            board_id: String::new(),
+            cover_id: None,
+            color: None,
+            created_at: date.to_string(),
+            modified_at: date.to_string(),
+            custom_fields: None,
+            date_last_activity: String::new(),
+            description: None,
+            requested_by: None,
+            assigned_by: None,
+            label_ids: None,
+            members: None,
+            assignees: None,
+            received_at: None,
+            start_at: None,
+            due_at: Some(date.to_string()),
+            end_at: Some(date.to_string()),
+            spent_time: None,
+            is_overtime: None,
+            user_id: String::new(),
+            sort: None,
+            subtask_sort: None,
+            r#type: AType::Card.to_string(),
+            linked_id: None,
+            vote: None,
+            poker: None,
+            target_id_gantt: None,
+            link_type_gantt: None,
+            link_id_gantt: None,
+            card_number: None,
+        }
+    }
+}
+impl WekanDisplay for Details {}
+#[cfg(feature = "test")]
+impl MockNewResponse for Details {
+    fn new() -> Self {
+        <Self as MockDetails>::new("fake-id", "fake-title", "2020-10-12T")
+    }
+}

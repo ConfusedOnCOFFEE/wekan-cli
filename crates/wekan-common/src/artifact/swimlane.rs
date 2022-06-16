@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use super::common::{AType, Base, SortedArtifact, StoreTrait};
+use super::common::{
+    AType, Base, DeserializeExt, IdReturner, SortedArtifact, StoreTrait, WekanDisplay,
+};
+
+#[cfg(feature = "test")]
+use crate::artifact::tests::MockNewResponse;
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -25,12 +30,15 @@ impl Base for Details {
     fn get_title(&self) -> String {
         self.title.as_ref().unwrap().to_owned()
     }
-    fn get_id(&self) -> String {
-        String::new()
-    }
     fn set_id(&mut self, id: &str) -> String {
         self._id = id.to_owned();
         self._id.to_owned()
+    }
+}
+
+impl IdReturner for Details {
+    fn get_id(&self) -> String {
+        String::new()
     }
 }
 
@@ -48,3 +56,22 @@ impl SortedArtifact for Details {
     }
 }
 impl StoreTrait for Details {}
+impl WekanDisplay for Details {}
+impl DeserializeExt for Details {}
+#[cfg(feature = "test")]
+impl MockNewResponse for Details {
+    fn new() -> Self {
+        Details {
+            _id: String::from("fake-id"),
+            title: None,
+            archived: false,
+            archived_at: String::new(),
+            board_id: String::from("fake-board-id"),
+            created_at: String::new(),
+            sort: 9,
+            updated_at: String::new(),
+            color: String::new(),
+            r#type: AType::Swimlane.to_string(),
+        }
+    }
+}

@@ -6,9 +6,9 @@ pub mod config;
 pub mod display;
 pub mod error;
 pub mod list;
-#[cfg(feature = "store")]
-pub mod persistence;
 pub mod resolver;
 pub mod result;
 pub mod runner;
+#[cfg(feature = "store")]
+pub mod store;
 pub mod subcommand;

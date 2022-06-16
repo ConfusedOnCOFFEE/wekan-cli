@@ -1,6 +1,5 @@
 use crate::{
     command::{BaseCommand, RootCommand},
-    display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     result::kind::WekanResult,
 };
@@ -33,7 +32,7 @@ impl Runner {
     async fn remove_config(&mut self, rm_args: &RemoveConfig) -> Result<WekanResult, Error> {
         match &rm_args.context {
             Some(context) => {
-                let path_to_be_deleted = <UserConfig as Butler>::get_default_path() + &context;
+                let path_to_be_deleted = <UserConfig as Butler>::get_default_path() + context;
                 info!("{:?}", path_to_be_deleted);
                 match tokio::fs::remove_dir_all(path_to_be_deleted).await {
                     Ok(_v) => WekanResult::new_msg("Context and store deleted.").ok(),
@@ -59,8 +58,6 @@ impl Runner {
         }
     }
 }
-
-impl CliDisplay for Runner {}
 #[async_trait]
 impl BaseCommand<Args, Client> for Runner {
     fn new(args: Args, client: Client) -> Self {

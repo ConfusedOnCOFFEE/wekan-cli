@@ -4,3 +4,5 @@ pub mod common;
 pub mod item;
 pub mod list;
 pub mod swimlane;
+#[cfg(feature = "test")]
+pub mod tests;

@@ -1,7 +1,12 @@
-use super::common::{AType, Base, BaseDetails, SortedArtifact, StoreTrait};
+use super::common::{
+    AType, Base, BaseDetails, DeserializeExt, IdReturner, SortedArtifact, StoreTrait, WekanDisplay,
+};
+use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
+#[cfg(feature = "test")]
+use crate::artifact::tests::{MockDetails, MockNewResponse};
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct Label {
@@ -181,11 +186,14 @@ impl Base for Details {
     fn get_title(&self) -> String {
         self.title.to_owned()
     }
-    fn get_id(&self) -> String {
-        self._id.to_owned()
-    }
     fn set_id(&mut self, id: &str) -> String {
         self._id = id.to_owned();
+        self._id.to_owned()
+    }
+}
+
+impl IdReturner for Details {
+    fn get_id(&self) -> String {
         self._id.to_owned()
     }
 }
@@ -222,3 +230,69 @@ impl SortedArtifact for Details {
     }
 }
 impl StoreTrait for Details {}
+impl RequestBody for Details {}
+impl WekanDisplay for Details {}
+impl DeserializeExt for Details {}
+
+#[cfg(feature = "test")]
+impl MockDetails for Details {
+    fn new(id: &str, title: &str, date: &str) -> Self {
+        Self {
+            _id: id.to_string(),
+            title: title.to_string(),
+            archived: false,
+            archived_at: None,
+            color: String::from("red"),
+            created_at: date.to_string(),
+            modified_at: date.to_string(),
+            description: None,
+            members: Vec::new(),
+            received_at: None,
+            start_at: None,
+            due_at: Some(date.to_string()),
+            end_at: Some(date.to_string()),
+            spent_time: None,
+            is_overtime: false,
+            sort: None,
+            r#type: AType::Board.to_string(),
+            subtasks_default_board_id: None,
+            subtasks_default_list_id: None,
+            date_settings_default_board_id: None,
+            date_settings_default_list_id: None,
+            allows_subtasks: true,
+            allows_attachments: true,
+            allows_checklists: true,
+            allows_comments: true,
+            allows_description_title: true,
+            allows_description_text: true,
+            allows_card_number: true,
+            allows_activities: true,
+            allows_labels: true,
+            allows_creator: true,
+            allows_assignee: true,
+            allows_members: true,
+            allows_requested_by: true,
+            allows_card_sorting_by_number: true,
+            // allows_show_lists: true,
+            allows_assigned_by: true,
+            allows_received_date: true,
+            allows_start_date: true,
+            allows_end_date: true,
+            allows_due_date: true,
+            present_parent_task: String::new(),
+            labels: None,
+            orgs: None,
+            permission: String::new(),
+            slug: String::new(),
+            stars: 34.0,
+            teams: None,
+        }
+    }
+}
+
+#[cfg(feature = "test")]
+impl MockNewResponse for Details {
+    fn new() -> Self {
+        <Self as MockDetails>::new("fake-id", "fake-title", "2020-10-12T")
+    }
+}

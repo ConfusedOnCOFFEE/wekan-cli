@@ -1,53 +1,24 @@
-#[cfg(test)]
-mod client {
-    use std::env;
-    use wekan_common::login::Token;
-    use wekan_core::config::{MandatoryConfig, UserConfig};
+mod config {
+    #[cfg(feature = "store")]
+    use wekan_common::validation::authentication::Token;
+    #[cfg(feature = "store")]
+    use wekan_core::config::ConfigRequester;
+    use wekan_core::config::{AddressConfig, MandatoryConfig, UserConfig};
     #[test]
     fn new_config() {
-        let config = UserConfig {
-            url: String::from("url"),
-            name: None,
-            token: None,
-        };
-        assert_eq!(config.get_url(), "url");
+        let config = UserConfig::new();
+        assert_eq!(config.get_address(), "http://localhost:8080");
     }
 
     #[test]
-    fn set_url_config() {
-        env::set_var("WEKAN_URL", "yes");
-        assert_eq!(UserConfig::set_url(), "yes");
-    }
-
-    #[test]
-    #[should_panic]
-    fn set_url_no_env() {
-        env::remove_var("WEKAN_URL");
-        UserConfig::set_url();
-    }
-
-    #[test]
-    #[should_panic]
+    #[cfg(feature = "store")]
     fn get_user_id_no_id() {
-        let config = UserConfig {
-            url: String::from("url"),
-            name: None,
-            token: None,
-        };
-        assert_eq!(config.get_logged_in_user_id(), "123");
-    }
-
-    #[test]
-    fn get_user_id() {
-        let config = UserConfig {
-            url: String::from("url"),
-            name: None,
-            token: Some(Token {
-                id: Box::new(String::from("1")),
-                token: Box::new(String::from("2")),
-                token_expires: Box::new(String::from("3")),
-            }),
-        };
-        assert_eq!(config.get_logged_in_user_id(), "1");
+        let mut config = UserConfig::new();
+        config.set_token(Token {
+            id: Box::new(String::from("123")),
+            token: Box::new(String::from("yNa1VR1Cz6nTzNirWPm2dRNYjdu-EM6LxKDIT0pIYsi")),
+            token_expires: Box::new(String::from("2022-08-30T19:37:47.170Z")),
+        });
+        assert_eq!(config.get_base_id(), "123");
     }
 }

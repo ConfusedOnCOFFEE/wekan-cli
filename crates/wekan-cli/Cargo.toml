@@ -1,7 +1,24 @@
 [package]
 name = "wekan-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+description = "A Wekan CLI to view, edit and remote artifacts from a WEKAN board"
+repository = "https://github.com/ConfusedOnCOFFEE/wekan-cli"
+categories = ["command-line-interface", "cli", "wekan", "kanban"]
+keywords = [
+  "wekan",
+  "cli",
+  "kanban",
+]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+rust-version = "1.60.0"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+]
 
 [features]
 store = [ "wekan-core/store"]
@@ -46,3 +63,6 @@ env_logger = "0.8.4"
 rpassword = "6.0.1"
 regex = "1"
 chrono = "0.4"
+
+[dev-dependencies]
+wekan-common = { path = "../wekan-common", features = ["test"] }

@@ -44,8 +44,8 @@ impl Context for Client {
     async fn set(&self, set_context: &SetContext) -> Result<WekanResult, Error> {
         info!("set context");
         let new_context =
-            <UserConfig as Butler>::get_default_path().to_owned() + &set_context.name + "/config";
-        let current_context = <UserConfig as Butler>::get_default_path().to_owned() + "config";
+            <UserConfig as Butler>::get_default_path() + &set_context.name + "/config";
+        let current_context = <UserConfig as Butler>::get_default_path() + "config";
         debug!("NC: {}", new_context);
         debug!("CC: {}", current_context);
         match tokio::fs::create_dir_all(
@@ -82,8 +82,8 @@ impl Context for Client {
     }
     async fn default(&self, name: &str) -> Result<WekanResult, Error> {
         debug!("default");
-        let new_context = <UserConfig as Butler>::get_default_path().to_owned() + &name + "/config";
-        let context_to_be = <UserConfig as Butler>::get_default_path().to_owned() + "/config";
+        let new_context = <UserConfig as Butler>::get_default_path() + name + "/config";
+        let context_to_be = <UserConfig as Butler>::get_default_path() + "/config";
         debug!("NC: {}", new_context);
         debug!("CC: {}", context_to_be);
         match tokio::fs::copy(new_context, context_to_be).await {

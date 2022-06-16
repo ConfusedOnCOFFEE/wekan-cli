@@ -4,10 +4,16 @@ use crate::{
     error::kind::Error,
 };
 use async_trait::async_trait;
-use log::{debug, trace};
+use log::debug;
+#[cfg(not(test))]
+use log::trace;
 use serde::{Deserialize, Serialize};
+#[cfg(not(test))]
 use std::fs;
-use tokio::{fs::File, io::AsyncWriteExt};
+#[cfg(not(test))]
+use tokio::fs::File;
+#[cfg(not(test))]
+use tokio::io::AsyncWriteExt;
 
 #[async_trait]
 impl Butler for UserConfig {}
@@ -20,6 +26,7 @@ pub trait PersistenceConfig {
     async fn write_config(&self, config: UserConfig);
     async fn read_config(&self) -> Result<UserConfig, Error>;
 }
+#[cfg(not(test))]
 #[async_trait]
 impl PersistenceConfig for UserConfig {
     async fn write_into_config<'de, T: Send + Deserialize<'de> + Serialize>(
@@ -57,11 +64,35 @@ impl PersistenceConfig for UserConfig {
     }
 }
 
+#[cfg(test)]
+#[async_trait]
+impl PersistenceConfig for UserConfig {
+    async fn write_into_config<'de, T: Send + Deserialize<'de> + Serialize>(
+        &self,
+        partial_config: T,
+    ) {
+        self.write("/config".to_string(), partial_config).await;
+    }
+
+    async fn write_config(&self, config: UserConfig) {
+        debug!("/write_context");
+        self.write_into_config(config).await;
+    }
+
+    async fn read_config(&self) -> Result<UserConfig, Error> {
+        debug!("read_config");
+        let config_path = self.get_path();
+        debug!("read from file: {}", config_path);
+        Ok(UserConfig::new())
+    }
+}
+
 #[async_trait]
 pub trait FileWriter {
     async fn write<'de, T: Send + Deserialize<'de> + Serialize>(&self, path: String, artifact: T);
 }
 
+#[cfg(not(test))]
 #[async_trait]
 impl FileWriter for UserConfig {
     async fn write<'de, T: Send + Deserialize<'de> + Serialize>(&self, path: String, artifact: T) {
@@ -81,5 +112,15 @@ impl FileWriter for UserConfig {
                 ),
             }
         }
+    }
+}
+#[cfg(test)]
+#[async_trait]
+impl FileWriter for UserConfig {
+    async fn write<'de, T: Send + Deserialize<'de> + Serialize>(
+        &self,
+        _path: String,
+        _artifact: T,
+    ) {
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    command::WekanParser,
+    command::{ArtifactCommand, WekanParser},
     display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     list::argument::Args,
@@ -11,7 +11,7 @@ use clap::Parser;
 use log::{debug, info, trace};
 use wekan_common::{
     artifact::{
-        common::{AType, Artifact, Base},
+        common::{AType, Artifact, Base, IdReturner},
         list::Details,
     },
     http::artifact::{CreateArtifact, ResponseOk},
@@ -34,19 +34,28 @@ pub struct Runner {
     pub client: Client,
     pub constraint: LConstraint,
     pub format: String,
+    pub display: CliDisplay,
 }
 
-impl CliDisplay for Runner {}
-impl Runner {
-    pub fn new(args: Args, client: Client, constraint: LConstraint, format: String) -> Self {
+impl ArtifactCommand<Args, Client, LConstraint> for Runner {
+    fn new(
+        args: Args,
+        client: Client,
+        constraint: LConstraint,
+        format: String,
+        display: CliDisplay,
+    ) -> Self {
         Self {
             args,
             client,
             constraint,
             format,
+            display,
         }
     }
+}
 
+impl Runner {
     pub async fn apply(&mut self) -> Result<WekanResult, Error> {
         info!("apply");
         self.run_subcommand().await
@@ -54,7 +63,7 @@ impl Runner {
 
     async fn run_subcommand(&mut self) -> Result<WekanResult, Error> {
         info!("run_subcommand");
-        match &self.args.command {
+        match self.args.command.to_owned() {
             Some(c) => match c {
                 Command::Ls(_ls) => self.print_requested_lists().await,
                 Command::Create(c) => self.create_list(c.title.to_owned()).await,
@@ -91,11 +100,11 @@ impl Runner {
                     None => Err(CliError::new_msg("List name not supplied.").as_enum()),
                 },
                 Command::Inspect(i) => match &i.delegate.board_id {
-                    Some(_id) => self.run_inspect(&i.id).await,
+                    Some(_id) => self.run_inspect(&i.id.to_owned()).await,
                     None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
-                Command::Details(_d) => match &self.args.name {
-                    Some(n) => self.get_lists_or_details(n).await,
+                Command::Details(_d) => match self.args.name.to_owned() {
+                    Some(n) => self.get_lists_or_details(&n).await,
                     None => WekanResult::new_msg("Board name needs to be supplied.").ok(),
                 },
             },
@@ -103,13 +112,14 @@ impl Runner {
         }
     }
 
-    async fn print_requested_lists(&self) -> Result<WekanResult, Error> {
+    async fn print_requested_lists(&mut self) -> Result<WekanResult, Error> {
         info!("print_requested_lists");
         let mut client = self.client.clone();
         debug!("{:?}", client);
         let lists: Result<Vec<Artifact>, CoreError> = client.get_all(AType::Card).await;
         let results: Vec<Artifact> = Self::get_result(lists).await;
-        <Runner as CliDisplay>::print_artifacts(results, self.format.to_owned())
+        self.display
+            .print_artifacts(results, self.format.to_owned())
     }
 
     async fn create_list(&self, card_title: String) -> Result<WekanResult, Error> {
@@ -129,14 +139,14 @@ impl Runner {
         }
     }
 
-    async fn run_inspect(&self, list_id: &str) -> Result<WekanResult, Error> {
+    async fn run_inspect(&mut self, list_id: &str) -> Result<WekanResult, Error> {
         info!("run_inspect");
         let mut client = self.client.clone();
         let list = client.get_one::<Details>(list_id).await.unwrap();
-        <Runner as CliDisplay>::print_details(list, Some("long".to_string()))
+        self.display.print_details(list, Some("long".to_string()))
     }
 
-    async fn get_lists_or_details(&self, list_name: &str) -> Result<WekanResult, Error> {
+    async fn get_lists_or_details(&mut self, list_name: &str) -> Result<WekanResult, Error> {
         info!("get_lists");
         let lists: Result<Vec<Artifact>, CoreError> =
             self.client.to_owned().get_all(AType::Card).await;
@@ -166,19 +176,22 @@ impl Runner {
         }
     }
 
-    async fn get_details(&self, list_id: &str) -> Result<WekanResult, Error> {
+    async fn get_details(&mut self, list_id: &str) -> Result<WekanResult, Error> {
         let mut client = self.client.clone();
         let list = client.get_one::<Details>(list_id).await.unwrap();
-        match <Runner as CliDisplay>::print_details(list, Some(self.format.to_owned())) {
+        match self
+            .display
+            .print_details(list, Some(self.format.to_owned()))
+        {
             Ok(_o) => {
-                self.get_cards_by_list_id(&self.constraint.board._id, list_id)
+                self.get_cards_by_list_id(&self.constraint.board._id.to_owned(), list_id)
                     .await
             }
             Err(e) => Err(e),
         }
     }
     async fn get_cards_by_list_id(
-        &self,
+        &mut self,
         board_id: &str,
         list_id: &str,
     ) -> Result<WekanResult, Error> {
@@ -202,7 +215,7 @@ impl Runner {
                 trace!("{:?}", cards);
                 if !cards.is_empty() {
                     println!("Following cards are available:");
-                    <Runner as CliDisplay>::print_artifacts(cards, String::from("long"))
+                    self.display.print_artifacts(cards, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
                         "This list contains no card.",

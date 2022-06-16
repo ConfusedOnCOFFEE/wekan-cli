@@ -5,7 +5,13 @@ use crate::{
     error::kind::{Error, StoreError},
     resolver::Query,
 };
-use wekan_common::artifact::common::{AType, Artifact, Base, SortedArtifact};
+use wekan_common::artifact::common::{
+    AType,
+    Artifact,
+    IdReturner,
+    // Base,
+    SortedArtifact,
+};
 use wekan_core::persistence::store::{Butler, Entry};
 // use std::fs;
 use log::{debug, info, trace};

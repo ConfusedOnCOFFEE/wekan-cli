@@ -2,23 +2,29 @@
 name = "wekan-core-derive"
 version = "0.1.0"
 edition = "2021"
-
+description = "The Wekan core derives"
+repository = "https://github.com/ConfusedOnCOFFEE/wekan-cli"
+categories = ["client", "wekan", "kanban", "core", "common", "derive"]
+keywords = [
+  "wekan",
+  "derive",
+  "wekan-cli",
+  "wekan-common",
+  "wekan-core"
+]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+rust-version = "1.60.0"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+]
 [lib]
 proc-macro = true
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 proc-macro2= { version = "1.0.39" }
 quote = "1.0"
-syn = { version = "1.0"}
-chrono = "0.4"
-reqwest = { version = "0.11", features = ["json", "multipart" ] }
-# futures = { version = "0.3.21" }
-# tokio = { version = "1.18.2", features = ["full"] }
-serde = { version = "1.0", features = ["derive"]}
-# serde_json = { version = "1.0" }
-# serde_yaml = { version = "0.8.21" }
-async-trait = { version = "0.1.7" }
-wekan-common = { path = "../wekan-common" }
-log = "0.4.0"
-# env_logger = "0.8.4"
+syn = { version = "1.0" }

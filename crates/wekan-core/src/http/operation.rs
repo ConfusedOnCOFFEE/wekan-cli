@@ -1,30 +1,27 @@
-use crate::{config::ArtifactApi, error::kind::Error};
-use async_trait::async_trait;
-use log::debug;
-use serde::{de::DeserializeOwned, Serialize};
-use std::{
-    clone::Clone,
-    fmt::Debug,
-    marker::{Send, Sync},
-};
-use wekan_common::artifact::common::{AType, Artifact, Base};
-
-use super::{artifact::ArtifactClient, util::SatisfyType};
-
+use super::util::SatisfyType;
 #[cfg(feature = "store")]
 use crate::{
     client::Client,
     config::{ConfigRequester, UserConfig},
     persistence::store::Store,
 };
+use crate::{config::ArtifactApi, error::kind::Error, http::client::HttpClient};
+use async_trait::async_trait;
+use log::debug;
 #[cfg(feature = "store")]
 use log::trace;
 #[cfg(feature = "store")]
 use serde::Deserialize;
+use std::marker::Send;
 #[cfg(feature = "store")]
 use wekan_common::artifact::common::StoreTrait;
+use wekan_common::{
+    artifact::common::{AType, Artifact, Base, DeserializeExt},
+    http::artifact::{Deleted, RequestBody},
+};
 #[cfg(feature = "store")]
 impl Store for UserConfig {}
+
 #[cfg(feature = "store")]
 #[async_trait]
 pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
@@ -45,13 +42,13 @@ pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
             Err(e) => Err(e),
         }
     }
-    async fn get_one<T: Base + StoreTrait + DeserializeOwned + 'static>(
+    async fn get_one<T: Base + StoreTrait + RequestBody + DeserializeExt + 'static>(
         &mut self,
         id: &str,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
         debug!("get_one {:?}", url);
-        match self.get_details::<T>(&url).await {
+        match self.get_request::<T>(&url).await {
             Ok(mut r) => {
                 trace!("{:?}", r);
                 r.set_id(id);
@@ -96,13 +93,13 @@ pub trait Artifacts: Operation {
             Err(e) => Err(e),
         }
     }
-    async fn get_one<T: Base + std::fmt::Debug + DeserializeOwned + 'static>(
+    async fn get_one<T: Base + RequestBody + DeserializeExt + 'static>(
         &mut self,
         id: &str,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
         debug!("get_one {:?}", url);
-        match self.get_details::<T>(&url).await {
+        match self.get_request::<T>(&url).await {
             Ok(mut r) => {
                 r.set_id(id);
                 Ok(r)
@@ -113,36 +110,90 @@ pub trait Artifacts: Operation {
 }
 
 #[async_trait]
-pub trait Operation: ArtifactApi + ArtifactClient {
-    async fn create<
-        U: Send + Clone + Sync + Debug + Serialize,
-        T: Send + Debug + DeserializeOwned + 'static,
-    >(
+pub trait Operation: ArtifactApi + HttpClient {
+    async fn create<U: RequestBody, T: Send + DeserializeExt + 'static>(
         &mut self,
         body: &U,
     ) -> Result<T, Error> {
         let r = self.get_artifacts_url().to_owned();
         debug!("create {:?}", r);
-        self.post_artifact(&r, body).await
+        self.post_request(&r, body).await
     }
-    async fn delete<T: Send + Debug + DeserializeOwned + 'static>(
-        &mut self,
-        id: &str,
-    ) -> Result<T, Error> {
+    async fn delete<T: Deleted + DeserializeExt>(&mut self, id: &str) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
         debug!("delete {:?}", url);
-        self.delete_artifact(&url).await
+        self.delete_request(&url).await
     }
-    async fn put<
-        U: Send + Sync + Debug + Serialize + Clone,
-        T: Send + Debug + DeserializeOwned + 'static,
-    >(
+    async fn put<U: RequestBody, T: Send + DeserializeExt + 'static>(
         &mut self,
         id: &str,
         body: &U,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
         debug!("put {:?}", url);
-        self.put_artifact(&url, body).await
+        self.put_request(&url, body).await
     }
 }
+
+// #[cfg(test)]
+// pub mod tests {
+//     use super::*;
+//     use wekan_common::artifact::tests::{MockNewResponse as NewResponse};
+//     use crate::http::client::tests::MockResponse;
+
+//     #[async_trait]
+//     pub trait Operation: ArtifactApi {
+//         async fn create<U: RequestBody, T: NewResponse + Send + Debug + DeserializeOwned + 'static>(
+//             &mut self,
+//             body: &U,
+//         ) -> Result<T, Error> {
+//             let r = self.get_artifacts_url().to_owned();
+//             debug!("create {:?}", r);
+//             self.post_artifact(&r, body).await
+//         }
+//         async fn delete<T: Deleted + RequestBody + NewResponse>(&mut self, id: &str) -> Result<T, Error> {
+//             let url = self.get_artifact_url(id);
+//             debug!("delete {:?}", url);
+//             self.delete_artifact(&url).await
+//         }
+//         async fn put<U: RequestBody + NewResponse + Debug + DeserializeOwned + 'static>(
+//             &mut self,
+//             id: &str,
+//             body: &U,
+//         ) -> Result<U, Error> {
+//             let url = self.get_artifact_url(id);
+//             debug!("put {:?}", url);
+//             self.put_artifact::<U>(&url, body).await
+//         }
+//     }
+
+//     #[async_trait]
+//     pub trait Artifacts: Operation {
+//         async fn get_all(&mut self, t: AType) -> Result<Vec<Artifact>, Error> {
+//             let r = self.get_artifacts_url().to_owned();
+//             debug!("get_all {:?}", r);
+//             match self.get_vec::<Artifact, MockResponse>(&r).await {
+//                 Ok(mut v) => {
+//                     v.satisfy(t);
+//                     debug!("Response: {:?}", v);
+//                     Ok(v)
+//                 }
+//                 Err(e) => Err(e),
+//             }
+//         }
+//         async fn get_one<T: Base + RequestBody + NewResponse + DeserializeOwned + 'static>(
+//             &mut self,
+//             id: &str,
+//         ) -> Result<T, Error> {
+//             let url = self.get_artifact_url(id);
+//             debug!("get_one {:?}", url);
+//             match self.get_details::<T>(&url).await {
+//                 Ok(mut r) => {
+//                     r.set_id(id);
+//                     Ok(r)
+//                 }
+//                 Err(e) => Err(e),
+//             }
+//         }
+//     }
+// }

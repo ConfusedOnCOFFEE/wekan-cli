@@ -1,4 +1,3 @@
-pub mod artifact;
 pub mod authentication;
 pub mod client;
 pub mod operation;

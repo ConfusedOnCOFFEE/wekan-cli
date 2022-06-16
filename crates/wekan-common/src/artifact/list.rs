@@ -1,6 +1,11 @@
-use super::common::{AType, Base, BaseDetails, SortedArtifact, StoreTrait, WipLimit};
+use super::common::{
+    AType, Base, BaseDetails, DeserializeExt, IdReturner, SortedArtifact, StoreTrait, WekanDisplay,
+    WipLimit,
+};
+#[cfg(feature = "test")]
+use super::tests::MockNewResponse;
+use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
-
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -28,11 +33,14 @@ impl Base for Details {
     fn get_title(&self) -> String {
         self.title.as_ref().unwrap().to_owned()
     }
-    fn get_id(&self) -> String {
-        self._id.to_owned()
-    }
     fn set_id(&mut self, id: &str) -> String {
         self._id = id.to_owned();
+        self._id.to_owned()
+    }
+}
+
+impl IdReturner for Details {
+    fn get_id(&self) -> String {
         self._id.to_owned()
     }
 }
@@ -66,3 +74,28 @@ impl SortedArtifact for Details {
     }
 }
 impl StoreTrait for Details {}
+impl RequestBody for Details {}
+impl WekanDisplay for Details {}
+impl DeserializeExt for Details {}
+
+#[cfg(feature = "test")]
+impl MockNewResponse for Details {
+    fn new() -> Self {
+        Self {
+            _id: String::from("fake-list-id"),
+            title: Some(String::from("fake-list")),
+            starred: false,
+            archived: false,
+            archived_at: String::new(),
+            board_id: String::from("fake-board-id"),
+            swimlane_id: String::from("fake-swimlane-id"),
+            created_at: String::new(),
+            sort: 0.0,
+            updated_at: String::new(),
+            modified_at: String::new(),
+            wip_limit: WipLimit::new(),
+            color: String::new(),
+            r#type: AType::List.to_string(),
+        }
+    }
+}

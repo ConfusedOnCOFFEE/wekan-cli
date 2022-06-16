@@ -1,7 +1,10 @@
+#[cfg(not(test))]
 use super::config::FileWriter;
 use crate::config::{ConfigRequester, UserConfig};
 use async_trait::async_trait;
+#[cfg(not(test))]
 use chrono::prelude::*;
+#[cfg(not(test))]
 use log::debug;
 use serde::{Deserialize, Serialize};
 use wekan_common::artifact::common::StoreTrait;
@@ -33,6 +36,7 @@ pub trait Butler: ConfigRequester<UserConfig> {
     }
 }
 
+#[cfg(not(test))]
 #[async_trait]
 pub trait Store: ConfigRequester<UserConfig> {
     async fn write_into_context<'de, T: StoreTrait + Deserialize<'de>>(
@@ -56,5 +60,16 @@ pub trait Store: ConfigRequester<UserConfig> {
         }
         debug!("Path: {:?}", path);
         self.get_config().write(path.to_string(), entry).await;
+    }
+}
+
+#[cfg(test)]
+#[async_trait]
+pub trait Store: ConfigRequester<UserConfig> {
+    async fn write_into_context<'de, T: StoreTrait + Deserialize<'de>>(
+        &self,
+        _partial_context: T,
+        _id: &str,
+    ) {
     }
 }

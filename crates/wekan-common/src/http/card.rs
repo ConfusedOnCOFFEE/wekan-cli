@@ -1,3 +1,4 @@
+use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Debug, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -9,6 +10,7 @@ pub struct CreateCard {
     pub description: String,
     pub swimlane_id: String,
 }
+impl RequestBody for CreateCard {}
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
@@ -29,7 +31,7 @@ impl Card {
 pub struct MoveCard {
     pub list_id: String,
 }
-
+impl RequestBody for MoveCard {}
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, PartialEq, Serialize, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -41,3 +43,4 @@ pub struct UpdateCard {
     pub sort: Option<f32>,
     pub labels: Option<Vec<String>>,
 }
+impl RequestBody for UpdateCard {}

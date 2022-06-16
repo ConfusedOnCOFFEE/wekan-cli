@@ -1,9 +1,9 @@
 use crate::error::kind::Error;
 #[derive(Debug)]
 pub struct WekanResult {
-    pub message: String,
-    pub exit_code: i8,
-    pub next_workflow: Option<String>,
+    message: String,
+    exit_code: i8,
+    next_workflow: Option<String>,
 }
 
 impl WekanResult {
@@ -32,6 +32,18 @@ impl WekanResult {
     }
     pub fn ok(&self) -> Result<WekanResult, Error> {
         Ok(self.clone())
+    }
+
+    pub fn get_msg(&self) -> String {
+        self.message.to_owned()
+    }
+
+    pub fn get_next_workflow(&self) -> Option<String> {
+        self.next_workflow.to_owned()
+    }
+
+    pub fn get_exit_code(&self) -> i8 {
+        self.exit_code
     }
 }
 

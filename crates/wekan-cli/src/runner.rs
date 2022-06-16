@@ -12,7 +12,10 @@ use wekan_core::{
 
 use crate::{
     board::{argument::Args as BArgs, runner::Runner as BRunner},
-    card::{argument::Args as CArgs, runner::Runner as CRunner},
+    card::{
+        argument::Args as CArgs,
+        runner::{NewCardRunner, Runner as CRunner},
+    },
     command::{ArtifactCommand, BaseCommand, RootCmds as Command, RootCommand, WekanParser},
     config::runner::Runner as ConfigRunner,
     display::CliDisplay,
@@ -23,7 +26,7 @@ use crate::{
     subcommand::{Describe, Inspect, Table as TArgs},
 };
 use wekan_common::{
-    artifact::common::{AType, Artifact, Base},
+    artifact::common::{AType, Artifact, IdReturner},
     artifact::{board::Details as BDetails, card::Details as CDetails, list::Details as LDetails},
     validation::{
         constraint::{
@@ -38,12 +41,11 @@ use wekan_common::{
 use crate::config::context::ReadContext;
 #[cfg(feature = "store")]
 use wekan_core::persistence::store::Butler;
-
 pub struct Runner {
     pub parser: WekanParser,
     pub client: LoginClient,
-    // pub cache: Option<Cache>,
     pub format: String,
+    pub display: CliDisplay,
 }
 
 impl<'a> Runner {
@@ -70,17 +72,18 @@ impl<'a> Runner {
         };
         debug!("Config done");
         trace!("{:?}", user_config);
+        let vec: Vec<u8> = Vec::new();
         Runner {
             parser,
             client: LoginClient::new(user_config),
-            // cache: None,
             format,
+            display: CliDisplay::new(vec),
         }
     }
 
     pub async fn run(&mut self) -> Result<WekanResult, Error> {
         debug!("run");
-        match &self.parser.command {
+        match self.parser.command.to_owned() {
             Command::Config(c) => {
                 let mut config = ConfigRunner::new(c.clone(), self.client.clone());
                 config.run().await
@@ -89,11 +92,11 @@ impl<'a> Runner {
                 self.client.healthcheck().await?;
                 debug!("Artifact command");
                 debug!("Initial login done.");
-                match &l {
-                    Command::Board(b) => self.run_board(b).await,
-                    Command::List(l) => self.run_list(l).await,
-                    Command::Card(c) => self.run_card(c).await,
-                    Command::Table(t) => self.run_table(t).await,
+                match l {
+                    Command::Board(b) => self.run_board(&b).await,
+                    Command::List(l) => self.run_list(&l).await,
+                    Command::Card(c) => self.run_card(&c).await,
+                    Command::Table(t) => self.run_table(&t).await,
                     Command::Inspect(i) => self.run_inspect(i).await,
                     Command::Describe(d) => self.run_describe(d).await,
                     _ => WekanResult::new_msg("Not implemented.").ok(),
@@ -124,6 +127,7 @@ impl<'a> Runner {
             client,
             constraint,
             self.format.to_owned(),
+            self.display.to_owned(),
         );
         runner.run().await
     }
@@ -152,11 +156,18 @@ impl<'a> Runner {
                         },
                     };
                     debug!("Constraint for command list: {:?}", constraint);
-                    let client =
-                        <Client as ListApi>::new(self.client.config.clone(), &constraint.board._id);
+                    let client = <Client as ListApi>::new(
+                        self.client.config.clone(),
+                        constraint.board._id.to_owned(),
+                    );
                     trace!("{:?}", client);
-                    let mut runner: LRunner =
-                        LRunner::new(l_args.clone(), client, constraint, self.format.to_owned());
+                    let mut runner: LRunner = LRunner::new(
+                        l_args.clone(),
+                        client,
+                        constraint,
+                        self.format.to_owned(),
+                        self.display.to_owned(),
+                    );
                     runner.apply().await
                 }
                 Err(e) => Err(e),
@@ -193,8 +204,8 @@ impl<'a> Runner {
         let filter = parser.delegate.filter;
         let client = <Client as CardApi>::new(
             self.client.config.clone(),
-            &constraint.board.as_ref().unwrap()._id,
-            &constraint.list.as_ref().unwrap()._id,
+            constraint.board.as_ref().unwrap()._id.to_owned(),
+            constraint.list.as_ref().unwrap()._id.to_owned(),
         );
         let mut runner: CRunner = CRunner::new(
             c_args.clone(),
@@ -203,6 +214,7 @@ impl<'a> Runner {
             self.format.to_owned(),
             query,
             filter,
+            self.display.to_owned(),
         );
         runner.run().await
     }
@@ -246,9 +258,9 @@ impl<'a> Runner {
                                     Err(_e) => cards_of_lists.push(Vec::new()),
                                 };
                             }
-                            <Runner as CliDisplay>::print_table(lists, cards_of_lists)
+                            self.display.print_table(lists, cards_of_lists)
                         } else {
-                            <Runner as CliDisplay>::print_table(lists, Vec::new())
+                            self.display.print_table(lists, Vec::new())
                         }
                     }
                     Err(_e) => Err(CliError::new_msg("List name doesn't exist.").as_enum()),
@@ -258,7 +270,7 @@ impl<'a> Runner {
         }
     }
 
-    async fn run_inspect(&self, i: &Inspect) -> Result<WekanResult, Error> {
+    async fn run_inspect(&mut self, i: Inspect) -> Result<WekanResult, Error> {
         let mut v: Vec<&str> = i.id.split_terminator('/').collect();
         debug!("describe");
         trace!("Vector: {:?}", v);
@@ -267,49 +279,44 @@ impl<'a> Runner {
         } else {
             // filter bad typoes bJdaNK9KmbJqLgRzE
             let id = v.remove(1);
-            self.verify_id_length(id)?;
+            self.verify_id_length(id.to_string())?;
             match v.remove(0) {
                 "board" | "b" => {
                     let mut client = <Client as BoardApi>::new(self.client.config.clone());
                     match client.get_one::<BDetails>(id).await {
-                        Ok(b) => {
-                            <Runner as CliDisplay>::print_details(b, Some(self.format.to_owned()))
-                        }
+                        Ok(b) => self.display.print_details(b, Some(self.format.to_owned())),
                         Err(e) => {
                             error!("Error: {:?}", e);
                             WekanResult::new_msg("Artifact not found.").ok()
                         }
                     }
                 }
-                "list" | "l" => match &i.delegate.board_id {
+                "list" | "l" => match i.delegate.board_id {
                     Some(b_id) => {
-                        self.verify_id_length(b_id)?;
-                        let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
+                        self.verify_id_length(b_id.to_string())?;
+                        let mut client =
+                            <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
                         let artifact = client.get_one::<LDetails>(v.remove(0)).await.unwrap();
-                        <Runner as CliDisplay>::print_details(
-                            artifact,
-                            Some(self.format.to_owned()),
-                        )
+                        self.display
+                            .print_details(artifact, Some(self.format.to_owned()))
                     }
                     None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
-                "card" | "c" => match &i.delegate.board_id {
+                "card" | "c" => match i.delegate.board_id {
                     Some(b_id) => {
-                        self.verify_id_length(b_id)?;
+                        self.verify_id_length(b_id.to_owned())?;
                         match &i.delegate.list_id {
                             Some(l_id) => {
-                                self.verify_id_length(l_id)?;
+                                self.verify_id_length(l_id.to_string())?;
                                 let mut client = <Client as CardApi>::new(
                                     self.client.config.clone(),
-                                    b_id,
-                                    l_id,
+                                    b_id.to_string(),
+                                    l_id.to_string(),
                                 );
                                 let artifact =
                                     client.get_one::<CDetails>(v.remove(2)).await.unwrap();
-                                <Runner as CliDisplay>::print_details(
-                                    artifact,
-                                    Some(self.format.to_owned()),
-                                )
+                                self.display
+                                    .print_details(artifact, Some(self.format.to_owned()))
                             }
                             None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
@@ -325,7 +332,7 @@ impl<'a> Runner {
         }
     }
 
-    async fn run_describe(&self, d: &Describe) -> Result<WekanResult, Error> {
+    async fn run_describe(&mut self, d: Describe) -> Result<WekanResult, Error> {
         let mut v: Vec<&str> = d.resource.split_terminator('/').collect();
         debug!("describe");
         trace!("Vector: {:?}", v);
@@ -349,24 +356,21 @@ impl<'a> Runner {
                     match query.find_board_id(name, filter).await {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
-                            <Runner as CliDisplay>::print_details(
-                                board,
-                                Some(self.format.to_owned()),
-                            )
+                            self.display
+                                .print_details(board, Some(self.format.to_owned()))
                         }
                         Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
                     }
                 }
                 "list" | "l" => match &d.delegate.board_id {
                     Some(b_id) => {
-                        let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
+                        let mut client =
+                            <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
                         match query.find_list_id(b_id, name, filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
-                                <Runner as CliDisplay>::print_details(
-                                    board,
-                                    Some(self.format.to_owned()),
-                                )
+                                self.display
+                                    .print_details(board, Some(self.format.to_owned()))
                             }
                             Err(_e) => {
                                 Err(CliError::new_msg("Board name doesn't exist.").as_enum())
@@ -378,15 +382,16 @@ impl<'a> Runner {
                 "card" | "c" => match &d.delegate.board_id {
                     Some(b_id) => match &d.delegate.list_id {
                         Some(l_id) => {
-                            let mut client =
-                                <Client as CardApi>::new(self.client.config.clone(), b_id, l_id);
+                            let mut client = <Client as CardApi>::new(
+                                self.client.config.clone(),
+                                b_id.to_string(),
+                                l_id.to_string(),
+                            );
                             match query.find_card_id(b_id, l_id, name, filter).await {
                                 Ok(c_id) => {
                                     let board = client.get_one::<CDetails>(&c_id).await.unwrap();
-                                    <Runner as CliDisplay>::print_details(
-                                        board,
-                                        Some(self.format.to_owned()),
-                                    )
+                                    self.display
+                                        .print_details(board, Some(self.format.to_owned()))
                                 }
                                 Err(_e) => {
                                     Err(CliError::new_msg("Card name doesn't exist.").as_enum())
@@ -406,7 +411,7 @@ impl<'a> Runner {
         }
     }
 
-    fn verify_id_length(&self, id: &str) -> Result<bool, Error> {
+    fn verify_id_length(&self, id: String) -> Result<bool, Error> {
         if id.len() == 17 {
             Ok(true)
         } else {
@@ -415,15 +420,13 @@ impl<'a> Runner {
     }
 }
 
-impl CliDisplay for Runner {}
-
 #[cfg(feature = "store")]
 #[async_trait]
 impl ReadContext for UserConfig {
     async fn read_context(&self) -> Result<UserConfig, Error> {
         info!("read_context");
-        debug!("{:?}", self.get_path().to_owned());
-        match tokio::fs::read(self.get_path().to_owned() + "/config").await {
+        debug!("{:?}", self.get_path());
+        match tokio::fs::read(self.get_path() + "/config").await {
             Ok(v) => match String::from_utf8_lossy(&v).parse::<String>() {
                 Ok(s) => {
                     trace!("{:?}", s);

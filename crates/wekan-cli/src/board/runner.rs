@@ -23,6 +23,15 @@ use crate::{
     result::kind::WekanResult,
     subcommand::CommonCommand as Command,
 };
+#[cfg(test)]
+use wekan_common::{
+    artifact::common::Artifact,
+    artifact::tests::{MockNewResponse, MockReturn},
+    http::artifact::{Deleted, IdResponse, RequestBody},
+};
+#[cfg(test)]
+use wekan_core::client::{BoardApi, Client};
+#[cfg(not(test))]
 use wekan_core::{
     client::{BoardApi, Client},
     http::operation::{Artifacts, Operation},
@@ -33,17 +42,23 @@ pub struct Runner {
     pub client: Client,
     pub constraint: BConstraint,
     pub format: String,
+    pub display: CliDisplay,
 }
 
-impl CliDisplay for Runner {}
-
 impl ArtifactCommand<Args, Client, BConstraint> for Runner {
-    fn new(args: Args, client: Client, constraint: BConstraint, format: String) -> Self {
+    fn new(
+        args: Args,
+        client: Client,
+        constraint: BConstraint,
+        format: String,
+        display: CliDisplay,
+    ) -> Self {
         Self {
             args,
             client,
             constraint,
             format,
+            display,
         }
     }
 }
@@ -77,10 +92,10 @@ impl RootCommand for Runner {
         {
             Ok(id) => {
                 let board = self.client.get_one::<Details>(&id).await.unwrap();
-                match <Runner as CliDisplay>::print_details(
-                    board,
-                    parser.delegate.filter.to_owned(),
-                ) {
+                match self
+                    .display
+                    .print_details(board, parser.delegate.filter.to_owned())
+                {
                     Ok(_o) => self.get_list_by_board_id(&id).await,
                     Err(e) => Err(e),
                 }
@@ -98,7 +113,7 @@ impl CommonRunsSimplified for Runner {
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
-                <Runner as CliDisplay>::print_artifacts(ok, self.format.to_owned())
+                self.display.print_artifacts(ok, self.format.to_owned())
             }
             Err(e) => Err(Error::Core(e)),
         }
@@ -118,10 +133,11 @@ impl CommonRunsSimplified for Runner {
                     config: self.client.config.clone(),
                 };
                 let filter = WekanParser::parse().delegate.filter;
+                let format = WekanParser::parse().delegate.filter;
                 match query.find_board_id(n, &filter).await {
                     Ok(board_id) => {
                         let board = self.client.get_one::<Details>(&board_id).await.unwrap();
-                        <Runner as CliDisplay>::print_details(board, None)
+                        self.display.print_details(board, format)
                     }
                     Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
                 }
@@ -199,7 +215,7 @@ impl Runner {
             },
             Command::Inspect(i) => {
                 let board = client.get_one::<Details>(&i.id).await.unwrap();
-                <Runner as CliDisplay>::print_details(board, Some("long".to_string()))
+                self.display.print_details(board, Some("long".to_string()))
             }
             Command::Details(_d) => self.details(self.args.name.to_owned()).await,
         }
@@ -232,7 +248,7 @@ impl Runner {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {
                     println!("Following lists are available:");
-                    <Runner as CliDisplay>::print_artifacts(lists, String::from("long"))
+                    self.display.print_artifacts(lists, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
                         "This boards contains no lists.",
@@ -245,3 +261,51 @@ impl Runner {
         }
     }
 }
+
+#[cfg(test)]
+#[async_trait]
+pub trait Operation {
+    async fn create<
+        U: RequestBody,
+        T: MockNewResponse + Send + std::fmt::Debug + serde::de::DeserializeOwned + 'static,
+    >(
+        &mut self,
+        _body: &U,
+    ) -> Result<T, wekan_core::error::kind::Error> {
+        Ok(T::new())
+    }
+    async fn delete<T: Deleted + MockReturn + IdResponse>(
+        &mut self,
+        id: &str,
+    ) -> Result<T, wekan_core::error::kind::Error> {
+        Ok(T::success(Some(id.to_string())))
+    }
+    async fn put<U: RequestBody, T: MockReturn + IdResponse>(
+        &mut self,
+        id: &str,
+        _body: &U,
+    ) -> Result<T, wekan_core::error::kind::Error> {
+        Ok(T::success(Some(id.to_string())))
+    }
+}
+#[cfg(test)]
+impl Operation for wekan_core::client::Client {}
+
+#[cfg(test)]
+#[async_trait]
+pub trait Artifacts {
+    async fn get_all(&mut self, t: AType) -> Result<Vec<Artifact>, wekan_core::error::kind::Error> {
+        Ok(vec![
+            Artifact::new("fake-id-1", "fake-title", t.clone()),
+            Artifact::new("fake-id-2", "fake-title2", t),
+        ])
+    }
+    async fn get_one<T: MockNewResponse + serde::de::DeserializeOwned + 'static>(
+        &mut self,
+        _id: &str,
+    ) -> Result<T, wekan_core::error::kind::Error> {
+        Ok(T::new())
+    }
+}
+#[cfg(test)]
+impl Artifacts for wekan_core::client::Client {}

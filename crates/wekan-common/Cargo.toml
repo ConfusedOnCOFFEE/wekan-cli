@@ -2,8 +2,28 @@
 name = "wekan-common"
 version = "0.1.0"
 edition = "2021"
+description = "A Wekan common for all the structs from the API"
+repository = "https://github.com/ConfusedOnCOFFEE/wekan-cli"
+categories = ["client", "wekan", "kanban", "api_v6.11", "common"]
+keywords = [
+  "wekan",
+  "api_v6.11",
+  "kanban",
+  "wekan-cli",
+  "wekan-core"
+]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+rust-version = "1.60.0"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+]
+[features]
+test = []
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 crate-type = ["lib"]
 bench = false
@@ -25,5 +45,3 @@ serde = { version = "1.0", features = ["derive"]}
 async-trait = { version = "0.1.7" }
 reqwest = { version = "0.11.10", features = ["json", "multipart" ] }
 serde_yaml = { version = "0.8.21" }
-# [dependencies.yaml-rust]
-# git = "https://github.com/chyh1990/yaml-rust.git"

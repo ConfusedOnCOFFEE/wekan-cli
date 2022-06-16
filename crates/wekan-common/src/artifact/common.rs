@@ -1,4 +1,5 @@
 use crate::error::kind::ParseError;
+use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 #[derive(Deserialize, Serialize, Debug, Clone, Eq)]
@@ -14,6 +15,22 @@ pub struct WipLimit {
     value: i8,
     enabled: bool,
     soft: bool,
+}
+
+impl WipLimit {
+    pub fn new() -> Self {
+        Self {
+            value: 0,
+            enabled: false,
+            soft: false,
+        }
+    }
+}
+
+impl Default for WipLimit {
+    fn default() -> Self {
+        WipLimit::new()
+    }
 }
 impl From<String> for AType {
     fn from(s: String) -> Self {
@@ -85,15 +102,21 @@ impl FromStr for AType {
 }
 pub trait Base {
     fn get_title(&self) -> String;
-    fn get_id(&self) -> String;
     fn set_id(&mut self, id: &str) -> String;
+}
+
+pub trait IdReturner {
+    fn get_id(&self) -> String;
+}
+
+impl IdReturner for Artifact {
+    fn get_id(&self) -> String {
+        self._id.to_owned()
+    }
 }
 impl Base for Artifact {
     fn get_title(&self) -> String {
         self.title.to_owned()
-    }
-    fn get_id(&self) -> String {
-        self._id.to_owned()
     }
 
     fn set_id(&mut self, id: &str) -> String {
@@ -138,13 +161,13 @@ impl std::fmt::Display for Artifact {
     }
 }
 
-pub trait QueryTrait: SortedArtifact + Base + std::fmt::Debug {}
+pub trait WekanDisplay: SortedArtifact + std::fmt::Debug + Base + IdReturner {}
+impl WekanDisplay for Artifact {}
 pub trait StoreTrait:
     SortedArtifact + Base + Clone + std::marker::Send + std::marker::Sync + std::fmt::Debug + Serialize
 {
 }
 
-impl QueryTrait for Artifact {}
 impl StoreTrait for Artifact {}
 impl SortedArtifact for Vec<Artifact> {
     fn get_type(&self) -> AType {
@@ -183,18 +206,20 @@ impl Base for Vec<Artifact> {
             None => panic!("Not an artifact variant"),
         }
     }
-    fn get_id(&self) -> String {
-        match self.first() {
-            Some(_v) => "s".to_string(),
-            None => panic!("Not an artifact variant"),
-        }
-    }
-
     fn set_id(&mut self, _id: &str) -> String {
         self.get_id()
     }
 }
-impl<Artifact: Clone + Base + QueryTrait + std::marker::Sync + Serialize + std::marker::Send>
+
+impl IdReturner for Vec<Artifact> {
+    fn get_id(&self) -> String {
+        match self.first() {
+            Some(v) => v.get_id(),
+            None => panic!("Not an artifact variant"),
+        }
+    }
+}
+impl<Artifact: Clone + Base + WekanDisplay + std::marker::Sync + Serialize + std::marker::Send>
     StoreTrait for Vec<Artifact>
 where
     Vec<Artifact>: Base + SortedArtifact,
@@ -215,5 +240,34 @@ impl Ord for Artifact {
 impl PartialEq for Artifact {
     fn eq(&self, other: &Self) -> bool {
         self.title == other.title
+    }
+}
+
+impl RequestBody for Artifact {}
+#[cfg(feature = "test")]
+pub trait DeserializeExt:
+    serde::de::DeserializeOwned + std::fmt::Debug + super::tests::MockNewResponse
+{
+}
+#[cfg(not(feature = "test"))]
+pub trait DeserializeExt: serde::de::DeserializeOwned + std::fmt::Debug {}
+
+impl DeserializeExt for Artifact {}
+
+#[cfg(feature = "test")]
+impl Artifact {
+    pub fn new(id: &str, title: &str, atype: AType) -> Self {
+        Artifact {
+            _id: id.to_string(),
+            title: title.to_string(),
+            r#type: atype,
+        }
+    }
+}
+
+#[cfg(feature = "test")]
+impl super::tests::MockNewResponse for Artifact {
+    fn new() -> Self {
+        Artifact::new("fake-id", "fake-title", AType::Board)
     }
 }

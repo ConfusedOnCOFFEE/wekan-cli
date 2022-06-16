@@ -21,6 +21,7 @@ pub struct UserConfig {
 #[async_trait]
 pub trait MandatoryConfig {
     fn new() -> Self;
+    fn set_token(&mut self, t: Token);
 }
 
 #[async_trait]
@@ -39,11 +40,11 @@ pub trait OptionalConfig {
 }
 
 #[async_trait]
-#[cfg(feature = "store")]
 impl OptionalConfig for UserConfig {
     async fn store_token(&mut self, t: Token) -> Token {
         debug!("set_token");
         self.usertoken = Some(t);
+        #[cfg(feature = "store")]
         self.write_config({
             UserConfig {
                 address: self.address.clone(),
@@ -128,5 +129,9 @@ impl MandatoryConfig for UserConfig {
             context: None,
             usertoken: None,
         }
+    }
+
+    fn set_token(&mut self, t: Token) {
+        self.usertoken = Some(t)
     }
 }

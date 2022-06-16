@@ -1,9 +1,6 @@
 #[cfg(test)]
 mod http {
-    use hyper::Response;
-    use reqwest::{Accepts, Response, Url};
-    use wekan_common::login::Client as LClient;
-    use wekan_core::{client::Client, config::UserConfig, http::Client as HClient};
+    // use wekan_core::{client::Client, config::UserConfig, http::Client as HClient};
 
     // impl Response for Response {
     //     fn new() -> Response {
@@ -14,9 +11,12 @@ mod http {
     // #[tokio::test]
     // fn get() {
     //     let userconfig = UserConfig {
-    //         url: String::from("url"),
-    //         name: None,
-    //         token: None
+    //         address: NetworkAddress {
+    //             host: String::from("url"),
+    //             port: 8080
+    //         },
+    //         context: None,
+    //         usertoken: None
     //     };
     //     let client = Client::new(userconfig);
     //     let res = reqwest::Response::new(hyper::Response::new("new_world"), Url::parse("https://example.net")?, Accepts {}, None);
@@ -40,9 +40,12 @@ mod http {
     // #[should_panic]
     // fn get_user_id_no_id() {
     //     let config = UserConfig {
-    //         url: String::from("url"),
-    //         name: None,
-    //         token: None
+    //         address: NetworkAddress {
+    //             host: String::from("url"),
+    //             port: 8080
+    //         },
+    //         context: None,
+    //         usertoken: None
     //     };
     //     assert_eq!(config.get_logged_in_user_id(), "123");
     // }
@@ -50,9 +53,12 @@ mod http {
     // #[test]
     // fn get_user_id() {
     //     let config = UserConfig {
-    //         url: String::from("url"),
-    //         name: None,
-    //         token: Some(Token {
+    //         address: NetworkAddress {
+    //             host: String::from("url"),
+    //             port: 8080
+    //         },
+    //         context: None,
+    //         usertoken: Some(Token {
     //             id: Box::new(String::from("1")),
     //             token: Box::new(String::from("2")),
     //             token_expires: Box::new(String::from("3"))

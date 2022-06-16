@@ -1,180 +1,238 @@
-use crate::{command::WekanParser, error::kind::Error, result::kind::WekanResult};
-use clap::Parser;
-use log::{debug, error, trace};
-use wekan_common::artifact::common::{Base, BaseDetails, MostDetails, SortedArtifact};
-use wekan_core::error::kind::Error as CoreError;
+use crate::{error::kind::Error, result::kind::WekanResult};
+use log::{debug, trace};
+use std::cmp::Ordering;
+use wekan_common::artifact::common::{
+    Base, BaseDetails, IdReturner, MostDetails, SortedArtifact, WekanDisplay,
+};
 
-pub trait CliDisplay {
-    fn print_debug(artifact_details: String) -> Result<WekanResult, Error> {
-        WekanResult::new_msg(&artifact_details).ok()
+#[cfg(test)]
+use std::io::Write;
+
+pub struct CliDisplay {
+    writer: Vec<u8>,
+}
+
+impl std::clone::Clone for CliDisplay {
+    fn clone(&self) -> Self {
+        Self {
+            writer: self.writer.clone(),
+        }
     }
-    fn print_most_details<
-        T: SortedArtifact + std::fmt::Debug + BaseDetails + Base + MostDetails,
-    >(
+}
+impl CliDisplay {
+    pub fn new(writer: Vec<u8>) -> Self {
+        Self { writer }
+    }
+
+    fn format(&mut self, msg: &str, width: usize) -> String {
+        let padded = format!("{:<width$}", msg, width = width + 3);
+        #[cfg(test)]
+        self.capture_out(&padded);
+        padded
+    }
+
+    #[cfg(test)]
+    fn capture_out(&mut self, msg: &str) {
+        self.writer.write(msg.as_bytes()).unwrap();
+    }
+
+    #[cfg(test)]
+    fn get_captured(mut self) -> String {
+        let res = String::from_utf8(self.writer.to_owned())
+            .unwrap()
+            .to_owned();
+        self.writer.flush().unwrap();
+        res
+    }
+
+    pub fn print_most_details<T: WekanDisplay + BaseDetails + MostDetails>(
+        &mut self,
         artifact_details: T,
     ) -> Result<WekanResult, Error> {
         trace!("{:?}", artifact_details);
-
-        let mut id_to_print = String::new();
-        let mut headline = String::from("ID");
-        let det = artifact_details.get_id();
-        let (tmp, _last) = det.split_at(4);
-        id_to_print.push_str(tmp);
-        headline.push_str(&" ".repeat(5));
-        headline.push_str("TITLE");
-        headline.push_str(&" ".repeat(3));
-        if artifact_details.get_title().len() >= 3 {
-            headline.push_str(&" ".repeat(artifact_details.get_title().len() - 3));
-        } else {
-            headline.push_str(&" ".repeat(artifact_details.get_title().len()));
-        }
-        headline.push_str("DESCRIPTION");
-        headline.push_str(&" ".repeat(3));
-        headline.push_str("CREATED AT");
-        headline.push_str(&" ".repeat(3));
-        headline.push_str("DUE AT");
-        headline.push_str(&" ".repeat(7));
-        headline.push_str("END AT");
-        println!("{}", headline);
+        let mut properties_to_show = vec![
+            artifact_details.get_id(),
+            artifact_details.get_title(),
+            artifact_details
+                .get_modified_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+            artifact_details
+                .get_created_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+        ];
+        properties_to_show.push(safely_unwrap_date(&artifact_details.get_end_at()));
+        properties_to_show.push(safely_unwrap_date(&artifact_details.get_due_at()));
+        let properties_iter = properties_to_show.iter();
+        let max_string = properties_iter.max_by(|x, y| cmp_by_length(x, y)).unwrap();
+        let mut output = String::new();
+        let mut headlines_to_show = vec![
+            String::from("ID"),
+            String::from("TITLE"),
+            String::from("MODIFIED_AT"),
+            String::from("CREATED_AT"),
+        ];
+        headlines_to_show.push(if_field_available(
+            &String::from("DUE_AT"),
+            &artifact_details.get_due_at(),
+        ));
+        headlines_to_show.push(if_field_available(
+            &String::from("END_AT"),
+            &artifact_details.get_end_at(),
+        ));
+        headlines_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output.push('\n');
         #[cfg(feature = "integration")]
         println!("AAAA   {}", artifact_details.get_title());
-        let created_at_long = artifact_details.get_created_at();
-        let (created_at, _last) = created_at_long.split_at(10);
-        let due_at_long = artifact_details.get_due_at();
-        let (due_at, _last) = due_at_long.split_at(10);
-        let end_at_long = artifact_details.get_end_at();
-        let (end_at, _last) = end_at_long.split_at(10);
         #[cfg(not(feature = "integration"))]
-        println!(
-            "{}   {}{}   {}      {}   {}   {}",
-            id_to_print,
-            artifact_details.get_title(),
-            " ".repeat(artifact_details.get_title().len() + 3),
-            artifact_details.get_description(),
-            created_at,
-            due_at,
-            end_at
-        );
-        let mut details_type = artifact_details.get_type().to_string();
-        details_type.push_str(" details completed.");
+        properties_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output.push('\n');
         WekanResult::new_workflow(
-            &details_type.to_string(),
+            &output.finish_up(),
             "Update the specified artifact with the subcommand 'update'",
         )
         .ok()
     }
 
-    fn print_details<T: SortedArtifact + std::fmt::Debug + BaseDetails + Base>(
+    pub fn print_details<T: WekanDisplay + BaseDetails>(
+        &mut self,
         artifact_details: T,
         format: Option<String>,
     ) -> Result<WekanResult, Error> {
-        debug!("print_details with {:?}", format);
-        trace!("{:?}", artifact_details);
-
-        let mut id_to_print = String::new();
-        let mut headline = String::from("ID");
-
-        headline.push_str(&" ".repeat(2));
-        match format {
-            Some(f) => {
-                debug!("{:?}", f);
-                if f.starts_with("long") || f.starts_with("extended") || f.starts_with("extd") {
-                    debug!("Format is long.");
-                    headline.push_str(&" ".repeat(artifact_details.get_id().len()));
-                    id_to_print.push_str(&artifact_details.get_id());
-                } else {
-                    debug!("Format is sth else.");
-                    headline.push_str(&" ".repeat(3));
-                    let det = artifact_details.get_id();
-                    let (tmp, _last) = det.split_at(4);
-                    id_to_print.push_str(tmp);
-                }
-            }
-            None => {
-                debug!("Format is not set.");
-                headline.push_str(&" ".repeat(3));
-                let det = artifact_details.get_id();
-                let (tmp, _last) = det.split_at(4);
-                id_to_print.push_str(tmp);
-            }
-        };
-
-        headline.push_str("TITLE");
-        headline.push_str(&" ".repeat(3));
-        headline.push_str("MODIFIED AT");
-        headline.push_str(&" ".repeat(3));
-        let modified_at_long = artifact_details.get_modified_at();
-        let (modified_at, _last) = modified_at_long.split_at(10);
-        let created_at_long = artifact_details.get_created_at();
-        let (created_at, _last) = created_at_long.split_at(10);
-        headline.push_str("CREATED AT");
-        println!("{}", headline);
+        debug!("print_details_v2");
+        let properties_to_show = vec![
+            artifact_details
+                .get_id()
+                .split_at({
+                    match format {
+                        Some(f) => {
+                            if f.starts_with("long")
+                                || f.starts_with("extended")
+                                || f.starts_with("extd")
+                            {
+                                artifact_details.get_id().len()
+                            } else {
+                                std::cmp::min(4, artifact_details.get_id().len())
+                            }
+                        }
+                        None => std::cmp::min(4, artifact_details.get_id().len()),
+                    }
+                })
+                .0
+                .to_string(),
+            artifact_details.get_title(),
+            artifact_details
+                .get_modified_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+            artifact_details
+                .get_created_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+        ];
+        let properties_iter = properties_to_show.iter();
+        let max_string = properties_iter.max_by(|x, y| cmp_by_length(x, y)).unwrap();
+        let headlines_to_show = vec![
+            String::from("ID"),
+            String::from("TITLE"),
+            String::from("MODIFIED_AT"),
+            String::from("CREATED_AT"),
+        ];
+        let mut output = String::new();
+        headlines_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output.push('\n');
         #[cfg(feature = "integration")]
         println!("AAAA   {}", artifact_details.get_title());
         #[cfg(not(feature = "integration"))]
-        println!(
-            "{}   {}{}   {}   {}",
-            id_to_print,
-            artifact_details.get_title(),
-            " ".repeat(2),
-            modified_at,
-            created_at
-        );
-        WekanResult::new_workflow(
-            "----",
-            "Update the specified artifact with the subcommand 'update'",
-        )
-        .ok()
+        properties_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        WekanResult::new_msg(&output.finish_up()).ok()
     }
-    fn print_artifacts<T: std::fmt::Debug + Base + std::fmt::Display>(
+    pub fn print_artifacts<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
+        &mut self,
         artifacts: Vec<T>,
         format: String,
     ) -> Result<WekanResult, Error> {
-        let mut iterator = artifacts.iter();
-
         trace!("{:?} - {:?}", artifacts, format);
         debug!("print_artifacts");
-        if !artifacts.is_empty() {
-            println!("ID     TITLE");
-            loop {
-                match iterator.next() {
-                    Some(r) => {
-                        if format.contains("rust") {
-                            println!("{:?}", r);
-                        } else if format.contains("elisp") {
-                            println!("{}", r);
-                        } else if format.contains("extended") {
-                            println!("{}   {}", r.get_id(), r.get_title());
-                        } else {
-                            let tmp = r.get_id().to_owned();
-                            let (_first, _last) = tmp.split_at(4);
-                            #[cfg(feature = "integration")]
-                            println!("AAAA   {}", r.get_title());
-                            #[cfg(not(feature = "integration"))]
-                            println!("{}   {}", _first, r.get_title());
-                        };
-                    }
-                    None => {
-                        if format.contains("elisp") {
-                            break WekanResult::new_msg(&String::new()).ok();
-                        } else {
-                            break WekanResult::new_workflow(
-                                "----",
-                                "Get or update details of an artifact.",
-                            )
-                            .ok();
-                        }
-                    }
-                }
-            }
-        } else {
-            WekanResult::new_workflow(
-                "This artifact contains no childs.",
-                "Create a card with 'card -b [BOARD-NAME] -l [LIST-NAME] create [CARD-NAME] --description [CARD-DESCRIPTION]'").ok()
-        }
+        let headlines_to_show = vec![String::from("ID"), String::from("TITLE")];
+        let mut output = String::new();
+        headlines_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, 3)));
+        output.push('\n');
+        artifacts.iter().for_each(|a| {
+            if format.contains("rust") || format.contains("elisp") {
+                output.push_str(
+                    &self.format(
+                        a.get_id()
+                            .split_at({
+                                if format.starts_with("long")
+                                    || format.starts_with("extended")
+                                    || format.starts_with("extd")
+                                {
+                                    a.get_id().len()
+                                } else {
+                                    std::cmp::min(3, a.get_id().len())
+                                }
+                            })
+                            .0,
+                        3,
+                    ),
+                );
+                output.push_str(&self.format(&a.get_title(), 3));
+            } else if format.contains("extended") {
+                output.push_str(&self.format(&a.get_id(), 3));
+                output.push_str(&self.format(&a.get_title(), 3));
+            } else {
+                #[cfg(not(feature = "integration"))]
+                output.push_str(
+                    &self.format(
+                        a.get_id()
+                            .split_at({
+                                if format.starts_with("long")
+                                    || format.starts_with("extended")
+                                    || format.starts_with("extd")
+                                {
+                                    a.get_id().len()
+                                } else {
+                                    std::cmp::min(4, a.get_id().len())
+                                }
+                            })
+                            .0,
+                        3,
+                    ),
+                );
+                #[cfg(not(feature = "integration"))]
+                output.push_str(&self.format(&a.get_title(), 3));
+
+                #[cfg(feature = "integration")]
+                output.push_str(&self.format(String::from("AAAA", 3)));
+                #[cfg(feature = "integration")]
+                output.push_str(&self.format(&a.get_title(), 3));
+                output.push('\n');
+            };
+        });
+        WekanResult::new_workflow(&output.finish_up(), "Get or update details of an artifact.").ok()
     }
 
-    fn print_table<
+    pub fn print_table<
         T: std::fmt::Debug
             + std::cmp::PartialOrd
             + std::cmp::Ord
@@ -182,6 +240,7 @@ pub trait CliDisplay {
             + Base
             + std::fmt::Display,
     >(
+        &self,
         lists: Vec<T>,
         mut cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
@@ -217,92 +276,125 @@ pub trait CliDisplay {
         };
         WekanResult::new_msg("----").ok()
     }
-    fn transform_to_exit(result: Result<WekanResult, Error>) -> i8 {
-        debug!("transform_to_exit");
-        trace!("{:?}", result);
-        match result {
-            Ok(r) => {
-                println!("{}", r.message);
-                let parser = WekanParser::parse();
-                if !parser.delegate.no_recommendations {
-                    println!("The next recommended workflows:");
-                    match &r.next_workflow {
-                        Some(w) => println!("{}", w),
-                        None => println!("Nothing to recommend. Suggestions?"),
-                    };
-                }
-                r.exit_code
-            }
-            Err(e) => {
-                eprint!("Something went wrong. ");
-                eprint!(
-                    "For more information use WEKAN_LOG, verbose argument or WEKAN_BACKTRACE=1. "
-                );
-                eprintln!("Trying to make sense of the error and showing user friendly output:");
-                trace!("{:?}", e);
-                match e {
-                    Error::Core(core) => match core {
-                        CoreError::Constraint(c) => {
-                            eprintln!("{:?}", c);
-                            1
-                        }
-                        CoreError::Http(h) => {
-                            if h.is_timeout() || h.is_connect() {
-                                eprintln!("Probably host down or Port not open.");
-                            }
-                            if h.is_request() {
-                                eprintln!("Either payload failure or authentication issue.");
-                            }
-                            if h.is_body() {
-                                eprintln!("Wrong payload or response. WEKAN_CLI works best against API v6.11.");
-                            }
+}
+fn cmp_by_length(x: &str, y: &str) -> Ordering {
+    if x.len() > y.len() {
+        return Ordering::Greater;
+    };
+    if x.len() == y.len() {
+        Ordering::Equal
+    } else {
+        Ordering::Less
+    }
+}
 
-                            if h.is_decode() {
-                                eprintln!("Response couldn't be decoded. Check WEKAN_API version.");
-                            }
+fn safely_unwrap_date(d: &str) -> String {
+    match d.split_once('T') {
+        Some(e) => e.0.to_string(),
+        None => String::new(),
+    }
+}
 
-                            2
-                        }
+fn if_field_available(h: &str, field: &str) -> String {
+    if !field.is_empty() {
+        h.to_string()
+    } else {
+        String::new()
+    }
+}
 
-                        CoreError::Io(io) => {
-                            error!("{:?}", io);
-                            eprintln!(
-                                "Config file or Context file not found. Check your WEKAN_PATH."
-                            );
-                            2
-                        }
-                        CoreError::Yaml(yaml) => {
-                            error!("{:?}", yaml);
-                            eprintln!(
-                                "Config or Context was not loaded successfully. Delete WEKAN_PATH."
-                            );
-                            2
-                        }
-                    },
-                    Error::Cli(cli) => {
-                        eprintln!("{}", cli.message);
-                        cli.error_code
-                    }
-                    Error::Input(i) => {
-                        println!("{}", i.message);
-                        0
-                    }
-                    Error::Io(io) => {
-                        eprintln!("IO Error");
-                        eprint!("{:?}", io);
-                        3
-                    }
-                    Error::Yaml(yaml) => {
-                        eprintln!("{:?}", yaml);
-                        4
-                    }
-                    #[cfg(feature = "store")]
-                    Error::Store(store) => {
-                        eprintln!("{:?}", store);
-                        4
-                    }
-                }
-            }
-        }
+trait FinishUp {
+    fn finish_up(&mut self) -> String;
+}
+
+impl FinishUp for String {
+    fn finish_up(&mut self) -> String {
+        self.push_str("\n----\n");
+        self.to_owned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wekan_common::artifact::{card::Details as CDetails, tests::MockDetails};
+
+    #[test]
+    fn print_details_output_normal() {
+        let a = CDetails::new(
+            &String::from("my-id"),
+            &String::from("my-title"),
+            &String::from("2022-10-15T208Z"),
+        );
+        let out = Vec::new();
+        let mut display = CliDisplay::new(out);
+        let ok_res = display.print_details(a, None).unwrap();
+        let expected_output = concat!(
+            "ID           TITLE        MODIFIED_AT  CREATED_AT   ",
+            "my-i         my-title     2022-10-15   2022-10-15   ",
+        );
+        let expected_msg = concat!(
+            "ID           TITLE        MODIFIED_AT  CREATED_AT   \n",
+            "my-i         my-title     2022-10-15   2022-10-15   \n----\n",
+        );
+        assert_eq!(
+            display.get_captured().escape_debug().to_string(),
+            expected_output
+        );
+        assert_eq!(ok_res.get_msg(), expected_msg);
+        assert_eq!(ok_res.get_next_workflow(), None);
+        assert_eq!(ok_res.get_exit_code(), 0)
+    }
+
+    #[test]
+    fn cmp_by_length_greater() {
+        assert_eq!(
+            cmp_by_length(&String::from("202"), &String::from("2")),
+            Ordering::Greater
+        )
+    }
+
+    #[test]
+    fn cmp_by_length_less() {
+        assert_eq!(
+            cmp_by_length(&String::from("2"), &String::from("202")),
+            Ordering::Less
+        )
+    }
+
+    #[test]
+    fn cmp_by_length_equal() {
+        assert_eq!(
+            cmp_by_length(&String::from("20"), &String::from("20")),
+            Ordering::Equal
+        )
+    }
+
+    #[test]
+    fn safely_unwrap_date_exist() {
+        assert_eq!(
+            safely_unwrap_date(&String::from("202T27Z")),
+            String::from("202")
+        )
+    }
+
+    #[test]
+    fn safely_unwrap_date_dont_exist() {
+        assert_eq!(safely_unwrap_date(&String::from("20")), String::new())
+    }
+
+    #[test]
+    fn if_field_vailable_true() {
+        assert_eq!(
+            if_field_available(&String::from("HEADER"), &String::from("header")),
+            String::from("HEADER")
+        )
+    }
+    #[test]
+    fn if_field_vailable_false() {
+        assert_eq!(
+            if_field_available(&String::from("HEADER"), &String::new()),
+            String::new()
+        )
     }
 }

@@ -3,7 +3,7 @@ use log::{debug, info, trace};
 use wekan_common::{
     artifact::{
         card::Details,
-        common::{AType, Artifact, Base},
+        common::{AType, Artifact, IdReturner},
     },
     http::{
         artifact::ResponseOk,
@@ -29,6 +29,7 @@ use crate::{
     result::kind::WekanResult,
     subcommand::Inspect,
 };
+
 #[derive(DeriveUnwrapper)]
 pub struct Runner {
     pub args: Args,
@@ -37,15 +38,30 @@ pub struct Runner {
     pub format: String,
     pub query: Query,
     pub filter: Option<String>,
+    pub display: CliDisplay,
 }
-impl Runner {
-    pub fn new(
+
+pub trait NewCardRunner {
+    fn new(
         args: Args,
         client: Client,
         constraint: Constraint,
         format: String,
         query: Query,
         filter: Option<String>,
+        display: CliDisplay,
+    ) -> Self;
+}
+
+impl NewCardRunner for Runner {
+    fn new(
+        args: Args,
+        client: Client,
+        constraint: Constraint,
+        format: String,
+        query: Query,
+        filter: Option<String>,
+        display: CliDisplay,
     ) -> Self {
         Self {
             args,
@@ -54,8 +70,33 @@ impl Runner {
             format,
             query,
             filter,
+            display,
         }
     }
+}
+// #[cfg(not(test))]
+// impl NewCardRunner<Writer> for Runner {
+//     fn new(
+//         args: Args,
+//         client: Client,
+//         constraint: Constraint,
+//         format: String,
+//         query: Query,
+//         filter: Option<String>,
+//         display: CliDisplay<Writer>,
+//     ) -> Self {
+//         Self {
+//             args,
+//             client,
+//             constraint,
+//             format,
+//             query,
+//             filter,
+//             display,
+//         }
+//     }
+// }
+impl Runner {
     async fn get_details(&mut self, name: &str) -> Result<WekanResult, Error> {
         match self
             .query
@@ -171,7 +212,7 @@ impl Runner {
                         {
                             Ok(_o) => WekanResult::new_workflow(
                                 "Card moved.",
-                                "Update card with more details.",
+                                "Update card with more deta2ils.",
                             )
                             .ok(),
                             Err(_e) => CliError::new_msg("Card update failed.").err(),
@@ -227,7 +268,7 @@ impl Runner {
                         {
                             Ok(_o) => {
                                 let card = self.client.get_one::<Details>(&card_id).await.unwrap();
-                                <Runner as CliDisplay>::print_most_details(card)
+                                self.display.print_most_details(card)
                             }
                             Err(_e) => CliError::new_msg("Card update failed.").err(),
                         }
@@ -251,7 +292,8 @@ impl Runner {
             Some(_b_id) => match &inspect.delegate.list_id {
                 Some(_l_id) => {
                     let artifact = self.client.get_one::<Details>(&inspect.id).await.unwrap();
-                    <Runner as CliDisplay>::print_details(artifact, Some("long".to_string()))
+                    self.display
+                        .print_details(artifact, Some("long".to_string()))
                 }
                 None => WekanResult::new_msg("List id needs to be supplied.").ok(),
             },
@@ -259,8 +301,6 @@ impl Runner {
         }
     }
 }
-
-impl CliDisplay for Runner {}
 
 #[async_trait]
 impl RootCommand for Runner {
@@ -271,21 +311,22 @@ impl RootCommand for Runner {
 
 #[async_trait]
 impl CommonRuns for Runner {
-    async fn list<'b>(&self, vecs: &'b [Artifact]) -> Result<WekanResult, Error> {
+    async fn list<'b>(&mut self, vecs: &'b [Artifact]) -> Result<WekanResult, Error> {
         debug!("list_or_details");
         trace!("{:?}", vecs);
         if !vecs.is_empty() {
-            <Runner as CliDisplay>::print_artifacts(vecs.to_vec(), self.format.to_owned())
+            self.display
+                .print_artifacts(vecs.to_vec(), self.format.to_owned())
         } else {
             debug!("No cards have been found.");
             WekanResult::new_workflow("No cards in the list.", "Card create with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]").ok()
         }
     }
-    async fn details(&self, a: &Artifact) -> Result<WekanResult, Error> {
+    async fn details(&mut self, a: &Artifact) -> Result<WekanResult, Error> {
         let mut client = self.client.clone();
         let card = client.get_one::<Details>(&a.get_id()).await.unwrap();
         trace!("{:?}", card);
-        <Runner as CliDisplay>::print_details(card, None)
+        self.display.print_details(card, None)
     }
 }
 

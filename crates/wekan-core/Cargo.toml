@@ -2,6 +2,25 @@
 name = "wekan-core"
 version = "0.1.0"
 edition = "2021"
+description = "A Wekan core to view, edit and remote artifacts from a WEKAN board"
+repository = "https://github.com/ConfusedOnCOFFEE/wekan-cli"
+categories = ["client", "wekan", "kanban", "core"]
+keywords = [
+  "wekan",
+  "client",
+  "kanban",
+  "wekan-cli",
+  "wekan-common"
+]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+rust-version = "1.60.0"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+]
 
 [lib]
 crate-type = ["lib"]
@@ -13,7 +32,7 @@ store = []
 [profile.release]
 opt-level = 3
 debug = false
-split-debuginfo = '...'  # Platform-specific.
+split-debuginfo = '...'
 debug-assertions = false
 overflow-checks = false
 lto = false
@@ -36,5 +55,9 @@ wekan-common = { path = "../wekan-common" }
 log = "0.4.0"
 env_logger = "0.8.4"
 wekan-core-derive = { path = "../wekan-core-derive"}
-# [dependencies.yaml-rust]
-# git = "https://github.com/chyh1990/yaml-rust.git"
+
+[dev-dependencies]
+http = "0.2"
+url = "2.2"
+mockall = "0.11.1"
+wekan-common = { path = "../wekan-common", features = ["test"] }

@@ -3,7 +3,7 @@ use chrono::{prelude::*, DateTime};
 use log::{debug, error, info, trace};
 use regex::Regex;
 use wekan_common::{
-    artifact::common::{AType, Artifact, Base, QueryTrait, SortedArtifact},
+    artifact::common::{AType, Artifact, Base, IdReturner, SortedArtifact, WekanDisplay},
     validation::authentication::TokenHeader,
 };
 use wekan_core::{
@@ -13,7 +13,7 @@ use wekan_core::{
 };
 
 #[cfg(feature = "store")]
-use crate::persistence::store::Store;
+use crate::store::Store;
 
 use crate::error::kind::{CliError, Error, Transform};
 
@@ -235,7 +235,11 @@ impl Query {
 
     async fn request_cards(&self, board_id: &str, list_id: &str) -> Result<Vec<Artifact>, Error> {
         info!("request_cards");
-        let mut client = <Client as CardApi>::new(self.config.to_owned(), board_id, list_id);
+        let mut client = <Client as CardApi>::new(
+            self.config.to_owned(),
+            board_id.to_string(),
+            list_id.to_string(),
+        );
         match client.get_all(AType::Card).await {
             Ok(o) => Ok(o),
             Err(e) => Err(Error::from(e)),
@@ -243,7 +247,7 @@ impl Query {
     }
     async fn request_lists(&self, board_id: &str) -> Result<Vec<Artifact>, Error> {
         info!("request_lists");
-        let mut client = <Client as ListApi>::new(self.config.to_owned(), board_id);
+        let mut client = <Client as ListApi>::new(self.config.to_owned(), board_id.to_string());
         match client.get_all(AType::List).await {
             Ok(o) => Ok(o),
             Err(e) => Err(Error::from(e)),
@@ -252,7 +256,7 @@ impl Query {
 
     async fn valid_response(
         &mut self,
-        vecs: Result<Vec<impl QueryTrait>, Error>,
+        vecs: Result<Vec<impl WekanDisplay>, Error>,
         name: &str,
         order: &Option<String>,
     ) -> Result<String, Error> {
@@ -264,7 +268,7 @@ impl Query {
 
     async fn extract_id(
         &mut self,
-        vecs: Vec<impl QueryTrait>,
+        vecs: Vec<impl WekanDisplay>,
         name: &str,
         order: &Option<String>,
     ) -> Result<String, Error> {
