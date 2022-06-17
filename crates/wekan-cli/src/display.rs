@@ -88,14 +88,15 @@ impl CliDisplay {
         headlines_to_show
             .iter()
             .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        println!("AAAA   {}", artifact_details.get_title());
+        output.push_str("AAAA   {}", artifact_details.get_title());
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
             .for_each(|x| output.push_str(&self.format(x, max_string.len())));
-        output.push('\n');
+        output = output.trim().to_string();
         WekanResult::new_workflow(
             &output.finish_up(),
             "Update the specified artifact with the subcommand 'update'",
@@ -155,13 +156,15 @@ impl CliDisplay {
         headlines_to_show
             .iter()
             .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        println!("AAAA   {}", artifact_details.get_title());
+        output.push_str("AAAA   {}", artifact_details.get_title());
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
             .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output = output.trim().to_string();
         WekanResult::new_msg(&output.finish_up()).ok()
     }
     pub fn print_artifacts<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
@@ -176,6 +179,7 @@ impl CliDisplay {
         headlines_to_show
             .iter()
             .for_each(|x| output.push_str(&self.format(x, 3)));
+        output = output.trim().to_string();
         output.push('\n');
         artifacts.iter().for_each(|a| {
             if format.contains("rust") || format.contains("elisp") {
@@ -225,6 +229,7 @@ impl CliDisplay {
                 output.push_str(&self.format(&String::from("AAAA"), 3));
                 #[cfg(feature = "integration")]
                 output.push_str(&self.format(&a.get_title(), 3));
+                output = output.trim().to_string();
                 output.push('\n');
             };
         });
@@ -333,8 +338,8 @@ mod tests {
             "my-i         my-title     2022-10-15   2022-10-15   ",
         );
         let expected_msg = concat!(
-            "ID           TITLE        MODIFIED_AT  CREATED_AT   \n",
-            "my-i         my-title     2022-10-15   2022-10-15   \n----\n",
+            "ID           TITLE        MODIFIED_AT  CREATED_AT\n",
+            "my-i         my-title     2022-10-15   2022-10-15\n----\n",
         );
         assert_eq!(
             display.get_captured().escape_debug().to_string(),

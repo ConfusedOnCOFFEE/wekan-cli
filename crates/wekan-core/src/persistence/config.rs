@@ -100,7 +100,7 @@ impl FileWriter for UserConfig {
         let config_path = self.get_path();
         debug!("write to file: {}{}", config_path, path);
         if !config_path.is_empty() {
-            match fs::create_dir_all(config_path.to_owned()) {
+            match fs::create_dir_all(&config_path) {
                 Ok(_created) => {
                     let mut file = File::create(config_path.to_owned() + &path.to_owned())
                         .await

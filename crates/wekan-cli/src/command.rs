@@ -63,11 +63,6 @@ pub struct Root {
         help = "Filter out available artifacts by id in format: b:..,l:..,c:.. Be aware that this has a higher order then the name"
     )]
     pub filter: Option<String>,
-    // TOODO switch to key_value pair
-    // #[clap(short = 'D', value_parser = parse_key_val::<String, i32>)]
-    // defines: Vec<(String, i32)>,
-    // /// Selected artifact
-    // pub name: Option<String>,
     #[clap(flatten)]
     pub verbose: Verbosity<ErrorLevel>,
 }

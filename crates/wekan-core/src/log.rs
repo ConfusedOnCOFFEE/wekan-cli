@@ -34,7 +34,6 @@ impl Log for Logger {
     }
 
     fn log(&self, record: &Record) {
-        // Check if the record is matched by the logger before logging
         if self.inner.matches(record) {
             match std::env::var("WEKAN_BACKTRACE") {
                 Ok(external) => {

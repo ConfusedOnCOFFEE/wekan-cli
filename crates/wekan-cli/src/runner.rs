@@ -277,7 +277,6 @@ impl<'a> Runner {
         if v.len() != 2 {
             WekanResult::new_msg("Format not correct type/id.").ok()
         } else {
-            // filter bad typoes bJdaNK9KmbJqLgRzE
             let id = v.remove(1);
             self.verify_id_length(id.to_string())?;
             match v.remove(0) {

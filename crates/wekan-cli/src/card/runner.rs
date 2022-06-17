@@ -74,28 +74,7 @@ impl NewCardRunner for Runner {
         }
     }
 }
-// #[cfg(not(test))]
-// impl NewCardRunner<Writer> for Runner {
-//     fn new(
-//         args: Args,
-//         client: Client,
-//         constraint: Constraint,
-//         format: String,
-//         query: Query,
-//         filter: Option<String>,
-//         display: CliDisplay<Writer>,
-//     ) -> Self {
-//         Self {
-//             args,
-//             client,
-//             constraint,
-//             format,
-//             query,
-//             filter,
-//             display,
-//         }
-//     }
-// }
+
 impl Runner {
     async fn get_details(&mut self, name: &str) -> Result<WekanResult, Error> {
         match self

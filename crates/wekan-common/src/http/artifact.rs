@@ -46,7 +46,6 @@ impl MockReturn for ResponseOk {
     }
 }
 
-// impl<T: Clone + Base + std::marker::Sync + Serialize + DeserDebug + std::marker::Send> DeserializeExt for Response<T> {}
 impl<T: Clone + Base + std::marker::Sync + Serialize + DeserializeExt + std::marker::Send>
     DeserializeExt for Response<T>
 {

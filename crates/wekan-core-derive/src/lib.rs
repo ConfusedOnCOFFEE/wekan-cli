@@ -10,7 +10,6 @@ pub fn derive_unwrapper(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let output: proc_macro2::TokenStream = quote! {
         impl wekan_core::http::util::Unwrapper for #name {}
     };
-    // panic!("{:?}", TokenStream::to_string(&output));
     proc_macro::TokenStream::from(output)
 }
 
@@ -32,7 +31,6 @@ pub fn derive_unauthorized_client(input: proc_macro::TokenStream) -> proc_macro:
         }
 
     };
-    // panic!("{:?}", TokenStream::to_string(&output));
     proc_macro::TokenStream::from(output)
 }
 
@@ -64,7 +62,6 @@ pub fn derive_authentication_client(input: proc_macro::TokenStream) -> proc_macr
         }
 
     };
-    // panic!("{:?}", TokenStream::to_string(&output));
     proc_macro::TokenStream::from(output)
 }
 
@@ -161,6 +158,5 @@ pub fn derive_token_config(input: proc_macro::TokenStream) -> proc_macro::TokenS
         }
 
     };
-    // panic!("{:?}", proc_macro2::TokenStream::to_string(&output));
     proc_macro::TokenStream::from(output)
 }

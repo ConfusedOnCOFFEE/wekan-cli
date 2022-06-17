@@ -54,7 +54,7 @@ pub trait Store: ConfigRequester<UserConfig> {
         debug!("Complete Entry: {:?}", entry);
         let mut path = entry.payload.get_type().to_string().to_owned();
         if entry.parent.to_string().is_empty() {
-            path.push_str("s");
+            path.push('s');
         } else {
             path.push_str(&entry.parent);
         }

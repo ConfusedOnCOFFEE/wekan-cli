@@ -1,7 +1,5 @@
 use clap::{Args as ClapArgs, Subcommand};
 use wekan_common::artifact::common::AType;
-// use std::ops::RangeInclusive;
-
 #[derive(Subcommand, Debug, Clone)]
 #[clap(about = "The following commands are available:")]
 pub enum CommonCommand {

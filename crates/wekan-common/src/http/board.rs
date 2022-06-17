@@ -23,10 +23,8 @@ pub struct CreateBoard {
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub struct CreatedBoard {
-    // #[serde(alias = "id")]
     #[serde(skip_deserializing)]
     _id: String,
-    // #[serde(alias = "defaultSwimmlaneId")]
     #[serde(skip_deserializing)]
     default_swimmlane_id: String,
 }
