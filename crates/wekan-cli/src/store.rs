@@ -1,6 +1,4 @@
 use async_trait::async_trait;
-//use clap::YamlLoader;
-// use tokio::{fs::File, io::{AsyncReadExt, AsyncWriteExt}};
 use crate::{
     error::kind::{Error, StoreError},
     resolver::Query,
@@ -13,25 +11,23 @@ use wekan_common::artifact::common::{
     SortedArtifact,
 };
 use wekan_core::persistence::store::{Butler, Entry};
-// use std::fs;
 use log::{debug, info, trace};
-// use serde::{Deserialize, Serialize};
 
 #[async_trait]
 pub trait Store {
-    async fn request_artifact(&self, artifact: &Artifact) -> Result<String, Error>;
-    async fn request_artifacts(
+    async fn lookup_id(&self, artifact: &Artifact) -> Result<String, Error>;
+    async fn approve_id(&self, id: &str) -> Result<String, Error>;
+    async fn lookup_artifacts(
         &self,
         artifact_variant: AType,
         id: &str,
     ) -> Result<Entry<Vec<Artifact>>, Error>;
-    async fn load_artifacts(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error>;
-    async fn load_last_used_artifact(&self, id: &str) -> Result<String, Error>;
+    async fn stock_up(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error>;
 }
 
 #[async_trait]
 impl Store for Query {
-    async fn request_artifacts(
+    async fn lookup_artifacts(
         &self,
         artifact_variant: AType,
         id: &str,
@@ -43,23 +39,23 @@ impl Store for Query {
         };
         info!("request_artifacts");
         trace!("{:?}", artifact);
-        match self.load_artifacts(&artifact).await {
+        match self.stock_up(&artifact).await {
             Ok(a) => Ok(a),
             Err(_e) => Err(Error::Store(StoreError { found: false })),
         }
     }
-    async fn request_artifact(&self, artifact: &Artifact) -> Result<String, Error> {
+    async fn lookup_id(&self, artifact: &Artifact) -> Result<String, Error> {
         info!("request_artifact");
         trace!("{:?}", artifact);
         let identifier = artifact.get_type().to_string() + &artifact.get_id();
         trace!("Identifier: {:?}", identifier);
-        match self.load_last_used_artifact(&identifier).await {
+        match self.approve_id(&identifier).await {
             Ok(a) => Ok(a),
             Err(_e) => Err(Error::Store(StoreError { found: false })),
         }
     }
 
-    async fn load_artifacts(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error> {
+    async fn stock_up(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error> {
         let config_path = self.config.get_path();
         let to_load_from = match artifact.get_type() {
             AType::Board => config_path.to_owned() + &artifact.get_type().to_string() + "s",
@@ -83,7 +79,7 @@ impl Store for Query {
             Err(e) => Err(Error::Io(e)),
         }
     }
-    async fn load_last_used_artifact(&self, unqiue_identifier: &str) -> Result<String, Error> {
+    async fn approve_id(&self, unqiue_identifier: &str) -> Result<String, Error> {
         let config_path = match std::env::var("WEKAN_CLI_CONFIG_PATH") {
             Ok(config_path_env) => config_path_env,
             Err(_e) => {

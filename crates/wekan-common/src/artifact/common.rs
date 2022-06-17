@@ -155,9 +155,18 @@ impl SortedArtifact for Artifact {
         self.r#type.to_owned()
     }
 }
+pub trait Elisp {
+    fn to_elisp(&self) -> String;
+}
+
+impl Elisp for Artifact {
+    fn to_elisp(&self) -> String {
+        format!("((_id . {}) (title . {})) ", self._id, self.title)
+    }
+}
 impl std::fmt::Display for Artifact {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "((_id . {}) (title . {})) ", self._id, self.title)
+        write!(f, "{}    {}", self._id, self.title)
     }
 }
 

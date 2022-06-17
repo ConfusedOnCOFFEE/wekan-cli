@@ -66,7 +66,7 @@ impl<'a> Runner {
             }
         };
         debug!("{:?}", user_config);
-        let format = match parser.delegate.format {
+        let format = match parser.delegate.output_format {
             Some(ref f) => f.to_owned(),
             None => "terminal".to_string(),
         };
@@ -219,7 +219,7 @@ impl<'a> Runner {
         runner.run().await
     }
 
-    async fn run_table(&self, table_args: &TArgs) -> Result<WekanResult, Error> {
+    async fn run_table(&mut self, table_args: &TArgs) -> Result<WekanResult, Error> {
         #[cfg(feature = "store")]
         let parser = WekanParser::parse();
         #[cfg(feature = "store")]
@@ -237,7 +237,7 @@ impl<'a> Runner {
         {
             Ok(board_id) => {
                 match query
-                    .request_artifacts(AType::List, &board_id, &String::new())
+                    .inquire(AType::List, &board_id, &String::new())
                     .await
                 {
                     Ok(lists) => {
@@ -248,7 +248,7 @@ impl<'a> Runner {
                             for r in iterator.by_ref() {
                                 trace!("List: {:?}", r.get_id());
                                 match query
-                                    .request_artifacts(AType::Card, &board_id, &r.get_id())
+                                    .inquire(AType::Card, &board_id, &r.get_id())
                                     .await
                                 {
                                     Ok(cards) => {

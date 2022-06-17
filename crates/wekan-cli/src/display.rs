@@ -244,41 +244,33 @@ impl CliDisplay {
             + Base
             + std::fmt::Display,
     >(
-        &self,
+        &mut self,
         lists: Vec<T>,
         mut cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
         let mut iterator = lists.iter();
-        if !lists.is_empty() {
-            loop {
-                match iterator.next() {
-                    Some(r) => print!("{}        ", r.get_title()),
-                    None => break println!(),
-                }
-            }
-        };
+        println!("{:?}", cards);
+        let mut output = String::new();
+        lists
+            .iter()
+            .for_each(|x| output.push_str(&self.format(&x.get_title(), 3)));
+        output.push('\n');
         if !cards.is_empty() {
             let mut iterator = cards.iter_mut();
             loop {
                 match iterator.next() {
                     Some(r) => {
-                        r.sort_by(|a, b| a.cmp(b));
                         trace!("{:?}", r);
-                        let mut inner_cards = r.iter();
-                        loop {
-                            match inner_cards.next() {
-                                Some(a) => {
-                                    println!("{}        ", a.get_title())
-                                }
-                                None => break println!(),
-                            }
+                        if !r.is_empty() {
+                            let next_card = r.remove(0);
+                            output.push_str(&self.format(&next_card.get_title(), 3))
                         }
                     }
-                    None => break println!(),
+                    None => break,
                 }
             }
         };
-        WekanResult::new_msg("----").ok()
+        WekanResult::new_msg(&output.finish_up()).ok()
     }
 }
 fn cmp_by_length(x: &str, y: &str) -> Ordering {

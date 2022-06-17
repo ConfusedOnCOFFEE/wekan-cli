@@ -38,7 +38,7 @@ pub enum RootCmds {
 }
 
 #[derive(Args, Debug)]
-#[clap(name = "wekan-cli", version = "0.1.0", about = "Common artifact args.")]
+#[clap(name = "wekan-cli", version = "0.1.0", about = "Common artifact args")]
 pub struct Root {
     #[clap(
         short = 'r',
@@ -56,11 +56,12 @@ pub struct Root {
     #[cfg(feature = "store")]
     pub no_store: bool,
     #[clap(short = 'o', long, help = "Output format: rust, elisp, long, extended")]
-    pub format: Option<String>,
+    pub output_format: Option<String>,
     #[clap(
         short = 'f',
         long,
-        help = "Filter out available artifacts by id in format: b:..,l:..,c:.. Be aware that this has a higher order then the name"
+        help = "Filter out artifacts by id",
+        long_help = "Filter out artifacts by id in format: b:..,l:..,c:.. This overrules name argument"
     )]
     pub filter: Option<String>,
     #[clap(flatten)]

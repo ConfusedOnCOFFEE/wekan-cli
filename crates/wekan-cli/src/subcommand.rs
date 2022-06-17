@@ -80,7 +80,7 @@ pub struct Describe {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Show a board tree.")]
+#[clap(version = "0.1.0", about = "Show a board table")]
 pub struct Table {
     /// Board name
     pub name: String,

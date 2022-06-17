@@ -241,7 +241,7 @@ impl Runner {
             config: self.client.config.clone(),
         };
         match query
-            .request_artifacts(AType::Board, board_id, &String::new())
+            .inquire(AType::Board, board_id, &String::new())
             .await
         {
             Ok(lists) => {

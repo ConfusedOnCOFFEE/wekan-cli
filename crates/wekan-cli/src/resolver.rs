@@ -32,11 +32,15 @@ impl Query {
         order: &Option<String>,
     ) -> Result<String, Error> {
         info!("find_card_id");
-        let cards = match self.request_artifacts(AType::Card, board_id, list_id).await {
+        let cards = match self.inquire(AType::Card, board_id, list_id).await {
             Ok(o) => Ok(o),
-            Err(e) => Err(e),
+            Err(e) => {
+                trace!("{:?}", e);
+                self.fulfill_inquiry(AType::Card, board_id, list_id)
+                    .await
+            },
         };
-        self.valid_response(cards, name, order).await
+        self.confirm_valid_name(cards, name, order).await
     }
 
     pub async fn find_swimlane_id(
@@ -46,15 +50,20 @@ impl Query {
     ) -> Result<String, Error> {
         info!("find_swimlane_id");
         let swimlane = match self
-            .request_artifacts(AType::Swimlane, board_id, &String::new())
+            .inquire(AType::Swimlane, board_id, &String::new())
             .await
         {
             Ok(o) => Ok(o),
-            Err(e) => Err(e),
+            Err(e) => {
+                trace!("{:?}", e);
+                self.fulfill_inquiry(AType::Card, board_id, &String::new())
+                    .await
+            },
         };
-        self.valid_response(swimlane, &String::from("Default"), order)
+        self.confirm_valid_name(swimlane, &String::from("Default"), order)
             .await
     }
+
     pub async fn find_list_id(
         &mut self,
         board_id: &str,
@@ -63,14 +72,19 @@ impl Query {
     ) -> Result<String, Error> {
         info!("find_list_id");
         let boards = match self
-            .request_artifacts(AType::List, board_id, &String::new())
+            .inquire(AType::List, board_id, &String::new())
             .await
         {
             Ok(o) => Ok(o),
-            Err(e) => Err(e),
+            Err(e) => {
+                trace!("{:?}", e);
+                self.fulfill_inquiry(AType::Card, board_id, &String::new())
+                    .await
+            },
         };
-        self.valid_response(boards, name, order).await
+        self.confirm_valid_name(boards, name, order).await
     }
+
     pub async fn find_board_id(
         &mut self,
         name: &str,
@@ -78,27 +92,31 @@ impl Query {
     ) -> Result<String, Error> {
         info!("find_board_id");
         let boards = match self
-            .request_artifacts(AType::Board, &String::new(), &String::new())
+            .inquire(AType::Board, &String::new(), &String::new())
             .await
         {
             Ok(o) => Ok(o),
-            Err(e) => Err(e),
+            Err(e) => {
+                trace!("{:?}", e);
+                self.fulfill_inquiry(AType::Card, &String::new(), &String::new())
+                    .await
+            },
         };
-        self.valid_response(boards, name, order).await
+        self.confirm_valid_name(boards, name, order).await
     }
 
     #[cfg(not(feature = "store"))]
-    pub async fn request_artifacts(
+    pub async fn inquire(
         &self,
         artifact_variant: AType,
         board_id: &str,
         list_id: &str,
     ) -> Result<Vec<Artifact>, Error> {
-        self.match_request_to_be_fullfilled(artifact_variant, board_id, list_id)
+        self.fulfill_inquiry(artifact_variant, board_id, list_id)
             .await
     }
     #[cfg(feature = "store")]
-    pub async fn request_artifacts(
+    pub async fn inquire(
         &self,
         artifact_variant: AType,
         board_id: &str,
@@ -106,11 +124,10 @@ impl Query {
     ) -> Result<Vec<Artifact>, Error> {
         if self.deny_store_usage {
             info!("Store disabled");
-            self.match_request_to_be_fullfilled(artifact_variant, board_id, list_id)
+            self.fulfill_inquiry(artifact_variant, board_id, list_id)
                 .await
         } else {
-            match <Self as Store>::request_artifacts(
-                self,
+            match self.lookup_artifacts(
                 artifact_variant.clone(),
                 &(board_id.to_owned() + list_id),
             )
@@ -123,7 +140,7 @@ impl Query {
                             AType::Board => {
                                 if Utc::now().hour() > t.hour() + 1 {
                                     debug!("New request");
-                                    self.match_request_to_be_fullfilled(
+                                    self.fulfill_inquiry(
                                         artifact_variant,
                                         board_id,
                                         list_id,
@@ -137,7 +154,7 @@ impl Query {
                             AType::List => {
                                 if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 15 {
                                     debug!("New request");
-                                    self.match_request_to_be_fullfilled(
+                                    self.fulfill_inquiry(
                                         artifact_variant,
                                         board_id,
                                         list_id,
@@ -151,7 +168,7 @@ impl Query {
                             AType::Card => {
                                 if t.minute() + 2 > 60 || Utc::now().minute() > t.minute() + 5 {
                                     debug!("New request");
-                                    self.match_request_to_be_fullfilled(
+                                    self.fulfill_inquiry(
                                         artifact_variant,
                                         board_id,
                                         list_id,
@@ -165,7 +182,7 @@ impl Query {
                             AType::Swimlane => {
                                 if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 20 {
                                     debug!("New request");
-                                    self.match_request_to_be_fullfilled(
+                                    self.fulfill_inquiry(
                                         artifact_variant,
                                         board_id,
                                         list_id,
@@ -183,19 +200,19 @@ impl Query {
                         }
                     }
                     Err(_e) => {
-                        self.match_request_to_be_fullfilled(artifact_variant, board_id, list_id)
+                        self.fulfill_inquiry(artifact_variant, board_id, list_id)
                             .await
                     }
                 },
                 Err(_e) => {
-                    self.match_request_to_be_fullfilled(artifact_variant, board_id, list_id)
+                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
                         .await
                 }
             }
         }
     }
 
-    async fn match_request_to_be_fullfilled(
+    async fn fulfill_inquiry(
         &self,
         artifact_variant: AType,
         board_id: &str,
@@ -254,7 +271,7 @@ impl Query {
         }
     }
 
-    async fn valid_response(
+    async fn confirm_valid_name(
         &mut self,
         vecs: Result<Vec<impl WekanDisplay>, Error>,
         name: &str,
