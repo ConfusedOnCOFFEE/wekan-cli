@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 flow=$1
 selection=$2
+all_args="${@:2}"
 echo "Quiet e2e docker-compose command."
 crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
-
 function test_crates() {
     echo "Run test ${1}"
     cd $script_dir
@@ -109,18 +109,19 @@ function release() {
 
 
 function run() {
-    echo "Run: ${1}"
     cd $script_dir
     if [ "${1}" == "cli" ]; then
+        echo "Run: ${1} with ${all_args}"
         cd crates/wekan-cli
-        cargo run
+        cargo run -- ${all_args}
     elif [ "${1}" == "cli-store" ]; then
+        echo "Run: ${1} with ${all_args}"
         cd crates/wekan-cli
-        cargo run --features store
+        cargo run --features store -- ${all_args}
     elif [ "${1}" == "container" ]; then
         docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
     else
-        run cli
+        run cli-store
     fi
 }
 
@@ -164,7 +165,7 @@ case $flow in
         exit
         ;;
     "r"|"run")
-        release $selection
+        run $selection
         exit
         ;;
     "e"|"e2e")
