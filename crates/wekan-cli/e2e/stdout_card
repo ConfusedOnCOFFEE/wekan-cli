@@ -27,21 +27,24 @@ SUBCOMMANDS:
 Card created.
 The next recommended workflows:
 Move card or update card.
-ID     TITLE   MODIFIED AT   CREATED AT
+ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA   test-card
 ----
+
 The next recommended workflows:
-Update the specified artifact with the subcommand 'update'
+Nothing to recommend. Suggestions?
 ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   Test
 Following cards are available:
-ID     TITLE
-AAAA   test-card
+ID    TITLE
+AAAA  test-card
 ----
+
 The next recommended workflows:
 Get or update details of an artifact.
-ID     TITLE   MODIFIED AT   CREATED AT
+ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA   test-card
 ----
+
 The next recommended workflows:
-Update the specified artifact with the subcommand 'update'
+Nothing to recommend. Suggestions?

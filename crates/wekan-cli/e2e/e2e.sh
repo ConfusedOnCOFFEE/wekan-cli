@@ -23,7 +23,7 @@ elif [ "$1" == "b:wekan-cli" ]; then
     docker build -f Dockerfile.e2e -t concafe/wekan-cli:integration .
 elif [ "$1" == "b:tester" ]; then
     cd ../../../
-    docker build -f Dockerfile.e2e-retest -t concafe/wekan-cli:tester .
+    docker build --no-cache -f Dockerfile.e2e-retest -t concafe/wekan-cli:tester .
 elif [ "$1" == "rm" ]; then
     docker stop wekan-cli
     docker rm wekan-cli

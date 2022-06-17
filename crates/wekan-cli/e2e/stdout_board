@@ -24,18 +24,21 @@ SUBCOMMANDS:
 New board created.
 The next recommended workflows:
 Create a list with 'list -b <BOARD_NAME> create [LIST_NAME]
-ID     TITLE
-AAAA   Templates
-AAAA   Test
+ID    TITLE
+AAAA  Templates
+AAAA  Test
 ----
+
 The next recommended workflows:
 Get or update details of an artifact.
+
 ID     TITLE   MODIFIED AT   CREATED AT
 AAAA   Test
 Following lists are available:
-ID     TITLE
-AAAA   Templates
-AAAA   Test
+ID    TITLE
+AAAA  Templates
+AAAA  Test
 ----
+
 The next recommended workflows:
 Get or update details of an artifact.
