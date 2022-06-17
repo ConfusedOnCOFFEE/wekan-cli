@@ -69,10 +69,8 @@ SUBCOMMANDS:
 By default, we will show table style, highly inspired by Docker. The detail view also has date information.
 
 ```sh
-
-ID     TITLE
-1234   my_title
-
+ID    TITLE
+1234  my_title
 ```
 
 
@@ -91,19 +89,6 @@ Not so sure, if that is a good way right now, but it could help if I upgrade to 
 ## REFACTOR
 
 - Currently there is not a good way on when a name argument is expected or not. I want to change that and make it more transparent and coherent in all subcommand but this takes time.
-
-
-## KNOWN ISSUE
-
-- Table view is broken.
-- Store doesn't always update if a new arifact is created.
-- Display columns aren't always correct.
-
-
-## PRIO LIST
-
-- Refactor display module.
-- Refresh store if an artifact was not found.
 
 
 ## ENV VARIABLES
