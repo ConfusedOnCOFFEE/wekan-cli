@@ -1,79 +1,179 @@
 #!/bin/bash
-cmd=$1
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+flow=$1
+selection=$2
+echo "Quiet e2e docker-compose command."
 crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
-if [ "${cmd}" == "d" ]; then
-    cd crates/wekan-cli
-    export EMACSSAVEMODEDIR=.
-    emacs
-elif [ "${cmd}" == "test" ]; then
-     cd crates/wekan-cli
-     cargo test -- --nocapture
-elif [ "${cmd}" == "e2e" ]; then
-    cd crates/wekan-cli/e2e
-    ./e2e.sh ab
-elif [ "${cmd}" == "e2e:rerun" ]; then
-    cd crates/wekan-cli/e2e
-    ./e2e.sh rerun
-elif [ "${cmd}" == "docker:build" ]; then
-    docker build -t concafe/wekan-cli:release .
-elif [ "${cmd}" == "run" ]; then
-    docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
-elif [ "${cmd}" == "qa" ]; then
-    set -e
-    ./manager.sh clippy
-    ./manager.sh fmt
-elif [ "${cmd}" == "clippy" ]; then
-    ./manager.sh clippy:cli
-    ./manager.sh clippy:core
-    ./manager.sh clippy:common
-    ./manager.sh clippy:macro
-elif [ "${cmd}" == "clippy:cli" ]; then
-    echo "wekan-cli clippy"
-    cd crates/wekan-cli
-    cargo clippy -- -Dwarnings
-elif [ "${cmd}" == "clippy:core" ]; then
-    echo "wekan-core clippy"
-    cd crates/wekan-core
-    cargo clippy -- -Dwarnings
-elif [ "${cmd}" == "clippy:common" ]; then
-    echo "wekan-common clippy"
-    cd crates/wekan-common
-    cargo clippy -- -Dwarnings
-elif [ "${cmd}" == "clippy:macro" ]; then
-    echo "wekan-core-derive clippy"
-    cd crates/wekan-core-derive
-    cargo clippy -- -Dwarnings
-elif [ "${cmd}" == "fmt" ]; then
+
+function test_crates() {
+    echo "Run test ${1}"
+    cd $script_dir
+    if [ "${1}" == "cli" ]; then
+        cd crates/wekan-cli
+        cargo test
+        cargo test --features store
+    elif [ "${1}" == "core" ]; then
+        cd crates/wekan-core
+        cargo test
+        cargo test  --features store
+    else
+        test_crates cli
+        test_crates core
+    fi
+}
+
+function e2e() {
+    echo "Run e2e ${1}"
+    cd $script_dir
+    if [ "${1}" == "ab" ]; then
+        cd crates/wekan-cli
+        cargo build --features integration
+        cd ./e2e
+        ./e2e.sh ab
+    elif [ "${1}" == "c" ]; then
+        e2e ab
+        e2e rerun
+    elif [ "${1}" == "rerun" ]; then
+        cd crates/wekan-cli/e2e
+        ./e2e.sh rerun
+        echo "Sleeping 5 seconds so the test can run."
+        sleep 5
+        echo "Trying to present results:"
+        docker logs wekan-cli
+    elif [ "${1}" == "l" ]; then
+        docker logs wekan-cli
+    else
+        e2e ab
+    fi
+}
+function clippy() {
+    echo "Run clippy ${1}"
+    cd $script_dir
+    if [ "${1}" == "cli" ]; then
+        cd crates/wekan-cli
+        cargo clippy -- -Dwarnings
+        cargo clippy --features store -- -Dwarnings
+    elif [ "${1}" == "core" ]; then
+        cd crates/wekan-core
+        cargo clippy -- -Dwarnings
+        cargo clippy --features store -- -Dwarnings
+    elif [ "${1}" == "common" ]; then
+        cd crates/wekan-common
+        cargo clippy -- -Dwarnings
+    elif [ "${1}" == "macro" ]; then
+        cd crates/wekan-core-derive
+        cargo clippy -- -Dwarnings
+    else
+        clippy cli
+        clippy core
+        clippy common
+        clippy macro
+    fi
+}
+
+
+function fmt() {
     echo "fmt crates"
+    cd $script_dir
     cd crates/wekan-cli
     cargo fmt
-    cd ../wekan-core
+    cd $script_dir
+    cd crates/wekan-core
     cargo fmt
-    cd ../wekan-core-derive
+    cd $script_dir
+    cd crates/wekan-core-derive
     cargo fmt
-    cd ../wekan-common
+    cd $script_dir
+    cd crates/wekan-common
     cargo fmt
-elif [ "${cmd}" == "test" ]; then
-    cd crates/wekan-cli
-    cargo test
-    cd ../crates/wekan-core
-    cargo test
-elif [ "${cmd}" == "build" ]; then
-    cd crates/wekan-cli
-    cargo build --verbose
-elif [ "${cmd}" == "release:apple" ]; then
-    cd crates/wekan-cli
-    cargo build -r --target aarch64-apple-darwin
-    cargo build -r --target x86_64-apple-darwin
-elif [ "${cmd}" == "release:linux" ]; then
-    cd crates/wekan-cli
-    cargo build -r --target x86_64-unknown-linux-gnu
-elif [ "${cmd}" == "release:windows" ]; then
-    cd crates/wekan-cli
-    cargo build -r --target x86_64-pc-windows-gnu
-elif [ "${cmd}" == "e2e:rerun" ]; then
-    cd crates/wekan-cli/e2e
-    ./e2e.sh rm
-    ./e2e.sh r
-    ./e2e.sh l
-fi
+}
+
+function release() {
+    echo "Release ${1}"
+    cd $script_dir
+    if [ "${1}" == "apple" ]; then
+        cd crates/wekan-cli
+        cargo build -r --target aarch64-apple-darwin
+        cargo build -r --target x86_64-apple-darwin
+    elif [ "${1}" == "linux" ]; then
+        cd crates/wekan-cli
+        cargo build -r --target x86_64-unknown-linux-gnu
+    elif [ "${1}" == "windows" ]; then
+        cd crates/wekan-cli
+        cargo build -r --target x86_64-pc-windows-gnu
+    else
+        cd crates/wekan-cli
+        cargo build -r
+    fi
+}
+
+
+function run() {
+    echo "Run: ${1}"
+    cd $script_dir
+    if [ "${1}" == "cli" ]; then
+        cd crates/wekan-cli
+        cargo run
+    elif [ "${1}" == "cli-store" ]; then
+        cd crates/wekan-cli
+        cargo run --features store
+    elif [ "${1}" == "container" ]; then
+        docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
+    else
+        run cli
+    fi
+}
+
+case $flow in
+    "d"|"dev")
+        cd crates/wekan-cli
+        export EMACSSAVEMODEDIR=.
+        emacs
+        exit
+        ;;
+    "t"|"test")
+        test_crates cli
+        test_crates core
+        exit
+        ;;
+    "b")
+        cd crates/wekan-cli
+        cargo build --verbose
+        exit
+        ;;
+    "d:b")
+        docker build -t concafe/wekan-cli:release .
+        exit
+        ;;
+    "f"|"fmt")
+        fmt
+        exit
+        ;;
+    "c"|"clippy")
+        clippy $selection
+        exit
+        ;;
+    "qa")
+        ./manager.sh fmt
+        ./manager.sh clippy
+        ./manager.sh t
+        exit
+        ;;
+    "release")
+        release $selection
+        exit
+        ;;
+    "r"|"run")
+        release $selection
+        exit
+        ;;
+    "e"|"e2e")
+        e2e $selection
+        exit
+        ;;
+    *)
+        echo -e "Nothing selected."
+        exit
+        ;;
+esac
+echo "Flow done."
