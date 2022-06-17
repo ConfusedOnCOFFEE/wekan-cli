@@ -17,11 +17,43 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build
+    - name: Build:cli
       run: cd crates/wekan-cli && cargo build --verbose
-    - name: Clippy
+    - name: Clippy:cli
       run: cd crates/wekan-cli && cargo clippy -- -Dwarnings
-    - name: Format
+    - name: Fmt:cli
       run: cd crates/wekan-cli && cargo fmt -- --check
-    - name: Run tests
+    - name: Test:cli
       run: cd crates/wekan-cli && cargo test --verbose
+    - name: Build:core
+      run: cd crates/wekan-cli && cargo build --verbose
+    - name: Clippy:core
+      run: cd crates/wekan-cli && cargo clippy -- -Dwarnings
+    - name: Fmt:core
+      run: cd crates/wekan-cli && cargo fmt -- --check
+    - name: Tests:core
+      run: cd crates/wekan-cli && cargo test --verbose
+    - name: 'Build:cli feature store'
+      run: cd crates/wekan-cli && cargo build --verbose
+    - name: 'Clippy:cli feature store'
+      run: cd crates/wekan-core && cargo clippy --features store -- -Dwarnings
+    - name: 'Fmt:cli feature store'
+      run: cd crates/wekan-core && cargo fmt  -- --check
+    - name: 'Test:cli feature store'
+      run: cd crates/wekan-core && cargo test --features store --verbose
+    - name: 'Build:core feature store'
+      run: cd crates/wekan-core && cargo build --features store --verbose
+    - name: 'Clippy:core feature store'
+      run: cd crates/wekan-core && cargo clippy --features store -- -Dwarnings
+    - name: 'Fmt:core feature store'
+      run: cd crates/wekan-core && cargo fmt  -- --check
+    - name: 'Tests:core feature store'
+      run: cd crates/wekan-core && cargo test --features store --verbose
+    - name: Clippy:common
+      run: cd crates/wekan-common && cargo clippy -- -Dwarnings
+    - name: Fmt:common
+      run: cd crates/wekan-common && cargo fmt  -- --check
+    - name: Clippy:core-derive
+      run: cd crates/wekan-core-derive && cargo clippy -- -Dwarnings
+    - name: Fmt:core-derive
+      run: cd crates/wekan-core-derive && cargo fmt  -- --check
