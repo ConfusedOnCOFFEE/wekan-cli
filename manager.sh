@@ -167,7 +167,7 @@ case $flow in
         run $selection
         exit
         ;;
-    "e"|"e2e")
+    "e"|"e2e"|"2e"|"2ee")
         e2e $selection
         exit
         ;;
