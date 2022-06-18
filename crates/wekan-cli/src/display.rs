@@ -236,6 +236,18 @@ impl CliDisplay {
         WekanResult::new_workflow(&output.finish_up(), "Get or update details of an artifact.").ok()
     }
 
+    pub fn prepare_output<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
+        &mut self,
+        output: &str,
+        artifacts: Vec<T>,
+        format: String,
+    ) -> Result<WekanResult, Error> {
+        let mut full_output = String::new();
+        full_output.push_str(output);
+        let second_output = self.print_artifacts(artifacts, format).unwrap();
+        full_output.push_str(&second_output.get_msg());
+        WekanResult::new_workflow(&full_output, &second_output.get_next_workflow().unwrap()).ok()
+    }
     pub fn print_table<
         T: std::fmt::Debug
             + std::cmp::PartialOrd
@@ -248,8 +260,6 @@ impl CliDisplay {
         lists: Vec<T>,
         mut cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
-        let mut iterator = lists.iter();
-        println!("{:?}", cards);
         let mut output = String::new();
         lists
             .iter()
@@ -317,11 +327,7 @@ mod tests {
 
     #[test]
     fn print_details_output_normal() {
-        let a = CDetails::new(
-            &String::from("my-id"),
-            &String::from("my-title"),
-            &String::from("2022-10-15T208Z"),
-        );
+        let a = CDetails::new("my-id", "my-title", "2022-10-15T208Z");
         let out = Vec::new();
         let mut display = CliDisplay::new(out);
         let ok_res = display.print_details(a, None).unwrap();

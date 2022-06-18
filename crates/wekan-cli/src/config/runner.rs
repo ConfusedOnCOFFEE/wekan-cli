@@ -1,5 +1,5 @@
 use crate::{
-    command::{BaseCommand, RootCommand},
+    command::{BaseCommand, RootCommandRunner},
     error::kind::{CliError, Error, Transform},
     result::kind::WekanResult,
 };
@@ -100,7 +100,7 @@ pub struct RemoveConfig {
 }
 
 #[async_trait]
-impl RootCommand for Runner {
+impl RootCommandRunner for Runner {
     async fn run(&mut self) -> Result<WekanResult, Error> {
         match self.args.command.to_owned() {
             ConfigCommand::SetCredentials(a) => self.client.run_login(&a).await,

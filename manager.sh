@@ -133,8 +133,7 @@ case $flow in
         exit
         ;;
     "t"|"test")
-        test_crates cli
-        test_crates core
+        test_crates $selection
         exit
         ;;
     "b")

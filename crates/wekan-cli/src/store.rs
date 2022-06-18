@@ -10,9 +10,13 @@ use wekan_common::artifact::common::{
     // Base,
     SortedArtifact,
 };
-use wekan_core::persistence::store::{Butler, Entry};
+use wekan_core::persistence::store::Entry;
 use log::{debug, info, trace};
 
+#[cfg(not(test))]
+use wekan_core::persistence::store::Butler;
+#[cfg(test)]
+use chrono::{prelude::*};
 #[async_trait]
 pub trait Store {
     async fn lookup_id(&self, artifact: &Artifact) -> Result<String, Error>;
@@ -55,6 +59,7 @@ impl Store for Query {
         }
     }
 
+    #[cfg(not(test))]
     async fn stock_up(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error> {
         let config_path = self.config.get_path();
         let to_load_from = match artifact.get_type() {
@@ -78,6 +83,18 @@ impl Store for Query {
             },
             Err(e) => Err(Error::Io(e)),
         }
+    }
+
+    #[cfg(test)]
+    async fn stock_up(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error> {
+        Ok(Entry  {
+            parent: artifact.get_id(),
+            age: Utc::now().to_string(),
+            payload: vec![
+                Artifact::new("store-fake-id-1", "store-fake-title", artifact.get_type().clone()),
+                Artifact::new("store-fake-id-2", "store-fake-title2", artifact.get_type()),
+            ]
+        })
     }
     async fn approve_id(&self, unqiue_identifier: &str) -> Result<String, Error> {
         let config_path = match std::env::var("WEKAN_CLI_CONFIG_PATH") {

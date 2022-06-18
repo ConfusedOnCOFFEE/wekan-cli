@@ -11,18 +11,14 @@ use wekan_common::{
     },
     validation::{authentication::TokenHeader, constraint::CardConstraint as Constraint},
 };
-use wekan_core::{
-    client::{CardApi, Client},
-    http::operation::{Artifacts, Operation},
-};
-use wekan_core_derive::Unwrapper as DeriveUnwrapper;
+use wekan_core::client::{CardApi, Client};
 
 use crate::{
     card::argument::{
         Args, CardCreateArgs as Create, CardMoveArgs as Move, Command, RemoveArgs as Remove,
         UpdateArgs as Update,
     },
-    command::{CommonRuns, RootCommand, SubCommand},
+    command::{CommonRuns, RootCommandRunner, SubCommandRunner},
     display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     resolver::Query,
@@ -30,7 +26,11 @@ use crate::{
     subcommand::Inspect,
 };
 
-#[derive(DeriveUnwrapper)]
+#[cfg(not(test))]
+use wekan_core::http::operation::{Artifacts, Operation};
+#[cfg(test)]
+use crate::tests::mocks::{Artifacts, Operation};
+
 pub struct Runner {
     pub args: Args,
     pub client: Client,
@@ -282,7 +282,7 @@ impl Runner {
 }
 
 #[async_trait]
-impl RootCommand for Runner {
+impl RootCommandRunner for Runner {
     async fn run(&mut self) -> Result<WekanResult, Error> {
         self.use_subcommand().await
     }
@@ -310,7 +310,7 @@ impl CommonRuns for Runner {
 }
 
 #[async_trait]
-impl SubCommand for Runner {
+impl SubCommandRunner for Runner {
     async fn use_subcommand(&mut self) -> Result<WekanResult, Error> {
         let board_name = &self.args.board;
         match self.query.find_board_id(board_name, &self.filter).await {

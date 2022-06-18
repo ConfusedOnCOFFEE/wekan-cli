@@ -4,8 +4,7 @@ use crate::{
     subcommand::{Describe, Get, Inspect, Table},
 };
 use async_trait::async_trait;
-use clap::{Args, Parser, Subcommand};
-use clap_verbosity_flag::{ErrorLevel, Verbosity};
+use clap::{Args as CArgs, Parser, Subcommand as CSubcommand};
 use wekan_common::artifact::common::Artifact;
 
 use crate::{
@@ -13,19 +12,29 @@ use crate::{
     display::CliDisplay, list::argument::Args as LArg,
 };
 
+#[cfg(not(test))]
+use clap_verbosity_flag::{ErrorLevel, Verbosity};
+#[cfg(test)]
+use crate::tests::mocks::Mock;
+
 /// Wekan CLI
 #[derive(Parser, Debug)]
-#[clap(author, version, about = "CLI to manage Wekan users, boards, lists, cards...", long_about = None)]
+#[clap(
+    author = "ConfusedOnCOFFEE<me@confusedoncoffee.com>",
+    version,
+    about = "CLI to manage Wekan users, boards, lists, cards...",
+    long_about = "Log in, create contexts and create, update and delete artifacts."
+)]
 pub struct WekanParser {
     #[clap(flatten)]
-    pub delegate: Root,
+    pub delegate: Args,
     #[clap(subcommand)]
-    pub command: RootCmds,
+    pub command: Subcommand,
 }
 
-/// The following commands are available:
-#[derive(Subcommand, Debug, Clone)]
-pub enum RootCmds {
+/// The following commands are avsailable:
+#[derive(CSubcommand, Debug, Clone)]
+pub enum Subcommand {
     Config(Config),
     Board(BArg),
     Card(CArg),
@@ -37,9 +46,9 @@ pub enum RootCmds {
     Ps(LArg),
 }
 
-#[derive(Args, Debug)]
+#[derive(CArgs, Debug)]
 #[clap(name = "wekan-cli", version = "0.1.0", about = "Common artifact args")]
-pub struct Root {
+pub struct Args {
     #[clap(
         short = 'r',
         long,
@@ -65,12 +74,35 @@ pub struct Root {
     )]
     pub filter: Option<String>,
     #[clap(flatten)]
+    #[cfg(not(test))]
     pub verbose: Verbosity<ErrorLevel>,
 }
 
+#[cfg(test)]
+impl Mock for Args {
+    fn mock() -> Self {
+        Self {
+            no_recommendations: true,
+            no_store: false,
+            output_format: None,
+            filter: None
+        }
+    }
+}
+#[cfg(test)]
+impl Args {
+    pub fn mock_with(r: bool, s: bool, o: &str, f: &str) -> Self {
+        Self {
+            no_recommendations: r,
+            no_store: s,
+            output_format: Some(o.to_string()),
+            filter: Some(f.to_string())
+        }
+    }
+}
 #[async_trait]
-pub trait ArtifactCommand<A, H, C> {
-    fn new(args: A, client: H, constraint: C, format: String, display: CliDisplay) -> Self;
+pub trait ArtifactCommand<'a, A, H, C> {
+    fn new(args: A, client: H, constraint: C, format: String, display: CliDisplay, global_options: &'a Args) -> Self;
 }
 
 #[async_trait]
@@ -83,7 +115,7 @@ pub trait ArtifactName {
     fn get_supplied_name(&self) -> Result<String, Error>;
 }
 #[async_trait]
-pub trait SubCommand {
+pub trait SubCommandRunner {
     async fn get_subcommand(&mut self) -> Result<WekanResult, Error> {
         WekanResult::new_msg("Not implemented.").ok()
     }
@@ -91,7 +123,7 @@ pub trait SubCommand {
 }
 
 #[async_trait]
-pub trait RootCommand {
+pub trait RootCommandRunner {
     async fn run(&mut self) -> Result<WekanResult, Error>;
     async fn use_rootcommand(&mut self, _name: &str) -> Result<WekanResult, Error> {
         WekanResult::new_msg("Not implemented.").ok()

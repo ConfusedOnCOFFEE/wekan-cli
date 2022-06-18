@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use clap::Parser;
 use log::{debug, info, trace};
 use wekan_common::{
     artifact::board::Details,
@@ -16,42 +15,37 @@ use wekan_common::{
 
 use super::argument::Args;
 use crate::{
-    command::{ArtifactCommand, CommonRunsSimplified, RootCommand, WekanParser},
+    command::{Args as RArgs, ArtifactCommand, CommonRunsSimplified, RootCommandRunner},
     display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     resolver::Query,
     result::kind::WekanResult,
     subcommand::CommonCommand as Command,
 };
+
 #[cfg(test)]
-use wekan_common::{
-    artifact::common::Artifact,
-    artifact::tests::{MockNewResponse, MockReturn},
-    http::artifact::{Deleted, IdResponse, RequestBody},
-};
-#[cfg(test)]
+use crate::tests::mocks::{Artifacts, Operation};
 use wekan_core::client::{BoardApi, Client};
 #[cfg(not(test))]
-use wekan_core::{
-    client::{BoardApi, Client},
-    http::operation::{Artifacts, Operation},
-};
+use wekan_core::http::operation::{Artifacts, Operation};
 
-pub struct Runner {
+pub struct Runner<'a> {
     pub args: Args,
     pub client: Client,
     pub constraint: BConstraint,
     pub format: String,
     pub display: CliDisplay,
+    pub global_options: &'a RArgs,
 }
 
-impl ArtifactCommand<Args, Client, BConstraint> for Runner {
+impl<'a> ArtifactCommand<'a, Args, Client, BConstraint> for Runner<'a> {
     fn new(
         args: Args,
         client: Client,
         constraint: BConstraint,
         format: String,
         display: CliDisplay,
+        global_options: &'a RArgs,
     ) -> Self {
         Self {
             args,
@@ -59,12 +53,13 @@ impl ArtifactCommand<Args, Client, BConstraint> for Runner {
             constraint,
             format,
             display,
+            global_options,
         }
     }
 }
 
 #[async_trait]
-impl RootCommand for Runner {
+impl<'a> RootCommandRunner for Runner<'a> {
     async fn run(&mut self) -> Result<WekanResult, Error> {
         debug!("run");
         match self.args.command.clone() {
@@ -76,27 +71,26 @@ impl RootCommand for Runner {
         }
     }
     async fn use_rootcommand(&mut self, name: &str) -> Result<WekanResult, Error> {
-        let parser = WekanParser::parse();
         #[cfg(feature = "store")]
         let mut query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let mut query = Query {
             config: self.client.config.clone(),
         };
         match query
-            .find_board_id(name, &parser.delegate.filter.to_owned())
+            .find_board_id(name, &self.global_options.filter.to_owned())
             .await
         {
             Ok(id) => {
                 let board = self.client.get_one::<Details>(&id).await.unwrap();
                 match self
                     .display
-                    .print_details(board, parser.delegate.filter.to_owned())
+                    .print_details(board, self.global_options.filter.to_owned())
                 {
-                    Ok(_o) => self.get_list_by_board_id(&id).await,
+                    Ok(o) => self.get_list_by_board_id(&o, &id).await,
                     Err(e) => Err(e),
                 }
             }
@@ -106,14 +100,17 @@ impl RootCommand for Runner {
 }
 
 #[async_trait]
-impl CommonRunsSimplified for Runner {
+impl<'a> CommonRunsSimplified for Runner<'a> {
     async fn list(&mut self) -> Result<WekanResult, Error> {
         self.client
             .set_base(&("users/".to_owned() + &self.client.get_user_id() + "/boards"));
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
-                self.display.print_artifacts(ok, self.format.to_owned())
+                self.display.print_artifacts(
+                    ok,
+                    self.format.to_owned(),
+                )
             }
             Err(e) => Err(Error::Core(e)),
         }
@@ -122,22 +119,23 @@ impl CommonRunsSimplified for Runner {
         match &name {
             Some(n) => {
                 #[cfg(feature = "store")]
-                let parser = WekanParser::parse();
-                #[cfg(feature = "store")]
                 let mut query = Query {
                     config: self.client.config.clone(),
-                    deny_store_usage: parser.delegate.no_store,
+                    deny_store_usage: self.global_options.no_store,
                 };
                 #[cfg(not(feature = "store"))]
                 let mut query = Query {
                     config: self.client.config.clone(),
                 };
-                let filter = WekanParser::parse().delegate.filter;
-                let format = WekanParser::parse().delegate.filter;
-                match query.find_board_id(n, &filter).await {
+                let filter = match &self.global_options.filter {
+                    Some(f) => f.to_owned(),
+                    None => String::new(),
+                };
+                match query.find_board_id(n, &Some(filter)).await {
                     Ok(board_id) => {
                         let board = self.client.get_one::<Details>(&board_id).await.unwrap();
-                        self.display.print_details(board, format)
+                        self.display
+                            .print_details(board, Some(self.format.to_owned()))
                     }
                     Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
                 }
@@ -146,7 +144,7 @@ impl CommonRunsSimplified for Runner {
         }
     }
 }
-impl Runner {
+impl<'a> Runner<'a> {
     async fn run_subcommand(&mut self, cmd: Command) -> Result<WekanResult, Error> {
         debug!("run_subcommand");
         let mut client = self.client.clone();
@@ -189,18 +187,15 @@ impl Runner {
             Command::Remove(_r) => match &self.args.name {
                 Some(n) => {
                     #[cfg(feature = "store")]
-                    let parser = WekanParser::parse();
-                    #[cfg(feature = "store")]
                     let mut query = Query {
                         config: self.client.config.clone(),
-                        deny_store_usage: parser.delegate.no_store,
+                        deny_store_usage: self.global_options.no_store,
                     };
                     #[cfg(not(feature = "store"))]
                     let mut query = Query {
                         config: self.client.config.clone(),
                     };
-                    let filter = WekanParser::parse().delegate.filter;
-                    match query.find_board_id(n, &filter).await {
+                    match query.find_board_id(n, &self.global_options.filter).await {
                         Ok(board_id) => match client.delete::<ResponseOk>(&board_id).await {
                             Ok(_o) => WekanResult::new_msg("Delete successfull.").ok(),
                             Err(e) => {
@@ -227,28 +222,23 @@ impl Runner {
             None => Err(CliError::new_msg("No name supplied").as_enum()),
         }
     }
-    async fn get_list_by_board_id(&mut self, board_id: &str) -> Result<WekanResult, Error> {
+    async fn get_list_by_board_id(&mut self, o: &WekanResult, board_id: &str) -> Result<WekanResult, Error> {
         info!("get_cards");
-        #[cfg(feature = "store")]
-        let parser = WekanParser::parse();
         #[cfg(feature = "store")]
         let query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let query = Query {
             config: self.client.config.clone(),
         };
-        match query
-            .inquire(AType::Board, board_id, &String::new())
-            .await
-        {
+        match query.inquire(AType::Board, Some(board_id), None).await {
             Ok(lists) => {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {
                     println!("Following lists are available:");
-                    self.display.print_artifacts(lists, String::from("long"))
+                    self.display.prepare_output(&o.get_msg(), lists, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
                         "This boards contains no lists.",
@@ -263,49 +253,54 @@ impl Runner {
 }
 
 #[cfg(test)]
-#[async_trait]
-pub trait Operation {
-    async fn create<
-        U: RequestBody,
-        T: MockNewResponse + Send + std::fmt::Debug + serde::de::DeserializeOwned + 'static,
-    >(
-        &mut self,
-        _body: &U,
-    ) -> Result<T, wekan_core::error::kind::Error> {
-        Ok(T::new())
-    }
-    async fn delete<T: Deleted + MockReturn + IdResponse>(
-        &mut self,
-        id: &str,
-    ) -> Result<T, wekan_core::error::kind::Error> {
-        Ok(T::success(Some(id.to_string())))
-    }
-    async fn put<U: RequestBody, T: MockReturn + IdResponse>(
-        &mut self,
-        id: &str,
-        _body: &U,
-    ) -> Result<T, wekan_core::error::kind::Error> {
-        Ok(T::success(Some(id.to_string())))
-    }
-}
-#[cfg(test)]
-impl Operation for wekan_core::client::Client {}
+mod tests {
+    use super::*;
+    use crate::tests::mocks::Mock;
+    use wekan_common::validation::{authentication::Token, user::User};
 
-#[cfg(test)]
-#[async_trait]
-pub trait Artifacts {
-    async fn get_all(&mut self, t: AType) -> Result<Vec<Artifact>, wekan_core::error::kind::Error> {
-        Ok(vec![
-            Artifact::new("fake-id-1", "fake-title", t.clone()),
-            Artifact::new("fake-id-2", "fake-title2", t),
-        ])
+    #[tokio::test]
+    async fn run_no_options_specified() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-title2")), None, None),
+            Client::mock(),
+            BConstraint {
+                user: Ok(User {
+                    name: *Token::mock().id,
+                    token: Some(*Token::mock().token),
+                }),
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = <Runner as RootCommandRunner>::run(&mut runner)
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "ID    TITLE\nstore-fake-id-1store-fake-title\nstore-fake-id-2store-fake-title2\n\n----\n");
     }
-    async fn get_one<T: MockNewResponse + serde::de::DeserializeOwned + 'static>(
-        &mut self,
-        _id: &str,
-    ) -> Result<T, wekan_core::error::kind::Error> {
-        Ok(T::new())
+
+    #[tokio::test]
+    async fn run_with_special_output() {
+        let r_args = RArgs::mock_with(false, false, "long", "b:5");
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-title2")), None, None),
+            Client::mock(),
+            BConstraint {
+                user: Ok(User {
+                    name: *Token::mock().id,
+                    token: Some(*Token::mock().token),
+                }),
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = <Runner as RootCommandRunner>::run(&mut runner)
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "ID    TITLE\nstore-fake-id-1store-fake-title\nstore-fake-id-2store-fake-title2\n\n----\n");
     }
 }
-#[cfg(test)]
-impl Artifacts for wekan_core::client::Client {}

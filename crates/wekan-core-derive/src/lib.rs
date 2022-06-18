@@ -2,17 +2,6 @@ use proc_macro2::{self};
 use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
-#[proc_macro_derive(Unwrapper)]
-pub fn derive_unwrapper(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = input.ident;
-
-    let output: proc_macro2::TokenStream = quote! {
-        impl wekan_core::http::util::Unwrapper for #name {}
-    };
-    proc_macro::TokenStream::from(output)
-}
-
 #[proc_macro_derive(UnauthenticationClient)]
 pub fn derive_unauthorized_client(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

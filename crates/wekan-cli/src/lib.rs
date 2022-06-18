@@ -12,3 +12,5 @@ pub mod runner;
 #[cfg(feature = "store")]
 pub mod store;
 pub mod subcommand;
+#[cfg(test)]
+mod tests;

@@ -1,5 +1,5 @@
 use crate::{
-    command::{ArtifactCommand, WekanParser},
+    command::{Args as RArgs, ArtifactCommand},
     display::CliDisplay,
     error::kind::{CliError, Error, Transform},
     list::argument::Args,
@@ -7,7 +7,6 @@ use crate::{
     result::kind::WekanResult,
     subcommand::CommonCommand as Command,
 };
-use clap::Parser;
 use log::{debug, info, trace};
 use wekan_common::{
     artifact::{
@@ -17,33 +16,34 @@ use wekan_common::{
     http::artifact::{CreateArtifact, ResponseOk},
     validation::constraint::ListConstraint as LConstraint,
 };
-use wekan_core_derive::Unwrapper as DeriveUnwrapper;
 
 use wekan_core::{
     client::Client,
     error::kind::Error as CoreError,
-    http::{
-        operation::{Artifacts, Operation},
-        util::Unwrapper,
-    },
 };
 
-#[derive(DeriveUnwrapper)]
-pub struct Runner {
+#[cfg(not(test))]
+use wekan_core::http::operation::{Artifacts, Operation};
+#[cfg(test)]
+use crate::tests::mocks::{Artifacts, Operation};
+
+pub struct Runner<'a> {
     pub args: Args,
     pub client: Client,
     pub constraint: LConstraint,
     pub format: String,
     pub display: CliDisplay,
+    pub global_options: &'a RArgs
 }
 
-impl ArtifactCommand<Args, Client, LConstraint> for Runner {
+impl<'a> ArtifactCommand<'a, Args, Client, LConstraint> for Runner<'a> {
     fn new(
         args: Args,
         client: Client,
         constraint: LConstraint,
         format: String,
         display: CliDisplay,
+        global_options: &'a RArgs
     ) -> Self {
         Self {
             args,
@@ -51,11 +51,12 @@ impl ArtifactCommand<Args, Client, LConstraint> for Runner {
             constraint,
             format,
             display,
+            global_options
         }
     }
 }
 
-impl Runner {
+impl<'a> Runner<'a> {
     pub async fn apply(&mut self) -> Result<WekanResult, Error> {
         info!("apply");
         self.run_subcommand().await
@@ -70,19 +71,20 @@ impl Runner {
                 Command::Remove(_r) => match &self.args.name {
                     Some(n) => {
                         #[cfg(feature = "store")]
-                        let parser = WekanParser::parse();
-                        #[cfg(feature = "store")]
                         let mut query = Query {
                             config: self.client.config.clone(),
-                            deny_store_usage: parser.delegate.no_store,
+                            deny_store_usage: self.global_options.no_store,
                         };
                         #[cfg(not(feature = "store"))]
                         let mut query = Query {
                             config: self.client.config.clone(),
                         };
-                        let filter = WekanParser::parse().delegate.filter;
+                        let filter = match &self.global_options.filter {
+                            Some(f) => f.to_owned(),
+                            None => String::new()
+                        };
                         match query
-                            .find_list_id(&self.constraint.board._id, n, &filter)
+                            .find_list_id(&self.constraint.board._id, n, &Some(filter))
                             .await
                         {
                             Ok(board_id) => {
@@ -117,7 +119,10 @@ impl Runner {
         let mut client = self.client.clone();
         debug!("{:?}", client);
         let lists: Result<Vec<Artifact>, CoreError> = client.get_all(AType::Card).await;
-        let results: Vec<Artifact> = Self::get_result(lists).await;
+        let results: Vec<Artifact> = match lists {
+            Ok(res) => res,
+            Err(_e) => Vec::<Artifact>::new()
+        };
         self.display
             .print_artifacts(results, self.format.to_owned())
     }
@@ -150,7 +155,10 @@ impl Runner {
         info!("get_lists");
         let lists: Result<Vec<Artifact>, CoreError> =
             self.client.to_owned().get_all(AType::Card).await;
-        let results: Vec<Artifact> = Self::get_result(lists).await;
+        let results: Vec<Artifact> = match lists {
+            Ok(res) => res,
+            Err(_e) => Vec::<Artifact>::new(),
+        };
         let mut iter = results.iter();
         trace!("Lists: {:?} - {}", results, list_name);
         loop {
@@ -197,18 +205,16 @@ impl Runner {
     ) -> Result<WekanResult, Error> {
         info!("get_cards");
         #[cfg(feature = "store")]
-        let parser = WekanParser::parse();
-        #[cfg(feature = "store")]
         let query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let query = Query {
             config: self.client.config.clone(),
         };
         match query
-            .inquire(AType::Card, board_id, list_id)
+            .inquire(AType::Card, Some(board_id), Some(list_id))
             .await
         {
             Ok(cards) => {

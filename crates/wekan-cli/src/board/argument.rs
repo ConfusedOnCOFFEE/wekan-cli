@@ -17,3 +17,15 @@ pub struct Args {
     #[clap(short, long, parse(from_os_str), value_name = "FILE")]
     task_file: Option<PathBuf>,
 }
+
+
+#[cfg(test)]
+impl Args {
+    pub fn mock(name: Option<String>, command: Option<CommonCommand>, task_file: Option<PathBuf>) -> Self {
+        Args {
+            name,
+            command,
+            task_file
+        }
+    }
+}

@@ -6,7 +6,8 @@ use wekan_cli::{
 use wekan_core::error::kind::Error as CoreError;
 #[tokio::main]
 async fn main() {
-    let mut c = Runner::new().await;
+    let parser = WekanParser::parse();
+    let mut c = Runner::new(parser.delegate, parser.command).await;
     std::process::exit(<Runner as ExitCode>::transform_to_exit(c.run().await).into());
 }
 

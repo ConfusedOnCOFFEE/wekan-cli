@@ -1,13 +1,11 @@
 extern crate log;
 #[cfg(feature = "store")]
 use async_trait::async_trait;
-use clap::Parser;
-use log::{debug, error, info, trace, Level};
-use wekan_core::log::Logger;
+use log::{debug, error, info, trace};
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, LoginClient},
     config::{MandatoryConfig, UserConfig},
-    http::{operation::Artifacts, preflight_request::Client as PFRClient},
+    http::{preflight_request::Client as PFRClient},
 };
 
 use crate::{
@@ -16,7 +14,7 @@ use crate::{
         argument::Args as CArgs,
         runner::{NewCardRunner, Runner as CRunner},
     },
-    command::{ArtifactCommand, BaseCommand, RootCmds as Command, RootCommand, WekanParser},
+    command::{ArtifactCommand, BaseCommand, RootCommandRunner, Subcommand as Command, Args as RArgs},
     config::runner::Runner as ConfigRunner,
     display::CliDisplay,
     error::kind::{CliError, Error, InputError, Transform},
@@ -41,17 +39,29 @@ use wekan_common::{
 use crate::config::context::ReadContext;
 #[cfg(feature = "store")]
 use wekan_core::persistence::store::Butler;
+#[cfg(not(test))]
+use log::Level;
+#[cfg(not(test))]
+use wekan_core::{
+    log::Logger,
+    http::operation::Artifacts
+};
+
+#[cfg(test)]
+use crate::tests::mocks::Artifacts;
+
 pub struct Runner {
-    pub parser: WekanParser,
     pub client: LoginClient,
     pub format: String,
     pub display: CliDisplay,
+    pub subcommands: Command,
+    pub global_options: RArgs
 }
 
 impl<'a> Runner {
-    pub async fn new() -> Self {
-        let parser = WekanParser::parse();
-        match parser.delegate.verbose.log_level() {
+    pub async fn new(r_args: RArgs, subcommands: Command) -> Self {
+        #[cfg(not(test))]
+        match r_args.verbose.log_level() {
             Some(Level::Info) => Logger::init(false).unwrap(),
             Some(_) => Logger::init(true).unwrap(),
             None => Logger::init(true).unwrap(),
@@ -66,7 +76,7 @@ impl<'a> Runner {
             }
         };
         debug!("{:?}", user_config);
-        let format = match parser.delegate.output_format {
+        let format = match r_args.output_format {
             Some(ref f) => f.to_owned(),
             None => "terminal".to_string(),
         };
@@ -74,16 +84,17 @@ impl<'a> Runner {
         trace!("{:?}", user_config);
         let vec: Vec<u8> = Vec::new();
         Runner {
-            parser,
             client: LoginClient::new(user_config),
             format,
             display: CliDisplay::new(vec),
+            subcommands,
+            global_options: r_args
         }
     }
 
     pub async fn run(&mut self) -> Result<WekanResult, Error> {
         debug!("run");
-        match self.parser.command.to_owned() {
+        match self.subcommands.to_owned() {
             Command::Config(c) => {
                 let mut config = ConfigRunner::new(c.clone(), self.client.clone());
                 config.run().await
@@ -128,6 +139,7 @@ impl<'a> Runner {
             constraint,
             self.format.to_owned(),
             self.display.to_owned(),
+            &self.global_options
         );
         runner.run().await
     }
@@ -135,17 +147,15 @@ impl<'a> Runner {
         info!("run_list_command");
         if !l_args.board.is_empty() {
             #[cfg(feature = "store")]
-            let parser = WekanParser::parse();
-            #[cfg(feature = "store")]
             let mut query = Query {
                 config: self.client.config.clone(),
-                deny_store_usage: parser.delegate.no_store,
+                deny_store_usage: self.global_options.no_store,
             };
             #[cfg(not(feature = "store"))]
             let mut query = Query {
                 config: self.client.config.clone(),
             };
-            let format = &self.parser.delegate.filter;
+            let format = &self.global_options.filter;
             match query.find_board_id(&l_args.board.to_string(), format).await {
                 Ok(id) => {
                     let constraint = LConstraint {
@@ -167,6 +177,7 @@ impl<'a> Runner {
                         constraint,
                         self.format.to_owned(),
                         self.display.to_owned(),
+                        &self.global_options
                     );
                     runner.apply().await
                 }
@@ -191,17 +202,15 @@ impl<'a> Runner {
             }),
         };
 
-        let parser = WekanParser::parse();
         #[cfg(feature = "store")]
         let query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let query = Query {
             config: self.client.config.clone(),
         };
-        let filter = parser.delegate.filter;
         let client = <Client as CardApi>::new(
             self.client.config.clone(),
             constraint.board.as_ref().unwrap()._id.to_owned(),
@@ -213,7 +222,7 @@ impl<'a> Runner {
             constraint,
             self.format.to_owned(),
             query,
-            filter,
+            Some(self.global_options.filter.as_ref().unwrap().to_string()),
             self.display.to_owned(),
         );
         runner.run().await
@@ -221,11 +230,9 @@ impl<'a> Runner {
 
     async fn run_table(&mut self, table_args: &TArgs) -> Result<WekanResult, Error> {
         #[cfg(feature = "store")]
-        let parser = WekanParser::parse();
-        #[cfg(feature = "store")]
         let mut query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let mut query = Query {
@@ -237,7 +244,7 @@ impl<'a> Runner {
         {
             Ok(board_id) => {
                 match query
-                    .inquire(AType::List, &board_id, &String::new())
+                    .inquire(AType::List, Some(&board_id), None)
                     .await
                 {
                     Ok(lists) => {
@@ -248,7 +255,7 @@ impl<'a> Runner {
                             for r in iterator.by_ref() {
                                 trace!("List: {:?}", r.get_id());
                                 match query
-                                    .inquire(AType::Card, &board_id, &r.get_id())
+                                    .inquire(AType::Card, Some(&board_id), Some(&r.get_id()))
                                     .await
                                 {
                                     Ok(cards) => {
@@ -283,7 +290,7 @@ impl<'a> Runner {
                 "board" | "b" => {
                     let mut client = <Client as BoardApi>::new(self.client.config.clone());
                     match client.get_one::<BDetails>(id).await {
-                        Ok(b) => self.display.print_details(b, Some(self.format.to_owned())),
+                        Ok(b) => self.display.print_details(b, self.global_options.output_format.to_owned()),
                         Err(e) => {
                             error!("Error: {:?}", e);
                             WekanResult::new_msg("Artifact not found.").ok()
@@ -297,7 +304,7 @@ impl<'a> Runner {
                             <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
                         let artifact = client.get_one::<LDetails>(v.remove(0)).await.unwrap();
                         self.display
-                            .print_details(artifact, Some(self.format.to_owned()))
+                            .print_details(artifact, self.global_options.output_format.to_owned())
                     }
                     None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
@@ -315,7 +322,7 @@ impl<'a> Runner {
                                 let artifact =
                                     client.get_one::<CDetails>(v.remove(2)).await.unwrap();
                                 self.display
-                                    .print_details(artifact, Some(self.format.to_owned()))
+                                    .print_details(artifact, self.global_options.output_format.to_owned())
                             }
                             None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
@@ -338,13 +345,13 @@ impl<'a> Runner {
         #[cfg(feature = "store")]
         let mut query = Query {
             config: self.client.config.clone(),
-            deny_store_usage: self.parser.delegate.no_store,
+            deny_store_usage: self.global_options.no_store,
         };
         #[cfg(not(feature = "store"))]
         let mut query = Query {
             config: self.client.config.clone(),
         };
-        let filter = &self.parser.delegate.filter;
+        let filter = &self.global_options.filter;
         if v.len() != 2 {
             WekanResult::new_msg("Format not correct resource_type/resource_name.").ok()
         } else {
@@ -356,7 +363,7 @@ impl<'a> Runner {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
                             self.display
-                                .print_details(board, Some(self.format.to_owned()))
+                                .print_details(board, self.global_options.output_format.to_owned())
                         }
                         Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
                     }
@@ -369,7 +376,7 @@ impl<'a> Runner {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
                                 self.display
-                                    .print_details(board, Some(self.format.to_owned()))
+                                    .print_details(board, self.global_options.output_format.to_owned())
                             }
                             Err(_e) => {
                                 Err(CliError::new_msg("Board name doesn't exist.").as_enum())
@@ -390,7 +397,7 @@ impl<'a> Runner {
                                 Ok(c_id) => {
                                     let board = client.get_one::<CDetails>(&c_id).await.unwrap();
                                     self.display
-                                        .print_details(board, Some(self.format.to_owned()))
+                                        .print_details(board, self.global_options.output_format.to_owned())
                                 }
                                 Err(_e) => {
                                     Err(CliError::new_msg("Card name doesn't exist.").as_enum())
