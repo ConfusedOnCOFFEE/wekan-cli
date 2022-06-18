@@ -529,26 +529,50 @@ mod tests {
         async fn find_board_id_with_store() {
             let mut query = Query::mock(false);
             let res = query.find_board_id("fake-board-title-1", &None).await.unwrap();
+            #[cfg(not(feature = "store"))]
+            assert_eq!(res, "fake-board-id-1");
+            #[cfg(feature = "store")]
             assert_eq!(res, "store-fake-board-id-1");
+
         }
 
         #[tokio::test]
         async fn find_list_id_with_store() {
             let mut query = Query::mock(false);
             let res = query
-                .find_list_id("store-fake-board-id-1", "store-fake-list-title-1", &None)
+                .find_list_id("store-fake-board-id-1", "fake-list-title-1", &None)
                 .await
                 .unwrap();
+            #[cfg(not(feature = "store"))]
+            assert_eq!(res, "fake-list-id-1");
+            #[cfg(feature = "store")]
             assert_eq!(res, "store-fake-list-id-1");
+
         }
 
         #[tokio::test]
-        async fn find_card_id_with_store() {
+        async fn find_card_id_with_store_request_again() {
             let mut query = Query::mock(false);
             let res = query
                 .find_card_id("fake-id-board-2", "fake-id-card-1", "fake-card-title-1", &None)
                 .await
                 .unwrap();
+            #[cfg(not(feature = "store"))]
+            assert_eq!(res, "fake-card-id-1");
+            #[cfg(feature = "store")]
+            assert_eq!(res, "store-fake-card-id-1");
+        }
+        #[tokio::test]
+        async fn find_card_id_with_store() {
+            let mut query = Query::mock(false);
+            let res = query
+                .find_card_id("fake-id-board-2", "fake-id-card-1", "store-fake-card-title-1", &None)
+                .await
+                .unwrap();
+            #[cfg(not(feature = "store"))]
+            assert_eq!(res, "store-fake-card-id-1");
+
+            #[cfg(feature = "store")]
             assert_eq!(res, "store-fake-card-id-1");
         }
 
@@ -564,7 +588,11 @@ mod tests {
                 )
                 .await
                 .unwrap();
+            #[cfg(not(feature = "store"))]
             assert_eq!(res, "store-fake-card-id-1");
+            #[cfg(feature = "store")]
+            assert_eq!(res, "store-fake-card-id-1");
+
         }
 
         #[tokio::test]

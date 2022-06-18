@@ -91,7 +91,7 @@ impl CliDisplay {
         output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        output.push_str("AAAA   {}", artifact_details.get_title());
+        output.push_str(&format!("AAAA   {}", artifact_details.get_title()));
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
@@ -159,7 +159,7 @@ impl CliDisplay {
         output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        output.push_str("AAAA   {}", artifact_details.get_title());
+        output.push_str(&format!("AAAA   {}", artifact_details.get_title()));
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
