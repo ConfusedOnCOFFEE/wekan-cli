@@ -8,8 +8,18 @@ pub struct Args {
     pub name: Option<String>,
     #[clap(short = 'b', long, help = "Board name")]
     pub board: String,
-    #[clap(short, long, parse(from_flag), help = "Show the details of the object")]
-    raw: bool,
     #[clap(subcommand)]
     pub command: Option<CommonCommand>,
+}
+
+
+#[cfg(test)]
+impl Args {
+    pub fn mock(name: Option<String>, board: String, command: Option<CommonCommand>) -> Self {
+        Args {
+            name,
+            board,
+            command,
+        }
+    }
 }

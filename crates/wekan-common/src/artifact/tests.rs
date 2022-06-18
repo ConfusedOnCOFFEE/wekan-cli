@@ -1,11 +1,11 @@
 use crate::artifact::common::IdReturner;
 use crate::http::artifact::IdResponse;
 pub trait MockDetails {
-    fn new(id: &str, title: &str, date: &str) -> Self;
+    fn mock(id: &str, title: &str, date: &str) -> Self;
 }
 
-pub trait MockNewResponse {
-    fn new() -> Self;
+pub trait MockResponse {
+    fn mock() -> Self;
 }
 
 pub trait MockReturn {

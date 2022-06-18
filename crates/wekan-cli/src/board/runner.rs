@@ -88,7 +88,7 @@ impl<'a> RootCommandRunner for Runner<'a> {
                 let board = self.client.get_one::<Details>(&id).await.unwrap();
                 match self
                     .display
-                    .print_details(board, self.global_options.filter.to_owned())
+                    .print_details(board, self.global_options.output_format.to_owned())
                 {
                     Ok(o) => self.get_list_by_board_id(&o, &id).await,
                     Err(e) => Err(e),
@@ -168,7 +168,7 @@ impl<'a> Runner<'a> {
                     Ok(ok) => {
                         trace!("{:?}", ok);
                         WekanResult::new_workflow(
-                            "New board created.",
+                            "Successfully created",
                             "Create a list with 'list -b <BOARD_NAME> create [LIST_NAME]",
                         )
                         .ok()
@@ -177,7 +177,7 @@ impl<'a> Runner<'a> {
                         debug!("{:?}", e);
                         CliError::new(
                             4,
-                            "Create board failed. Did you login?",
+                            "Failed to create",
                             Constraint::Login(true),
                         )
                         .err()
@@ -197,10 +197,10 @@ impl<'a> Runner<'a> {
                     };
                     match query.find_board_id(n, &self.global_options.filter).await {
                         Ok(board_id) => match client.delete::<ResponseOk>(&board_id).await {
-                            Ok(_o) => WekanResult::new_msg("Delete successfull.").ok(),
+                            Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
                             Err(e) => {
                                 trace!("{:?}", e);
-                                CliError::new_msg("Deletion failed").err()
+                                CliError::new_msg("Failed to delete").err()
                             }
                         },
                         Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
@@ -237,7 +237,7 @@ impl<'a> Runner<'a> {
             Ok(lists) => {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {
-                    println!("Following lists are available:");
+                    o.get_msg().push_str("Following lists are available:\n");
                     self.display.prepare_output(&o.get_msg(), lists, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
@@ -255,14 +255,83 @@ impl<'a> Runner<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::mocks::Mock;
+    use crate::{
+        tests::mocks::Mock,
+        subcommand::{Details as SDetails, Create, Remove}
+    };
     use wekan_common::validation::{authentication::Token, user::User};
 
     #[tokio::test]
     async fn run_no_options_specified() {
         let r_args = RArgs::mock();
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-title2")), None, None),
+            Args::mock(Some(String::from("fake-board-title-2")), None, None),
+            Client::mock(),
+            BConstraint {
+                user: Ok(User {
+                    name: *Token::mock().id,
+                    token: Some(*Token::mock().token),
+                }),
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = <Runner as RootCommandRunner>::run(&mut runner)
+            .await
+            .unwrap();
+        #[cfg(not(feature = "store"))]
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "ID    TITLE\nfake-board-id-1fake-board-title-1\n",
+            "fake-board-id-2fake-board-title-2\n\n----\n"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
+            "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
+        );
+        assert_eq!(res.get_msg(),
+                   expected);
+    }
+
+    #[tokio::test]
+    async fn run_no_options_details() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-board-title-2")), Some(Command::Details(SDetails {})), None),
+            Client::mock(),
+            BConstraint {
+                user: Ok(User {
+                    name: *Token::mock().id,
+                    token: Some(*Token::mock().token),
+                }),
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = <Runner as RootCommandRunner>::run(&mut runner)
+            .await
+            .unwrap();
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n"
+        );
+        assert_eq!(res.get_msg(),
+                   expected);
+    }
+
+    #[tokio::test]
+    async fn run_no_options_create() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-title2")), Some(Command::Create(Create {
+                title: String::from("new-board")
+            })), None),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -278,14 +347,42 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(res.get_msg(),
-                   "ID    TITLE\nstore-fake-id-1store-fake-title\nstore-fake-id-2store-fake-title2\n\n----\n");
+                   "Successfully created");
+    }
+
+
+    #[tokio::test]
+    async fn run_no_options_remove() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-board-title-1")), Some(Command::Remove(Remove {})), None),
+            Client::mock(),
+            BConstraint {
+                user: Ok(User {
+                    name: *Token::mock().id,
+                    token: Some(*Token::mock().token),
+                }),
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = <Runner as RootCommandRunner>::run(&mut runner)
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "Successfully deleted");
     }
 
     #[tokio::test]
     async fn run_with_special_output() {
+        #[cfg(feature = "store")]
         let r_args = RArgs::mock_with(false, false, "long", "b:5");
+        #[cfg(not(feature = "store"))]
+        let r_args = RArgs::mock_with(false, "long", "b:5");
+
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-title2")), None, None),
+            Args::mock(Some(String::from("fake-board-title-2")), None, None),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -293,14 +390,29 @@ mod tests {
                     token: Some(*Token::mock().token),
                 }),
             },
-            String::new(),
+            String::from("long"),
             CliDisplay::new(Vec::new()),
             &r_args,
         );
         let res = <Runner as RootCommandRunner>::run(&mut runner)
             .await
             .unwrap();
+
+        #[cfg(not(feature = "store"))]
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "ID    TITLE\nfake-board-id-1fake-board-title-1\n",
+            "fake-board-id-2fake-board-title-2\n\n----\n"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
+            "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
+        );
         assert_eq!(res.get_msg(),
-                   "ID    TITLE\nstore-fake-id-1store-fake-title\nstore-fake-id-2store-fake-title2\n\n----\n");
+                   expected);
     }
 }

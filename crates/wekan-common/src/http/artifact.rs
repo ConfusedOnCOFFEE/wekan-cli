@@ -3,7 +3,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[cfg(feature = "test")]
-use crate::artifact::tests::{MockNewResponse, MockReturn};
+use crate::artifact::tests::{MockResponse, MockReturn};
 #[derive(Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Response<T> {
@@ -40,7 +40,7 @@ impl MockReturn for ResponseOk {
         match body {
             Some(b) => ResponseOk { _id: b.get_id() },
             None => ResponseOk {
-                _id: String::from("fake-id"),
+                _id: String::from("fake-ok-id"),
             },
         }
     }
@@ -51,16 +51,16 @@ impl<T: Clone + Base + std::marker::Sync + Serialize + DeserializeExt + std::mar
 {
 }
 #[cfg(feature = "test")]
-impl<T: DeserializeOwned> MockNewResponse for Response<T> {
-    fn new() -> Self {
+impl<T: DeserializeOwned> MockResponse for Response<T> {
+    fn mock() -> Self {
         Response { array: Vec::new() }
     }
 }
 #[cfg(feature = "test")]
-impl MockNewResponse for ResponseOk {
-    fn new() -> Self {
+impl MockResponse for ResponseOk {
+    fn mock() -> Self {
         ResponseOk {
-            _id: String::from("fake-id"),
+            _id: String::from("fake-ok-id"),
         }
     }
 }

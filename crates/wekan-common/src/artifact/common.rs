@@ -2,6 +2,10 @@ use crate::error::kind::ParseError;
 use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+#[cfg(feature = "test")]
+use super::tests::{MockResponse, MockDetails};
+
 #[derive(Deserialize, Serialize, Debug, Clone, Eq)]
 pub struct Artifact {
     pub _id: String,
@@ -59,7 +63,7 @@ impl From<AType> for String {
             AType::Board => "board".to_string(),
             AType::List => "list".to_string(),
             AType::Card => "card".to_string(),
-            AType::Swimlane => "swimmlane".to_string(),
+            AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
         }
     }
@@ -80,7 +84,7 @@ impl ToString for AType {
             AType::Board => "board".to_string(),
             AType::List => "list".to_string(),
             AType::Card => "card".to_string(),
-            AType::Swimlane => "swimmlane".to_string(),
+            AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
         }
     }
@@ -255,7 +259,7 @@ impl PartialEq for Artifact {
 impl RequestBody for Artifact {}
 #[cfg(feature = "test")]
 pub trait DeserializeExt:
-    serde::de::DeserializeOwned + std::fmt::Debug + super::tests::MockNewResponse
+    serde::de::DeserializeOwned + std::fmt::Debug + super::tests::MockResponse
 {
 }
 #[cfg(not(feature = "test"))]
@@ -264,19 +268,19 @@ pub trait DeserializeExt: serde::de::DeserializeOwned + std::fmt::Debug {}
 impl DeserializeExt for Artifact {}
 
 #[cfg(feature = "test")]
-impl Artifact {
-    pub fn new(id: &str, title: &str, atype: AType) -> Self {
+impl MockDetails for Artifact {
+    fn mock(id: &str, title: &str, atype: &str) -> Self {
         Artifact {
             _id: id.to_string(),
             title: title.to_string(),
-            r#type: atype,
+            r#type: AType::from(atype.to_string()),
         }
     }
 }
 
 #[cfg(feature = "test")]
-impl super::tests::MockNewResponse for Artifact {
-    fn new() -> Self {
-        Artifact::new("fake-id", "fake-title", AType::Board)
+impl MockResponse for Artifact {
+    fn mock() -> Self {
+        <Self as MockDetails>::mock("fake-artifact-id", "fake-artifact-title", &AType::Board.to_string())
     }
 }

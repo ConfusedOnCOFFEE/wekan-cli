@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::vec::Vec;
 
 #[cfg(feature = "test")]
-use crate::artifact::tests::{MockDetails, MockNewResponse};
+use crate::artifact::tests::{MockDetails, MockResponse};
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct Label {
@@ -235,7 +235,7 @@ impl DeserializeExt for Details {}
 
 #[cfg(feature = "test")]
 impl MockDetails for Details {
-    fn new(id: &str, title: &str, date: &str) -> Self {
+    fn mock(id: &str, title: &str, date: &str) -> Self {
         Self {
             _id: id.to_string(),
             title: title.to_string(),
@@ -289,8 +289,8 @@ impl MockDetails for Details {
 }
 
 #[cfg(feature = "test")]
-impl MockNewResponse for Details {
-    fn new() -> Self {
-        <Self as MockDetails>::new("fake-id", "fake-title", "2020-10-12T")
+impl MockResponse for Details {
+    fn mock() -> Self {
+        <Self as MockDetails>::mock("my-fake-board-id", "fake-board-title", "2020-10-12T")
     }
 }

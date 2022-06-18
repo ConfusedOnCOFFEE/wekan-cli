@@ -3,7 +3,7 @@ use super::common::{
     WipLimit,
 };
 #[cfg(feature = "test")]
-use super::tests::MockNewResponse;
+use super::tests::{MockResponse, MockDetails};
 use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 #[allow(dead_code)]
@@ -79,23 +79,30 @@ impl WekanDisplay for Details {}
 impl DeserializeExt for Details {}
 
 #[cfg(feature = "test")]
-impl MockNewResponse for Details {
-    fn new() -> Self {
+impl MockDetails for Details {
+    fn mock(id: &str, title: &str, date: &str) -> Self {
         Self {
-            _id: String::from("fake-list-id"),
-            title: Some(String::from("fake-list")),
+            _id: id.to_string(),
+            title: Some(title.to_string()),
             starred: false,
             archived: false,
-            archived_at: String::new(),
-            board_id: String::from("fake-board-id"),
-            swimlane_id: String::from("fake-swimlane-id"),
-            created_at: String::new(),
+            archived_at: date.to_string(),
+            board_id: String::from("my-fake-board-id"),
+            swimlane_id: String::from("my-fake-swimlane-id"),
+            created_at: date.to_string(),
             sort: 0.0,
-            updated_at: String::new(),
-            modified_at: String::new(),
+            updated_at: date.to_string(),
+            modified_at: date.to_string(),
             wip_limit: WipLimit::new(),
             color: String::new(),
             r#type: AType::List.to_string(),
         }
+    }
+}
+
+#[cfg(feature = "test")]
+impl MockResponse for Details {
+    fn mock() -> Self {
+        <Self as MockDetails>::mock("my-fake-list-id", "fake-list-title", "2020-10-12T")
     }
 }

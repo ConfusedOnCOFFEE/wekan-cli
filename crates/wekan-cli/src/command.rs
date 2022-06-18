@@ -83,6 +83,7 @@ impl Mock for Args {
     fn mock() -> Self {
         Self {
             no_recommendations: true,
+            #[cfg(feature = "store")]
             no_store: false,
             output_format: None,
             filter: None
@@ -91,6 +92,15 @@ impl Mock for Args {
 }
 #[cfg(test)]
 impl Args {
+    #[cfg(not(feature = "store"))]
+    pub fn mock_with(r: bool, o: &str, f: &str) -> Self {
+        Self {
+            no_recommendations: r,
+            output_format: Some(o.to_string()),
+            filter: Some(f.to_string())
+        }
+    }
+    #[cfg(feature = "store")]
     pub fn mock_with(r: bool, s: bool, o: &str, f: &str) -> Self {
         Self {
             no_recommendations: r,

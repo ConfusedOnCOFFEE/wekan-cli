@@ -411,81 +411,6 @@ mod tests {
             }
         }
     }
-    #[cfg(feature = "store")]
-    #[cfg(test)]
-    mod store_tests {
-        use super::*;
-
-        #[tokio::test]
-        async fn find_board_id_with_store() {
-            let mut query = Query::mock(false);
-            let res = query.find_board_id("fake-title", &None).await.unwrap();
-            assert_eq!(res, "store-fake-id-1");
-        }
-
-        #[tokio::test]
-        async fn find_list_id_with_store() {
-            let mut query = Query::mock(false);
-            let res = query
-                .find_list_id("fake-id-1", "fake-title", &None)
-                .await
-                .unwrap();
-            assert_eq!(res, "store-fake-id-1");
-        }
-
-        #[tokio::test]
-        async fn find_card_id_with_store() {
-            let mut query = Query::mock(false);
-            let res = query
-                .find_card_id("fake-id-2", "fake-id-1", "fake-title", &None)
-                .await
-                .unwrap();
-            assert_eq!(res, "store-fake-id-1");
-        }
-
-        #[tokio::test]
-        async fn find_card_id_with_store_with_order() {
-            let mut query = Query::mock(false);
-            let res = query
-                .find_card_id(
-                    "fake-id-2",
-                    "fake-id-1",
-                    "fake-title",
-                    &Some(String::from("b:1")),
-                )
-                .await
-                .unwrap();
-            assert_eq!(res, "store-fake-id-1");
-        }
-
-        #[tokio::test]
-        async fn request_boards_with_store() {
-            let query = Query::mock(true);
-            let res = query.request_boards().await.unwrap();
-            assert_eq!(res, Vec::mocks(AType::Board));
-        }
-
-        #[tokio::test]
-        async fn request_lists_with_store() {
-            let query = Query::mock(true);
-            let res = query.request_lists("fake-id-2").await.unwrap();
-            assert_eq!(res, Vec::mocks(AType::List));
-        }
-
-        #[tokio::test]
-        async fn request_card_with_store() {
-            let query = Query::mock(true);
-            let res = query.request_cards("fake-id-2", "fake-id-2").await.unwrap();
-            assert_eq!(res, Vec::mocks(AType::Card));
-        }
-
-        #[tokio::test]
-        async fn request_swimlanes_with_store() {
-            let query = Query::mock(true);
-            let res = query.request_swimlanes("fake-id-2").await.unwrap();
-            assert_eq!(res, Vec::mocks(AType::Swimlane));
-        }
-    }
 
     #[tokio::test]
     async fn find_board_id() {
@@ -493,8 +418,8 @@ mod tests {
         let mut query = Query::mock();
         #[cfg(feature = "store")]
         let mut query = Query::mock(true);
-        let res = query.find_board_id("fake-title", &None).await.unwrap();
-        assert_eq!(res, "fake-id-1");
+        let res = query.find_board_id("fake-board-title-1", &None).await.unwrap();
+        assert_eq!(res, "fake-board-id-1");
     }
 
     #[tokio::test]
@@ -504,10 +429,10 @@ mod tests {
         #[cfg(feature = "store")]
         let mut query = Query::mock(true);
         let res = query
-            .find_list_id("fake-id-1", "fake-title", &None)
+            .find_list_id("fake-board-id-1", "fake-list-title-1", &None)
             .await
             .unwrap();
-        assert_eq!(res, "fake-id-1");
+        assert_eq!(res, "fake-list-id-1");
     }
 
     #[tokio::test]
@@ -517,10 +442,10 @@ mod tests {
         #[cfg(feature = "store")]
         let mut query = Query::mock(true);
         let res = query
-            .find_card_id("fake-id-2", "fake-id-1", "fake-title", &None)
+            .find_card_id("fake-board-id-2", "fake-list-id-1", "fake-card-title-1", &None)
             .await
             .unwrap();
-        assert_eq!(res, "fake-id-1");
+        assert_eq!(res, "fake-card-id-1");
     }
 
     #[tokio::test]
@@ -531,14 +456,14 @@ mod tests {
         let mut query = Query::mock(true);
         let res = query
             .find_card_id(
-                "fake-id-2",
-                "fake-id-1",
-                "fake-title",
-                &Some(String::from("b:1")),
+                "fake-board-id-2",
+                "fake-list-id-1",
+                "fake-card-title-1",
+                &Some(String::from("b:f")),
             )
             .await
             .unwrap();
-        assert_eq!(res, "fake-id-1");
+        assert_eq!(res, "fake-card-id-1");
     }
     #[tokio::test]
     async fn request_boards() {
@@ -589,8 +514,86 @@ mod tests {
         let mut res = query.inquire(AType::Board, None, None).await.unwrap();
         assert_eq!(res.get_title(), "s");
         #[cfg(not(feature = "store"))]
-        assert_eq!(res.remove(0).get_id(), "fake-id-1");
+        assert_eq!(res.remove(0).get_id(), "fake-board-id-1");
         #[cfg(feature = "store")]
-        assert_eq!(res.remove(0).get_id(), "store-fake-id-1");
+        assert_eq!(res.remove(0).get_id(), "store-fake-board-id-1");
     }
+
+
+    #[cfg(feature = "store")]
+    #[cfg(test)]
+    mod store_tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn find_board_id_with_store() {
+            let mut query = Query::mock(false);
+            let res = query.find_board_id("fake-board-title-1", &None).await.unwrap();
+            assert_eq!(res, "store-fake-board-id-1");
+        }
+
+        #[tokio::test]
+        async fn find_list_id_with_store() {
+            let mut query = Query::mock(false);
+            let res = query
+                .find_list_id("store-fake-board-id-1", "store-fake-list-title-1", &None)
+                .await
+                .unwrap();
+            assert_eq!(res, "store-fake-list-id-1");
+        }
+
+        #[tokio::test]
+        async fn find_card_id_with_store() {
+            let mut query = Query::mock(false);
+            let res = query
+                .find_card_id("fake-id-board-2", "fake-id-card-1", "fake-card-title-1", &None)
+                .await
+                .unwrap();
+            assert_eq!(res, "store-fake-card-id-1");
+        }
+
+        #[tokio::test]
+        async fn find_card_id_with_store_with_order() {
+            let mut query = Query::mock(false);
+            let res = query
+                .find_card_id(
+                    "fake-id-board-2",
+                    "fake-id-list-1",
+                    "fake-card-title-1",
+                    &Some(String::from("b:1")),
+                )
+                .await
+                .unwrap();
+            assert_eq!(res, "store-fake-card-id-1");
+        }
+
+        #[tokio::test]
+        async fn request_boards_with_store() {
+            let query = Query::mock(true);
+            let res = query.request_boards().await.unwrap();
+            assert_eq!(res, Vec::mocks(AType::Board));
+        }
+
+        #[tokio::test]
+        async fn request_lists_with_store() {
+            let query = Query::mock(true);
+            let res = query.request_lists("fake-id-2").await.unwrap();
+            assert_eq!(res, Vec::mocks(AType::List));
+        }
+
+        #[tokio::test]
+        async fn request_card_with_store() {
+            let query = Query::mock(true);
+            let res = query.request_cards("fake-id-2", "fake-id-2").await.unwrap();
+            assert_eq!(res, Vec::mocks(AType::Card));
+        }
+
+        #[tokio::test]
+        async fn request_swimlanes_with_store() {
+            let query = Query::mock(true);
+            let res = query.request_swimlanes("fake-id-2").await.unwrap();
+            assert_eq!(res, Vec::mocks(AType::Swimlane));
+        }
+    }
+
 }

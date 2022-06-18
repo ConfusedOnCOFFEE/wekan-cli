@@ -2,7 +2,7 @@ use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "test")]
-use crate::artifact::tests::MockNewResponse;
+use crate::artifact::tests::MockResponse;
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -23,20 +23,18 @@ pub struct CreateBoard {
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub struct CreatedBoard {
-    #[serde(skip_deserializing)]
     _id: String,
-    #[serde(skip_deserializing)]
-    default_swimmlane_id: String,
+    default_swimlane_id: String,
 }
 
 impl RequestBody for CreateBoard {}
 impl crate::artifact::common::DeserializeExt for CreatedBoard {}
 #[cfg(feature = "test")]
-impl MockNewResponse for CreatedBoard {
-    fn new() -> Self {
+impl MockResponse for CreatedBoard {
+    fn mock() -> Self {
         Self {
-            _id: String::from("fake-id"),
-            default_swimmlane_id: String::from("default"),
+            _id: String::from("fake-return-id"),
+            default_swimlane_id: String::from("default"),
         }
     }
 }

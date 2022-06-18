@@ -1,6 +1,5 @@
 pub mod board;
 pub mod card;
-pub mod cli;
 pub mod command;
 pub mod config;
 pub mod display;

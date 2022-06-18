@@ -86,10 +86,15 @@ Motivation:
 
 Not so sure, if that is a good way right now, but it could help if I upgrade to a new API version. Also wekan-core can be reused and not use it with the CLI.
 
-## REFACTOR
+
+## BACKLOG (not sorted)
 
 - Currently there is not a good way on when a name argument is expected or not. I want to change that and make it more transparent and coherent in all subcommand but this takes time.
-
+- Return messages schema.
+- Exit and error codes are random.
+- Apply all traits (CommonRunner, SubcommandRunner...) to the Runners.
+- Remove vector in Display.
+- Remove format field in runners.
 
 ## ENV VARIABLES
 
@@ -107,6 +112,14 @@ All the ENV variables can be used in any combination, but MFILTER only filters n
 
 
 ## DEVELOPMENT
+
+Quick test access. Please it in $HOME/.cargo/config.
+
+```
+[alias]
+t = "test -- --nocapture --color always"
+ts = "test --features store -- --nocapture --color always"
+```
 
 ## TESTS
 

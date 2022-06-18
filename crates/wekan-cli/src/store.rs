@@ -1,22 +1,19 @@
-use async_trait::async_trait;
 use crate::{
     error::kind::{Error, StoreError},
     resolver::Query,
 };
-use wekan_common::artifact::common::{
-    AType,
-    Artifact,
-    IdReturner,
-    // Base,
-    SortedArtifact,
-};
-use wekan_core::persistence::store::Entry;
+use async_trait::async_trait;
 use log::{debug, info, trace};
+use wekan_common::artifact::common::{AType, Artifact, IdReturner, SortedArtifact};
+use wekan_core::persistence::store::Entry;
 
+#[cfg(test)]
+use chrono::prelude::*;
+#[cfg(test)]
+use wekan_common::artifact::tests::MockDetails;
 #[cfg(not(test))]
 use wekan_core::persistence::store::Butler;
-#[cfg(test)]
-use chrono::{prelude::*};
+
 #[async_trait]
 pub trait Store {
     async fn lookup_id(&self, artifact: &Artifact) -> Result<String, Error>;
@@ -87,13 +84,28 @@ impl Store for Query {
 
     #[cfg(test)]
     async fn stock_up(&self, artifact: &Artifact) -> Result<Entry<Vec<Artifact>>, Error> {
-        Ok(Entry  {
+        let id_prefix = String::from("store-fake-");
+        let id_suffix = String::from("-id-");
+        let title_prefix = String::from("store-fake-");
+        let title_suffix = String::from("-title-");
+        Ok(Entry {
             parent: artifact.get_id(),
             age: Utc::now().to_string(),
             payload: vec![
-                Artifact::new("store-fake-id-1", "store-fake-title", artifact.get_type().clone()),
-                Artifact::new("store-fake-id-2", "store-fake-title2", artifact.get_type()),
-            ]
+                Artifact::mock(
+                    &(id_prefix.to_owned() + &artifact.get_type().to_string() + &id_suffix + "1"),
+                    &(title_prefix.to_owned()
+                        + &artifact.get_type().to_string()
+                        + &title_suffix
+                        + "1"),
+                    &artifact.get_type().to_string(),
+                ),
+                Artifact::mock(
+                    &(id_prefix + &artifact.get_type().to_string() + &id_suffix + "2"),
+                    &(title_prefix + &artifact.get_type().to_string() + &title_suffix + "2"),
+                    &artifact.get_type().to_string(),
+                ),
+            ],
         })
     }
     async fn approve_id(&self, unqiue_identifier: &str) -> Result<String, Error> {

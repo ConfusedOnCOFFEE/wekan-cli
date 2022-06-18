@@ -89,10 +89,10 @@ impl<'a> Runner<'a> {
                         {
                             Ok(board_id) => {
                                 match self.client.delete::<ResponseOk>(&board_id).await {
-                                    Ok(_o) => WekanResult::new_msg("Delete successfull.").ok(),
+                                    Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
                                     Err(e) => {
                                         trace!("{:?}", e);
-                                        CliError::new_msg("Deletion failed").err()
+                                        CliError::new_msg("Failed to delete").err()
                                     }
                                 }
                             }
@@ -110,7 +110,7 @@ impl<'a> Runner<'a> {
                     None => WekanResult::new_msg("Board name needs to be supplied.").ok(),
                 },
             },
-            None => WekanResult::new_workflow("Nothing selected.", "Run 'list --help'").ok(),
+            None => WekanResult::new_workflow("Nothing selected", "Run 'list --help'").ok(),
         }
     }
 
@@ -134,12 +134,12 @@ impl<'a> Runner<'a> {
             Ok(ok) => {
                 trace!("{:?}", ok);
                 WekanResult::new_workflow(
-                    "New List created.",
+                    "Successfully created",
                     "See the details of a list or create a card for it with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]'").ok()
             }
             Err(e) => {
                 debug!("{:?}", e);
-                CliError::new_msg("Create list failed.").err()
+                CliError::new_msg("Failed to create").err()
             }
         }
     }
@@ -154,7 +154,7 @@ impl<'a> Runner<'a> {
     async fn get_lists_or_details(&mut self, list_name: &str) -> Result<WekanResult, Error> {
         info!("get_lists");
         let lists: Result<Vec<Artifact>, CoreError> =
-            self.client.to_owned().get_all(AType::Card).await;
+            self.client.to_owned().get_all(AType::List).await;
         let results: Vec<Artifact> = match lists {
             Ok(res) => res,
             Err(_e) => Vec::<Artifact>::new(),
@@ -191,8 +191,8 @@ impl<'a> Runner<'a> {
             .display
             .print_details(list, Some(self.format.to_owned()))
         {
-            Ok(_o) => {
-                self.get_cards_by_list_id(&self.constraint.board._id.to_owned(), list_id)
+            Ok(o) => {
+                self.get_cards_by_list_id(&o, &self.constraint.board._id.to_owned(), list_id)
                     .await
             }
             Err(e) => Err(e),
@@ -200,6 +200,7 @@ impl<'a> Runner<'a> {
     }
     async fn get_cards_by_list_id(
         &mut self,
+        o: &WekanResult,
         board_id: &str,
         list_id: &str,
     ) -> Result<WekanResult, Error> {
@@ -220,8 +221,8 @@ impl<'a> Runner<'a> {
             Ok(cards) => {
                 trace!("{:?}", cards);
                 if !cards.is_empty() {
-                    println!("Following cards are available:");
-                    self.display.print_artifacts(cards, String::from("long"))
+                    o.get_msg().push_str("Following lists are available:\n");
+                    self.display.prepare_output(&o.get_msg(), cards, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
                         "This list contains no card.",
@@ -232,5 +233,154 @@ impl<'a> Runner<'a> {
             }
             Err(e) => Err(e),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        tests::mocks::Mock,
+        subcommand::{Details as SDetails, Create, Remove}
+    };
+    #[tokio::test]
+    async fn run_no_options_specified() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-list-title-2")), String::from("fake-board-title-1"), None),
+            Client::mock(),
+            LConstraint {
+                board: Artifact {
+                    _id: String::from("fake-board-id-1"),
+                    title: String::from("fake-board-title-1"),
+                    r#type: AType::Board
+                }
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = runner.apply()
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "Nothing selected");
+    }
+
+    #[tokio::test]
+    async fn run_no_options_details() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-list-title-2")), String::from("fake-board-title-2"), Some(Command::Details(SDetails {}))),
+            Client::mock(),
+            LConstraint {
+                board: Artifact {
+                    _id: String::from("fake-board-id-2"),
+                    title: String::from("fake-board-title-2"),
+                    r#type: AType::Board
+                }
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = runner.apply()
+            .await
+            .unwrap();
+        #[cfg(not(feature = "store"))]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "ID    TITLE\nfake-card-id-1fake-card-title-1\n",
+            "fake-card-id-2fake-card-title-2\n\n----\n"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "ID    TITLE\nstore-fake-card-id-1store-fake-card-title-1\n",
+            "store-fake-card-id-2store-fake-card-title-2\n\n----\n"
+        );
+        assert_eq!(res.get_msg(),
+                   expected);
+    }
+
+    #[tokio::test]
+    async fn run_no_options_create() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-list-title-2")), String::from("fake-board-title-1"), Some(Command::Create(Create {
+                title: String::from("new-board")
+            }))),
+            Client::mock(),
+            LConstraint {
+                board: Artifact {
+                    _id: String::from("fake-board-id-1"),
+                    title: String::from("fake-board-title-1"),
+                    r#type: AType::Board
+                }
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = runner.apply()
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "Successfully created");
+    }
+
+
+    #[tokio::test]
+    async fn run_no_options_remove() {
+        let r_args = RArgs::mock();
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-list-title-2")), String::from("fake-board-title-1"), Some(Command::Remove(Remove {}))),
+            Client::mock(),
+            LConstraint {
+                board: Artifact {
+                    _id: String::from("fake-board-id-1"),
+                    title: String::from("fake-board-title-1"),
+                    r#type: AType::Board
+                }
+            },
+            String::new(),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = runner.apply()
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "Successfully deleted");
+    }
+
+    #[tokio::test]
+    async fn run_with_special_output() {
+        #[cfg(feature = "store")]
+        let r_args = RArgs::mock_with(false, false, "long", "b:5");
+        #[cfg(not(feature = "store"))]
+        let r_args = RArgs::mock_with(false, "long", "b:5");
+
+        let mut runner = Runner::new(
+            Args::mock(Some(String::from("fake-list-title-2")), String::from("fake-board-title-2"), None),
+            Client::mock(),
+            LConstraint {
+                board: Artifact {
+                    _id: String::from("fake-board-id-2"),
+                    title: String::from("fake-board-title-2"),
+                    r#type: AType::Board
+                }
+            },
+            String::from("long"),
+            CliDisplay::new(Vec::new()),
+            &r_args,
+        );
+        let res = runner.apply()
+            .await
+            .unwrap();
+        assert_eq!(res.get_msg(),
+                   "Nothing selected");
     }
 }

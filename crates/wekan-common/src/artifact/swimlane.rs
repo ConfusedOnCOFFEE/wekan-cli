@@ -5,7 +5,7 @@ use super::common::{
 };
 
 #[cfg(feature = "test")]
-use crate::artifact::tests::MockNewResponse;
+use crate::artifact::tests::{MockResponse, MockDetails};
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -59,19 +59,26 @@ impl StoreTrait for Details {}
 impl WekanDisplay for Details {}
 impl DeserializeExt for Details {}
 #[cfg(feature = "test")]
-impl MockNewResponse for Details {
-    fn new() -> Self {
-        Details {
-            _id: String::from("fake-id"),
-            title: None,
+impl MockDetails for Details {
+    fn mock(id: &str, title: &str, date: &str) -> Self {
+        Self {
+            _id: id.to_string(),
+            title: Some(title.to_string()),
             archived: false,
-            archived_at: String::new(),
-            board_id: String::from("fake-board-id"),
-            created_at: String::new(),
+            archived_at: date.to_string(),
+            board_id: String::from("my-fake-board-id"),
+            created_at: date.to_string(),
             sort: 9,
-            updated_at: String::new(),
+            updated_at: date.to_string(),
             color: String::new(),
             r#type: AType::Swimlane.to_string(),
         }
+    }
+}
+
+#[cfg(feature = "test")]
+impl MockResponse for Details {
+    fn mock() -> Self {
+        <Self as MockDetails>::mock("my-fake-swimlane-id", "fake-swimlane-title", "2020-10-12T")
     }
 }

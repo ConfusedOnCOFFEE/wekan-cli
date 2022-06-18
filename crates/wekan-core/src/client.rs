@@ -85,7 +85,7 @@ impl SwimlaneApi for Client {
         }
     }
     fn set_base(&mut self, board_id: &str) -> String {
-        self.base = "boards/".to_owned() + board_id + "/swimmlanes/";
+        self.base = "boards/".to_owned() + board_id + "/swimlanes/";
         self.base.to_owned()
     }
 }

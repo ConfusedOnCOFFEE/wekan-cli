@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn print_details_output_normal() {
-        let a = CDetails::new("my-id", "my-title", "2022-10-15T208Z");
+        let a = CDetails::mock("my-id", "my-title", "2022-10-15T208Z");
         let out = Vec::new();
         let mut display = CliDisplay::new(out);
         let ok_res = display.print_details(a, None).unwrap();
@@ -351,7 +351,7 @@ mod tests {
     #[test]
     fn cmp_by_length_greater() {
         assert_eq!(
-            cmp_by_length(&String::from("202"), &String::from("2")),
+            cmp_by_length("202", "2"),
             Ordering::Greater
         )
     }
@@ -359,7 +359,7 @@ mod tests {
     #[test]
     fn cmp_by_length_less() {
         assert_eq!(
-            cmp_by_length(&String::from("2"), &String::from("202")),
+            cmp_by_length("2", "202"),
             Ordering::Less
         )
     }
@@ -367,7 +367,7 @@ mod tests {
     #[test]
     fn cmp_by_length_equal() {
         assert_eq!(
-            cmp_by_length(&String::from("20"), &String::from("20")),
+            cmp_by_length("20", "20"),
             Ordering::Equal
         )
     }
@@ -375,27 +375,27 @@ mod tests {
     #[test]
     fn safely_unwrap_date_exist() {
         assert_eq!(
-            safely_unwrap_date(&String::from("202T27Z")),
+            safely_unwrap_date("202T27Z"),
             String::from("202")
         )
     }
 
     #[test]
     fn safely_unwrap_date_dont_exist() {
-        assert_eq!(safely_unwrap_date(&String::from("20")), String::new())
+        assert_eq!(safely_unwrap_date("20"), "")
     }
 
     #[test]
     fn if_field_vailable_true() {
         assert_eq!(
-            if_field_available(&String::from("HEADER"), &String::from("header")),
+            if_field_available("HEADER", "header"),
             String::from("HEADER")
         )
     }
     #[test]
     fn if_field_vailable_false() {
         assert_eq!(
-            if_field_available(&String::from("HEADER"), &String::new()),
+            if_field_available("HEADER", ""),
             String::new()
         )
     }

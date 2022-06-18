@@ -3,7 +3,7 @@ use super::common::{
     WekanDisplay,
 };
 #[cfg(feature = "test")]
-use super::tests::{MockDetails, MockNewResponse};
+use super::tests::{MockDetails, MockResponse};
 use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::vec::Vec;
@@ -164,16 +164,16 @@ impl RequestBody for Details {}
 impl DeserializeExt for Details {}
 #[cfg(feature = "test")]
 impl MockDetails for Details {
-    fn new(id: &str, title: &str, date: &str) -> Self {
+    fn mock(id: &str, title: &str, date: &str) -> Self {
         Self {
             _id: Some(id.to_string()),
             title: title.to_string(),
             archived: None,
             archived_at: None,
             parent_id: None,
-            list_id: String::new(),
-            swimlane_id: String::new(),
-            board_id: String::new(),
+            list_id: String::from("my-fake-card-id"),
+            swimlane_id: String::from("my-fake-swimlane-id"),
+            board_id: String::from("my-fake-board-id"),
             cover_id: None,
             color: None,
             created_at: date.to_string(),
@@ -208,8 +208,8 @@ impl MockDetails for Details {
 }
 impl WekanDisplay for Details {}
 #[cfg(feature = "test")]
-impl MockNewResponse for Details {
-    fn new() -> Self {
-        <Self as MockDetails>::new("fake-id", "fake-title", "2020-10-12T")
+impl MockResponse for Details {
+    fn mock() -> Self {
+        <Self as MockDetails>::mock("my-fake-card-id", "fake-card-title", "2020-10-12T")
     }
 }

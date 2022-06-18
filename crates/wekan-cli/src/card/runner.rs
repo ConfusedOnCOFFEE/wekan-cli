@@ -129,7 +129,7 @@ impl Runner {
                     Err(_e) => CliError::new_msg("Card creation failed.").err(),
                 }
             }
-            Err(_e) => CliError::new_msg("List can not be matched to swimmlane.").err(),
+            Err(_e) => CliError::new_msg("List can not be matched to swimlane.").err(),
         }
     }
 
