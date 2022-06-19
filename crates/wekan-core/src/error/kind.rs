@@ -6,9 +6,7 @@ pub enum Error {
     Http(ReqError),
     Constraint(Constraint),
     Io(std::io::Error),
-    Yaml(serde_yaml::Error),
-    #[cfg(test)]
-    UrlParse(url::ParseError),
+    Yaml(serde_yaml::Error)
 }
 
 impl From<ReqError> for Error {
@@ -25,13 +23,6 @@ impl From<std::io::Error> for Error {
 impl From<serde_yaml::Error> for Error {
     fn from(error: serde_yaml::Error) -> Self {
         Error::Yaml(error)
-    }
-}
-
-#[cfg(test)]
-impl From<url::ParseError> for Error {
-    fn from(error: url::ParseError) -> Self {
-        Error::UrlParse(error)
     }
 }
 

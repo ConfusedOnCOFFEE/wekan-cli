@@ -215,13 +215,17 @@ impl<'a> Runner {
             constraint.board.as_ref().unwrap()._id.to_owned(),
             constraint.list.as_ref().unwrap()._id.to_owned(),
         );
+        let filter = match &self.global_options.filter {
+            Some(f) => f,
+            None => "",
+        };
         let mut runner: CRunner = CRunner::new(
             c_args.clone(),
             client.clone(),
             constraint,
             self.format.to_owned(),
             query,
-            Some(self.global_options.filter.as_ref().unwrap().to_string()),
+            Some(filter.to_string()),
             self.display.to_owned(),
         );
         runner.run().await

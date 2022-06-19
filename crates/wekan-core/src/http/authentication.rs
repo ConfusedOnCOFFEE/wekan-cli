@@ -13,7 +13,7 @@ use reqwest::{header::CONTENT_TYPE, Client as ReqClient, Response as RResponse};
 use wekan_common::validation::authentication::{Credentials, Token, TokenHeader};
 
 #[cfg(test)]
-use crate::http::client::tests::{MockClient, MockResponse};
+use crate::http::client::tests::{MResponse, MockClient};
 use crate::http::client::MethodMiddleware;
 
 use log::info;
@@ -193,8 +193,8 @@ pub trait Unauthorized {
     fn builder() -> Result<MockClient, Error> {
         Ok(MockClient {})
     }
-    async fn get(_url: &str) -> Result<MockResponse, Error> {
-        Ok(MockResponse {})
+    async fn get(_url: &str) -> Result<MResponse, Error> {
+        Ok(MResponse {})
     }
 }
 

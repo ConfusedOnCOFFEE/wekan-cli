@@ -15,7 +15,7 @@ use wekan_common::{
 };
 
 #[cfg(test)]
-use wekan_common::artifact::tests::MockNewResponse as NewResponse;
+use wekan_common::artifact::tests::MockResponse;
 
 #[cfg(test)]
 use wekan_common::http::artifact::Deleted;
@@ -107,25 +107,25 @@ pub trait MethodMiddleware {
 #[cfg(test)]
 impl MethodMiddleware for super::client::tests::MockClient {
     async fn get_ext<R: DeserializeExt>(&self, _url: &str) -> Result<R, Error> {
-        Ok(R::new())
+        Ok(R::mock())
     }
     async fn post_ext<B: RequestBody, U: DeserializeExt>(
         &self,
         _url: &str,
         _body: &B,
     ) -> Result<U, Error> {
-        Ok(U::new())
+        Ok(U::mock())
     }
     async fn delete_ext<R: DeserializeExt>(&self, _url: &str) -> Result<R, Error> {
-        Ok(R::new())
+        Ok(R::mock())
     }
 
-    async fn put_ext<B: RequestBody, U: NewResponse>(
+    async fn put_ext<B: RequestBody, U: MockResponse>(
         &self,
         _url: &str,
         _body: &B,
     ) -> Result<U, Error> {
-        Ok(U::new())
+        Ok(U::mock())
     }
 }
 
@@ -211,18 +211,17 @@ pub mod tests {
     use serde::{Deserialize, Serialize};
     use wekan_common::{
         artifact::common::AType,
-        artifact::tests::MockNewResponse as NewResponse,
         http::artifact::RequestBody,
         validation::authentication::{Token, TokenHeader},
     };
     #[derive(Clone, Deserialize, Serialize, Debug)]
-    pub struct MockResponse {}
-    impl RequestBody for MockResponse {}
-    impl Deleted for MockResponse {}
+    pub struct MResponse {}
+    impl RequestBody for MResponse {}
+    impl Deleted for MResponse {}
     pub struct MockClient {}
-    impl NewResponse for MockResponse {
-        fn new() -> Self {
-            MockResponse {}
+    impl MockResponse for MResponse {
+        fn mock() -> Self {
+            MResponse {}
         }
     }
     pub trait ConvertVec {
@@ -230,7 +229,7 @@ pub mod tests {
             Vec::new()
         }
     }
-    impl ConvertVec for MockResponse {}
+    impl ConvertVec for MResponse {}
     #[test]
     fn new_client() {
         let userconfig = UserConfig::new();

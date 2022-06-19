@@ -307,12 +307,7 @@ impl Query {
     fn check_artifact(artifact: &Artifact, name: &str, order: &Option<String>) -> bool {
         match order {
             Some(ref s) => {
-                debug!(
-                    "Order is selected, Trying to filter based on the list given: {:?}",
-                    order
-                );
-
-                if Query::match_title_by_type(artifact, s) {
+                if !s.is_empty() && Query::match_title_by_type(artifact, s) {
                     true
                 } else {
                     Query::contains_title(artifact, name)
