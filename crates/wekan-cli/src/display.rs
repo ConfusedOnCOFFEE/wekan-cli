@@ -1,5 +1,5 @@
 use crate::{error::kind::Error, result::kind::WekanResult};
-use log::{debug, trace};
+use log::info;
 use std::cmp::Ordering;
 use wekan_common::artifact::common::{
     Base, BaseDetails, IdReturner, MostDetails, SortedArtifact, WekanDisplay,
@@ -49,7 +49,6 @@ impl CliDisplay {
         &mut self,
         artifact_details: T,
     ) -> Result<WekanResult, Error> {
-        trace!("{:?}", artifact_details);
         let mut properties_to_show = vec![
             artifact_details.get_id(),
             artifact_details.get_title(),
@@ -91,7 +90,9 @@ impl CliDisplay {
         output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        output.push_str(&format!("AAAA   {}", artifact_details.get_title()));
+        output.push_str(&self.format("AAAA", max_string.len()));
+        #[cfg(feature = "integration")]
+        output.push_str(&self.format(&artifact_details.get_title(), max_string.len()));
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
@@ -109,25 +110,14 @@ impl CliDisplay {
         artifact_details: T,
         format: Option<String>,
     ) -> Result<WekanResult, Error> {
-        debug!("print_details_v2");
+        info!("print_details");
         let properties_to_show = vec![
             artifact_details
                 .get_id()
-                .split_at({
-                    match format {
-                        Some(f) => {
-                            if f.starts_with("long")
-                                || f.starts_with("extended")
-                                || f.starts_with("extd")
-                            {
-                                artifact_details.get_id().len()
-                            } else {
-                                std::cmp::min(4, artifact_details.get_id().len())
-                            }
-                        }
-                        None => std::cmp::min(4, artifact_details.get_id().len()),
-                    }
-                })
+                .split_at(CliDisplay::unwrap_format(
+                    format.as_ref(),
+                    &artifact_details,
+                ))
                 .0
                 .to_string(),
             artifact_details.get_title(),
@@ -159,7 +149,9 @@ impl CliDisplay {
         output = output.trim().to_string();
         output.push('\n');
         #[cfg(feature = "integration")]
-        output.push_str(&format!("AAAA   {}", artifact_details.get_title()));
+        output.push_str(&self.format("AAAA", max_string.len()));
+        #[cfg(feature = "integration")]
+        output.push_str(&self.format(&artifact_details.get_title(), max_string.len()));
         #[cfg(not(feature = "integration"))]
         properties_to_show
             .iter()
@@ -170,10 +162,9 @@ impl CliDisplay {
     pub fn print_artifacts<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
         &mut self,
         artifacts: Vec<T>,
-        format: String,
+        format: Option<String>,
     ) -> Result<WekanResult, Error> {
-        trace!("{:?} - {:?}", artifacts, format);
-        debug!("print_artifacts");
+        info!("print_artifacts");
         let headlines_to_show = vec![String::from("ID"), String::from("TITLE")];
         let mut output = String::new();
         headlines_to_show
@@ -182,70 +173,35 @@ impl CliDisplay {
         output = output.trim().to_string();
         output.push('\n');
         artifacts.iter().for_each(|a| {
-            if format.contains("rust") || format.contains("elisp") {
-                output.push_str(
-                    &self.format(
-                        a.get_id()
-                            .split_at({
-                                if format.starts_with("long")
-                                    || format.starts_with("extended")
-                                    || format.starts_with("extd")
-                                {
-                                    a.get_id().len()
-                                } else {
-                                    std::cmp::min(3, a.get_id().len())
-                                }
-                            })
-                            .0,
-                        3,
-                    ),
-                );
-                output.push_str(&self.format(&a.get_title(), 3));
-            } else if format.contains("extended") {
-                output.push_str(&self.format(&a.get_id(), 3));
-                output.push_str(&self.format(&a.get_title(), 3));
-            } else {
-                #[cfg(not(feature = "integration"))]
-                output.push_str(
-                    &self.format(
-                        a.get_id()
-                            .split_at({
-                                if format.starts_with("long")
-                                    || format.starts_with("extended")
-                                    || format.starts_with("extd")
-                                {
-                                    a.get_id().len()
-                                } else {
-                                    std::cmp::min(4, a.get_id().len())
-                                }
-                            })
-                            .0,
-                        3,
-                    ),
-                );
-                #[cfg(not(feature = "integration"))]
-                output.push_str(&self.format(&a.get_title(), 3));
-                #[cfg(feature = "integration")]
-                output.push_str(&self.format(&String::from("AAAA"), 3));
-                #[cfg(feature = "integration")]
-                output.push_str(&self.format(&a.get_title(), 3));
-                output = output.trim().to_string();
-                output.push('\n');
-            };
+            #[cfg(not(feature = "integration"))]
+            output.push_str(
+                &self.format(
+                    a.get_id()
+                        .split_at(CliDisplay::unwrap_format(format.as_ref(), a))
+                        .0,
+                    3,
+                ),
+            );
+            #[cfg(feature = "integration")]
+            output.push_str(&self.format(&"AAAA", 3));
+            output.push_str(&self.format(&a.get_title(), 3));
+            output = output.trim().to_string();
+            output.push('\n');
         });
-        WekanResult::new_workflow(&output.finish_up(), "Get or update details of an artifact.").ok()
+        WekanResult::new_workflow(&output.finish_up(), "Get or update details of an artifact").ok()
     }
 
     pub fn prepare_output<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
         &mut self,
         output: &str,
         artifacts: Vec<T>,
-        format: String,
+        format: Option<String>,
     ) -> Result<WekanResult, Error> {
         let mut full_output = String::new();
         full_output.push_str(output);
         let second_output = self.print_artifacts(artifacts, format).unwrap();
         full_output.push_str(&second_output.get_msg());
+        full_output = full_output.trim().to_string();
         WekanResult::new_workflow(&full_output, &second_output.get_next_workflow().unwrap()).ok()
     }
     pub fn print_table<
@@ -262,7 +218,6 @@ impl CliDisplay {
     ) -> Result<WekanResult, Error> {
         let mut output = String::new();
         let mut longest_card_name = String::new();
-        let longest_cards: &Vec<T>;
         cards.iter().for_each(|x| {
             longest_card_name.push_str(
                 &x.iter()
@@ -271,7 +226,7 @@ impl CliDisplay {
                     .get_title(),
             );
         });
-        longest_cards = cards
+        let longest_cards: &Vec<T> = cards
             .iter()
             .max_by(|p, n| cmp_vec(p.len(), n.len()))
             .unwrap();
@@ -292,6 +247,19 @@ impl CliDisplay {
             }
         };
         WekanResult::new_msg(&output.finish_up()).ok()
+    }
+
+    fn unwrap_format<T: IdReturner>(format: Option<&String>, a: &T) -> usize {
+        match format {
+            Some(f) => {
+                if f.starts_with("long") || f.starts_with("extended") || f.starts_with("extd") {
+                    a.get_id().len()
+                } else {
+                    std::cmp::min(3, a.get_id().len())
+                }
+            }
+            None => std::cmp::min(3, a.get_id().len()),
+        }
     }
 }
 fn cmp_by_length(x: &str, y: &str) -> Ordering {

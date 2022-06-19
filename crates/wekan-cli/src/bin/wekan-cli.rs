@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{debug, error, trace};
+use log::{debug, error, info, trace};
 use wekan_cli::{
     command::WekanParser, error::kind::Error, result::kind::WekanResult, runner::Runner,
 };
@@ -17,24 +17,19 @@ trait ExitCode {
         trace!("{:?}", result);
         match result {
             Ok(r) => {
-                println!("{}", r.get_msg());
+                println!("{}", r.get_msg().trim());
                 let parser = WekanParser::parse();
                 if !parser.delegate.no_recommendations {
-                    println!("The next recommended workflows:");
                     match &r.get_next_workflow() {
-                        Some(w) => println!("{}", w),
-                        None => println!("Nothing to recommend. Suggestions?"),
+                        Some(w) => println!("Recommended workflow: {}", w.trim()),
+                        None => {}
                     };
                 }
                 r.get_exit_code()
             }
             Err(e) => {
-                eprint!("Something went wrong.");
-                eprint!(
-                    "For more information use WEKAN_LOG, verbose argument or WEKAN_BACKTRACE=1. "
-                );
-                eprintln!("Trying to make sense of the error and showing user friendly output:");
-                trace!("{:?}", e);
+                debug!("{:?}", e);
+                info!("Use WEKAN_LOG, verbose or WEKAN_BACKTRACE=1.");
                 match e {
                     Error::Core(core) => Self::transform_core_error(core),
                     Error::Cli(cli) => {
@@ -90,12 +85,14 @@ trait ExitCode {
 
             CoreError::Io(io) => {
                 error!("{:?}", io);
-                eprintln!("Config file or Context file not found. Check your WEKAN_PATH.");
+                eprintln!(
+                    "Config file or Context file not found. Check your WEKAN_CLI_CONFIG_PATH."
+                );
                 2
             }
             CoreError::Yaml(yaml) => {
                 error!("{:?}", yaml);
-                eprintln!("Config or Context was not loaded successfully. Delete WEKAN_PATH.");
+                eprintln!("Failed to load config or context. Delete WEKAN_CLI_CONFIG_PATH.");
                 2
             }
         }

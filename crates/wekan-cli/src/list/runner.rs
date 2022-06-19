@@ -96,7 +96,7 @@ impl<'a> Runner<'a> {
                             Err(_e) => Err(CliError::new_msg("List name does not exist").as_enum()),
                         }
                     }
-                    None => Err(CliError::new_msg("List name not supplied.").as_enum()),
+                    None => Err(CliError::new_msg("List name not supplied").as_enum()),
                 },
                 Command::Inspect(i) => match &i.delegate.board_id {
                     Some(_id) => self.run_inspect(&i.id.to_owned()).await,
@@ -104,7 +104,7 @@ impl<'a> Runner<'a> {
                 },
                 Command::Details(_d) => match self.args.name.to_owned() {
                     Some(n) => self.get_lists_or_details(&n).await,
-                    None => WekanResult::new_msg("Board name needs to be supplied.").ok(),
+                    None => WekanResult::new_msg("Board name needs to be supplied").ok(),
                 },
             },
             None => WekanResult::new_workflow("Nothing selected", "Run 'list --help'").ok(),
@@ -121,7 +121,7 @@ impl<'a> Runner<'a> {
             Err(_e) => Vec::<Artifact>::new(),
         };
         self.display
-            .print_artifacts(results, self.format.to_owned())
+            .print_artifacts(results, Some(self.format.to_owned()))
     }
 
     async fn create_list(&self, card_title: String) -> Result<WekanResult, Error> {
@@ -130,9 +130,7 @@ impl<'a> Runner<'a> {
         match client.create::<CreateArtifact, ResponseOk>(&c_a).await {
             Ok(ok) => {
                 trace!("{:?}", ok);
-                WekanResult::new_workflow(
-                    "Successfully created",
-                    "See the details of a list or create a card for it with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]'").ok()
+                WekanResult::new_msg("Successfully created").ok()
             }
             Err(e) => {
                 debug!("{:?}", e);
@@ -218,13 +216,15 @@ impl<'a> Runner<'a> {
             Ok(cards) => {
                 trace!("{:?}", cards);
                 if !cards.is_empty() {
-                    o.get_msg().push_str("Following lists are available:\n");
-                    self.display
-                        .prepare_output(&o.get_msg(), cards, String::from("long"))
+                    self.display.prepare_output(
+                        &(o.get_msg() + "Following cards are available:\n"),
+                        cards,
+                        None,
+                    )
                 } else {
                     WekanResult::new_workflow(
-                        "This list contains no card.",
-                        "Create a card with 'card create --help'",
+                        &(o.get_msg() + "This list contains no card"),
+                        "Create a card with subcommand 'card create --help'",
                     )
                     .ok()
                 }

@@ -124,12 +124,16 @@ impl Runner {
                     Ok(o) => {
                         debug!("CreadCard response");
                         trace!("Created card: {:?}", o);
-                        WekanResult::new_workflow("Card created.", "Move card or update card.").ok()
+                        WekanResult::new_workflow(
+                            "Successfully created",
+                            "Move card or update card",
+                        )
+                        .ok()
                     }
-                    Err(_e) => CliError::new_msg("Card creation failed.").err(),
+                    Err(_e) => CliError::new_msg("Card creation failed").err(),
                 }
             }
-            Err(_e) => CliError::new_msg("List can not be matched to swimlane.").err(),
+            Err(_e) => CliError::new_msg("List can not be matched to swimlane").err(),
         }
     }
 
@@ -148,10 +152,10 @@ impl Runner {
             Ok(card_id) => {
                 debug!("Found card it to remove");
                 match self.client.delete::<ResponseOk>(&card_id).await {
-                    Ok(_o) => WekanResult::new_msg("Delete successfull.").ok(),
+                    Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
                     Err(e) => {
                         trace!("{:?}", e);
-                        CliError::new_msg("Deletion failed").err()
+                        CliError::new_msg("Failed to delete").err()
                     }
                 }
             }
@@ -190,26 +194,24 @@ impl Runner {
                             .await
                         {
                             Ok(_o) => WekanResult::new_workflow(
-                                "Card moved.",
-                                "Update card with more deta2ils.",
+                                "Successfully moved",
+                                "Update card with more details",
                             )
                             .ok(),
-                            Err(_e) => CliError::new_msg("Card update failed.").err(),
+                            Err(_e) => CliError::new_msg("Failed to update").err(),
                         }
                     }
-                    Err(_e) => CliError::new_msg("Card couldn't be found.").err(),
+                    Err(_e) => CliError::new_msg("Card couldn't be found").err(),
                 }
             }
-            _ => CliError::new_msg("List not found.").err(),
+            _ => CliError::new_msg("List not found").err(),
         }
     }
 
     async fn run_update(&mut self, update_args: &Update) -> Result<WekanResult, Error> {
         info!("Update");
         match &update_args.card_file {
-            Some(_c) => {
-                WekanResult::new_workflow("NOT IMPLEMENTED.", "Update explicit fields.").ok()
-            }
+            Some(_c) => WekanResult::new_workflow("NOT IMPLEMENTED", "Update explicit fields").ok(),
             None => {
                 info!("update properties");
                 match self
@@ -249,10 +251,10 @@ impl Runner {
                                 let card = self.client.get_one::<Details>(&card_id).await.unwrap();
                                 self.display.print_most_details(card)
                             }
-                            Err(_e) => CliError::new_msg("Card update failed.").err(),
+                            Err(_e) => CliError::new_msg("Failed to update").err(),
                         }
                     }
-                    Err(_e) => CliError::new_msg("Card couldn't be found.").err(),
+                    Err(_e) => CliError::new_msg("Card couldn't be found").err(),
                 }
             }
         }
@@ -295,7 +297,7 @@ impl CommonRuns for Runner {
         trace!("{:?}", vecs);
         if !vecs.is_empty() {
             self.display
-                .print_artifacts(vecs.to_vec(), self.format.to_owned())
+                .print_artifacts(vecs.to_vec(), Some(self.format.to_owned()))
         } else {
             debug!("No cards have been found.");
             WekanResult::new_workflow("No cards in the list.", "Card create with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]").ok()

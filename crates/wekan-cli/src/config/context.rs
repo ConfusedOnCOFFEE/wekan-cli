@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Set Context")]
+#[clap(version = "0.1.0", about = "Set context")]
 pub struct SetContext {
     /// Context
     pub name: String,
@@ -19,14 +19,14 @@ pub struct SetContext {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Delete Context")]
+#[clap(version = "0.1.0", about = "Remove context")]
 pub struct DeleteContext {
     // Context
     pub name: String,
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Use Context")]
+#[clap(version = "0.1.0", about = "Use context")]
 pub struct UseContext {
     /// Context
     pub name: String,
@@ -72,7 +72,7 @@ impl Context for Client {
             <UserConfig as Butler>::get_default_path() + &delete_context.name + "/config";
         debug!("NC: {}", config_path);
         match tokio::fs::remove_file(config_path).await {
-            Ok(_ok) => WekanResult::new_workflow("Context deleted.", "'config set-context'").ok(),
+            Ok(_ok) => WekanResult::new_workflow("Successfully deleted", "config set-context").ok(),
             Err(_e) => WekanResult::new_msg("Context couldn't be deleted. It doesn't exist.").ok(),
         }
     }

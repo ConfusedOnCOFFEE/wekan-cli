@@ -35,7 +35,7 @@ impl Runner {
                 let path_to_be_deleted = <UserConfig as Butler>::get_default_path() + context;
                 info!("{:?}", path_to_be_deleted);
                 match tokio::fs::remove_dir_all(path_to_be_deleted).await {
-                    Ok(_v) => WekanResult::new_msg("Context and store deleted.").ok(),
+                    Ok(_v) => WekanResult::new_msg("Context and config successfully deleted").ok(),
                     Err(e) => {
                         trace!("{:?}", e);
                         CliError::new_msg("Context removal didn't work").err()
@@ -50,10 +50,10 @@ impl Runner {
         let path_to_be_deleted = <UserConfig as Butler>::get_default_path();
         info!("{:?}", path_to_be_deleted);
         match tokio::fs::remove_dir_all(path_to_be_deleted).await {
-            Ok(_v) => WekanResult::new_msg("wekan-cli config removed.").ok(),
+            Ok(_v) => WekanResult::new_msg("wekan-cli config removed").ok(),
             Err(e) => {
                 trace!("{:?}", e);
-                CliError::new_msg("Path couldn't be deleted. Do it manually please.").err()
+                CliError::new_msg("Path couldn't be deleted. Do it manually please!").err()
             }
         }
     }
@@ -67,7 +67,7 @@ impl BaseCommand<Args, Client> for Runner {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove config or contexts.")]
+#[clap(version = "0.1.0", about = "Remove config or context")]
 pub struct RemoveConfig {
     #[clap(
         requires = "remove_complete",

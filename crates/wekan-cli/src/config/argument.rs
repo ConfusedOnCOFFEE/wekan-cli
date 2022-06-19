@@ -11,7 +11,7 @@ use super::credentials::SetCredentials;
 
 /// Config
 #[derive(ClapArgs, Clone, Debug)]
-#[clap(version = "0.1.0", about = "CLI configuration.")]
+#[clap(version = "0.1.0", about = "CLI configuration")]
 pub struct Args {
     #[clap(subcommand)]
     pub command: Command,
@@ -23,7 +23,7 @@ pub enum Command {
     #[clap(name = "set-credentials")]
     SetCredentials(SetCredentials),
     #[cfg(feature = "store")]
-    #[clap(name = "delete-credentials")]
+    #[clap(name = "remove-credentials")]
     DeleteCredentials(DeleteCredentials),
     #[cfg(feature = "store")]
     #[clap(name = "use-context")]
@@ -32,7 +32,7 @@ pub enum Command {
     #[clap(name = "set-context")]
     SetContext(SetContext),
     #[cfg(feature = "store")]
-    #[clap(name = "delete-context")]
+    #[clap(name = "remove-context")]
     DeleteContext(DeleteContext),
     #[cfg(feature = "store")]
     #[clap(name = "remove")]

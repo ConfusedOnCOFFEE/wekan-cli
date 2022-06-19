@@ -23,7 +23,7 @@ use clap_verbosity_flag::{ErrorLevel, Verbosity};
     author = "ConfusedOnCOFFEE<me@confusedoncoffee.com>",
     version,
     about = "CLI to manage Wekan users, boards, lists, cards...",
-    long_about = "Log in, create contexts and create, update and delete artifacts."
+    long_about = "Log in, create contexts and create, update and delete artifacts"
 )]
 pub struct WekanParser {
     #[clap(flatten)]

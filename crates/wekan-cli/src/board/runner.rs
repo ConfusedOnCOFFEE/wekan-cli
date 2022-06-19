@@ -107,7 +107,8 @@ impl<'a> CommonRunsSimplified for Runner<'a> {
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
-                self.display.print_artifacts(ok, self.format.to_owned())
+                self.display
+                    .print_artifacts(ok, Some(self.format.to_owned()))
             }
             Err(e) => Err(Error::Core(e)),
         }
@@ -137,7 +138,7 @@ impl<'a> CommonRunsSimplified for Runner<'a> {
                     Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
                 }
             }
-            None => Err(CliError::new_msg("Board name not supplied.").as_enum()),
+            None => Err(CliError::new_msg("Board name not supplied").as_enum()),
         }
     }
 }
@@ -166,7 +167,7 @@ impl<'a> Runner<'a> {
                         trace!("{:?}", ok);
                         WekanResult::new_workflow(
                             "Successfully created",
-                            "Create a list with 'list -b <BOARD_NAME> create [LIST_NAME]",
+                            "Create a list with subcommand 'list create --help'",
                         )
                         .ok()
                     }
@@ -198,7 +199,7 @@ impl<'a> Runner<'a> {
                         Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
                     }
                 }
-                None => Err(CliError::new_msg("Board name not supplied.").as_enum()),
+                None => Err(CliError::new_msg("Board name not supplied").as_enum()),
             },
             Command::Inspect(i) => {
                 let board = client.get_one::<Details>(&i.id).await.unwrap();
@@ -230,19 +231,21 @@ impl<'a> Runner<'a> {
             config: self.client.config.clone(),
         };
         match query
-            .inquire(AType::Board, Some(board_id), None, false)
+            .inquire(AType::List, Some(board_id), None, false)
             .await
         {
             Ok(lists) => {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {
-                    o.get_msg().push_str("Following lists are available:\n");
-                    self.display
-                        .prepare_output(&o.get_msg(), lists, String::from("long"))
+                    self.display.prepare_output(
+                        &(o.get_msg() + "Following lists are available:\n"),
+                        lists,
+                        None,
+                    )
                 } else {
                     WekanResult::new_workflow(
-                        "This boards contains no lists.",
-                        "Create a list with 'list -b <BOARD_NAME> create [CARD_NAME]'",
+                        &(o.get_msg() + "This boards contains no lists"),
+                        "Create a list with subcommand 'list create --help'",
                     )
                     .ok()
                 }

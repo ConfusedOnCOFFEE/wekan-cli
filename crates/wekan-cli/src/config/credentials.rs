@@ -21,7 +21,7 @@ use rpassword;
 use std::fs;
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Set credentials.")]
+#[clap(version = "0.1.0", about = "Set credentials")]
 pub struct SetCredentials {
     /// User
     pub user: String,
@@ -38,7 +38,7 @@ pub struct SetCredentials {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Copy, Clone)]
-#[clap(version = "0.1.0", about = "Delete credentails")]
+#[clap(version = "0.1.0", about = "Remove credentails")]
 pub struct DeleteCredentials {}
 
 #[async_trait]
@@ -89,7 +89,7 @@ impl Authenticate for Client {
         {
             Ok(t) => {
                 trace!("{:?}", t);
-                WekanResult::new_workflow("Login succesful.", "board ls").ok()
+                WekanResult::new_workflow("Succesfully logged in", "board ls").ok()
             }
             e => {
                 println!("{:?}", e);
@@ -131,8 +131,8 @@ impl ClearConfig for Client {
             Ok(ok) => {
                 debug!("{:?}", ok);
                 WekanResult::new_workflow(
-                    "Logout succesful. Config deleted.",
-                    "'login [USER] [HOST] <POST>",
+                    "Successfully logged out and credentials successfully deleted",
+                    "'login --host <HOST> [USER]'",
                 )
                 .ok()
             }
