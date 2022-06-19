@@ -4,79 +4,108 @@ flow=$1
 selection=$2
 all_args="${@:2}"
 os_type=$(uname)
-# Spin up testing environment.
-echo "Quiet e2e docker-compose command."
-crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
 
 # Run tests with different crates including the available features.
 function test_crates() {
     echo "Run test ${1}"
     cd $script_dir
-    if [ "${1}" == "cli" ]; then
-        cd crates/wekan-cli
-        cargo test
-        cargo test --features store
-    elif [ "${1}" == "core" ]; then
-        cd crates/wekan-core
-        cargo test
-        cargo test  --features store
-    else
-        test_crates cli
-        test_crates core
-    fi
+    case "$1" in
+        "cli")
+            run_test wekan-cli
+            ;;
+        "cli-store")
+            cd crates/wekan-cli
+            cargo test --features store
+            ;;
+        "core")
+            run_test wekan-core
+            cargo test  --features store
+            ;;
+        *)
+            run_test wekan-cli
+            cargo test  --features store
+            cd ../../
+            run_test wekan-core
+            cargo test  --features store
+            ;;
+    esac
+}
+
+function run_test() {
+    cd crates/$1
+    cargo test
 }
 
 # Run E2E tests and show results.
 function e2e() {
-    echo "Run e2e ${1}"
+    echo "Run e2e $1"
     cd $script_dir
-    if [ "${1}" == "ab" ]; then
-        cd crates/wekan-cli
-        cargo build --features integration
-        cd ./e2e
-        ./e2e.sh ab
-    elif [ "${1}" == "c" ]; then
-        e2e ab
-        e2e rerun
-    elif [ "${1}" == "rerun" ]; then
-        cd crates/wekan-cli/e2e
-        ./e2e.sh rerun
-        echo "Sleeping 5 seconds so the test can run."
-        sleep 5
-        echo "Trying to present results:"
-        docker logs wekan-cli
-    elif [ "${1}" == "l" ]; then
-        docker logs wekan-cli
-    else
-        e2e ab
-    fi
+    case "$1" in
+        "c")
+            run_e2e
+            e2e rerun
+            ;;
+        "rerun")
+            cd crates/wekan-cli/e2e
+            ./e2e.sh rerun
+            echo "Sleeping 5 seconds so the test can run."
+            sleep 5
+            echo "Trying to present results:"
+            docker logs wekan-cli
+            ;;
+        "l")
+            docker logs wekan-cli
+            ;;
+        *)
+            run_e2e
+            ;;
+    esac
 }
+
+function run_e2e() {
+    # Spin up testing environment.
+    echo "Quiet e2e docker-compose command"
+    crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
+    cd crates/wekan-cli
+    cargo build --features integration
+    cd ./e2e
+    ./e2e.sh ab
+}
+
 
 # Clippy all crates
 function clippy() {
     echo "Run clippy ${1}"
     cd $script_dir
-    if [ "${1}" == "cli" ]; then
-        cd crates/wekan-cli
-        cargo clippy -- -Dwarnings
-        cargo clippy --features store -- -Dwarnings
-    elif [ "${1}" == "core" ]; then
-        cd crates/wekan-core
-        cargo clippy -- -Dwarnings
-        cargo clippy --features store -- -Dwarnings
-    elif [ "${1}" == "common" ]; then
-        cd crates/wekan-common
-        cargo clippy -- -Dwarnings
-    elif [ "${1}" == "macro" ]; then
-        cd crates/wekan-core-derive
-        cargo clippy -- -Dwarnings
-    else
-        clippy cli
-        clippy core
-        clippy common
-        clippy macro
-    fi
+    case "$1" in
+        "cli")
+            run_clippy wekan-cli
+            cargo clippy --features store -- -Dwarnings
+            ;;
+        "core")
+            run_clippy wekan-core
+            cargo clippy --features store -- -Dwarnings
+            ;;
+        "common")
+            run_clippy wekan-common
+            ;;
+        "macro")
+            run_clippy wekan-core-derive
+            ;;
+        *)
+            clippy cli
+            clippy core
+            clippy common
+            clippy macro
+            ;;
+    esac
 }
+
+function run_clippy() {
+    cd crates/$1
+    cargo clippy -- -Dwarnings
+}
+
 
 
 # Cmt all crates
@@ -101,39 +130,50 @@ function fmt() {
 function release() {
     echo "Release ${1}"
     cd $script_dir
-    if [ "${1}" == "apple" ]; then
-        cd crates/wekan-cli
-        cargo build -r --target aarch64-apple-darwin
-        cargo build -r --target x86_64-apple-darwin
-    elif [ "${1}" == "linux" ]; then
-        cd crates/wekan-cli
-        cargo build -r --target x86_64-unknown-linux-gnu
-    elif [ "${1}" == "windows" ]; then
-        cd crates/wekan-cli
-        cargo build -r --target x86_64-pc-windows-gnu
-    else
-        cd crates/wekan-cli
-        cargo build -r
-    fi
+    case "$1" in
+        "apple")
+            cd crates/wekan-cli
+            cargo build -r --target aarch64-apple-darwin
+            cargo build -r --target x86_64-apple-darwin
+            ;;
+        "linux")
+            cd crates/wekan-cli
+            cargo build -r --target x86_64-unknown-linux-gnu
+            ;;
+        "windows")
+            cd crates/wekan-cli
+            cargo build -r --target x86_64-pc-windows-gnu
+            ;;
+        *)
+            cd crates/wekan-cli
+            cargo build -r
+            ;;
+    esac
 }
 
 
 # Run wekan-cli with cargo run.
 function run() {
     cd $script_dir
-    if [ "${1}" == "cli" ]; then
-        echo "Run: ${1} with ${all_args}"
-        cd crates/wekan-cli
-        cargo run -- ${all_args}
-    elif [ "${1}" == "cli-store" ]; then
-        echo "Run: ${1} with ${all_args}"
-        cd crates/wekan-cli
-        cargo run --features store -- ${all_args}
-    elif [ "${1}" == "container" ]; then
-        docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
-    else
-        run cli-store
-    fi
+    case "$1" in
+        "cli")
+            echo "Run: $1 with $all_args"
+            cd crates/wekan-cli
+            cargo run -- ${all_args}
+            ;;
+        "cli-store")
+            echo "Run: $1 with $all_args"
+            cd crates/wekan-cli
+            cargo run --features store -- $all_args
+            ;;
+        "container")
+            docker run -d --name wekan-cli --network e2e_wekan-e2e-tier concafe/wekan-cli:release /bin/bash
+            exit $?
+            ;;
+        *)
+            run cli-store
+            ;;
+    esac
 }
 
 
@@ -147,23 +187,51 @@ function mozilla_gcov() {
     fi
     cd crates/wekan-cli
     rustup component add llvm-tools-preview
-    RUSTFLAGS="-Cinstrument-coverage"
-    cargo build
-    LLVM_PROFILE_FILE="your_name-%p-%m.profraw"
-    cargo test
-    grcov . -s . --binary-path ./target/debug/ -t html \
-          --branch --ignore-not-existing -o ./target/debug/coverage/
-    if [ "$?" == "0" ]; then
-        case "$os_type" in
-            "Darwin")
-                # Opening with Safari as default choice. Please Firefox :)
-                open -a Safari ./target/debug/coverage/index.html
-                ;;
-            "*")
-                echo "Open ${pwd}/target/debug/coverage/index.html in the browser of your choice"
-                ;;
-        esac
-    fi
+    case "$1" in
+        "gen")
+            grcov . -s .  --binary-path ./target/debug/ -t html \
+                  --branch --ignore-not-existing -o ./target/debug/coverage/
+            delete_llvm_profile
+            if [ "$?" == "0" ]; then
+                case "$os_type" in
+                    "Darwin")
+                        # Opening with Safari as default choice. use Please Firefox :)
+                        open "$script_dir/crates/wekan-cli/target/debug/coverage/index.html"
+                        ;;
+                    "*")
+                        echo "Open $script_dir/crates/wekan-cli/target/debug/coverage/index.html"
+                        ;;
+                esac
+            fi
+            ;;
+        "clear")
+            delete_llvm_profiles
+            ;;
+        *)
+            echo "Make sure, to clean the ENV variables after the run, so you don't have sidefects."
+            echo "Please run these commands in the root directory:"
+            export_flag_cargo_build='echo "Set RUSTFLAGS" && export RUSTFLAGS="-Cinstrument-coverage"'
+            change_directory='cd crates/wekan-cli'
+            cargo_build='cargo build --features store'
+            export_flag_llvm_profile='echo "Set LLVM_PROFILE_FILE" && export LLVM_PROFILE_FILE="llvm-profile-%p-%m.profraw"'
+            cargo_test='cargo test --features store'
+            export_clear='export RUSTFLAGS= && export LLVM_PROFILE_FILE='
+            echo -e "$export_flag_cargo_build && \n $change_directory && \n $cargo_build && \n $export_flag_llvm_profile && \n $cargo_test && \n cd ../../ && ./manager.sh cov gen && \n echo 'Clear ENV variables' && \n $export_clear"
+            ;;
+    esac
+}
+
+function delete_llvm_profile () {
+    echo "Cleaning up generated files"
+    cd $script_dir
+    rm default.profraw 2>/dev/null
+    rm llvm-profile*.profraw 2>/dev/null
+    cd crates/wekan-cli
+    rm default.profraw 2>/dev/null
+    rm llvm-profile*.profraw 2>/dev/null
+    cd "$script_dir/crates/wekan-core"
+    rm default.profraw 2>/dev/null
+    rm llvm-profile*.profraw 2>/dev/null
 }
 
 # ------ OUTDATED OR NOT WORKING ----
@@ -213,58 +281,58 @@ function lcov_coverage() {
 
 # Decide which flow to run.
 case $flow in
+    "b"|"build")
+        cd crates/wekan-cli
+        echo "Build without feature"
+        cargo build
+        echo "Build feture store"
+        cargo build --features store
+        echo "Build integration"
+        cargo build --features integration
+        ;;
+    "b:target")
+        release $selection
+        ;;
+    "c"|"clippy")
+        clippy $selection
+        ;;
+    "cov"|"lcov")
+        mozilla_gcov $selection
+        ;;
     "d"|"dev")
         cd crates/wekan-cli
         export EMACSSAVEMODEDIR=.
         emacs
-        exit
-        ;;
-    "t"|"test")
-        test_crates $selection
-        exit
-        ;;
-    "b")
-        cd crates/wekan-cli
-        cargo build --verbose
-        exit
         ;;
     "d:b")
         docker build -t concafe/wekan-cli:release .
-        exit
-        ;;
-    "f"|"fmt")
-        fmt
-        exit
-        ;;
-    "c"|"clippy")
-        clippy $selection
-        exit
-        ;;
-    "cov"|"lcov")
-        mozilla_gcov
-        exit
-        ;;
-    "qa")
-        ./manager.sh fmt
-        ./manager.sh clippy
-        ./manager.sh t
-        exit
-        ;;
-    "release")
-        release $selection
-        exit
-        ;;
-    "r"|"run")
-        run $selection
-        exit
         ;;
     "e"|"e2e"|"2e"|"2ee")
         e2e $selection
-        exit
+        ;;
+    "f"|"fmt")
+        fmt
+        ;;
+    "r"|"run")
+        run $selection
+        ;;
+    "r:s")
+        run cli-store
+        ;;
+    "t"|"test")
+        test_crates $selection
+        ;;
+    "ts")
+        test_crates cli-store
+        ;;
+    "qa")
+        fmt
+        clippy
+        t
+        e2e
         ;;
     *)
-        echo -e "Nothing selected."
-        exit
+        echo "Nothing selected"
         ;;
 esac
-echo "Flow done."
+exit $?
