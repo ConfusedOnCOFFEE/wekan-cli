@@ -1,4 +1,15 @@
-# TODO
+# Backlog
+
+- Currently there is not a good way on when a name argument is expected or not. I want to change that and make it more transparent and coherent in all subcommand but this takes time.
+- Return messages schema.
+- Exit and error codes are random.
+- Apply all traits (CommonRunner, SubcommandRunner...) to the Runners.
+- Remove vector in Display.
+- Remove format field in runners.
+- Better LOG LEVEL design.
+
+
+# Backlog (Missing features against API)
 
 - Fix table view.
 - Labels for card update doesn't work. Somehow the parsing panics or my derive is bad.

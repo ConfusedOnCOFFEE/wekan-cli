@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This script allows to run E2E tests and communicate with containers and cargo.
+# Comfortable rerun, build and inspect the result of a test run.
+
 docker-compose up -d
 if [ "$1" == "ab" ]; then
     echo "docker build"

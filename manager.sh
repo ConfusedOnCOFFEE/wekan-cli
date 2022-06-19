@@ -1,10 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 flow=$1
 selection=$2
 all_args="${@:2}"
+
+# Spin up testing environment.
 echo "Quiet e2e docker-compose command."
 crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
+
+# Run tests with different crates including the available features.
 function test_crates() {
     echo "Run test ${1}"
     cd $script_dir
@@ -22,6 +26,7 @@ function test_crates() {
     fi
 }
 
+# Run E2E tests and show results.
 function e2e() {
     echo "Run e2e ${1}"
     cd $script_dir
@@ -46,6 +51,8 @@ function e2e() {
         e2e ab
     fi
 }
+
+# Clippy all crates
 function clippy() {
     echo "Run clippy ${1}"
     cd $script_dir
@@ -72,6 +79,7 @@ function clippy() {
 }
 
 
+# Cmt all crates
 function fmt() {
     echo "fmt crates"
     cd $script_dir
@@ -88,6 +96,8 @@ function fmt() {
     cargo fmt
 }
 
+
+# Build release artifact for specified platforms.
 function release() {
     echo "Release ${1}"
     cd $script_dir
@@ -108,6 +118,7 @@ function release() {
 }
 
 
+# Run wekan-cli with cargo run.
 function run() {
     cd $script_dir
     if [ "${1}" == "cli" ]; then
@@ -125,6 +136,8 @@ function run() {
     fi
 }
 
+
+# Decide which flow to run.
 case $flow in
     "d"|"dev")
         cd crates/wekan-cli

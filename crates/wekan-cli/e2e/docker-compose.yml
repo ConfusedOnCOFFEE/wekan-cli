@@ -1,5 +1,9 @@
+# No personal credit.
+# Taken from here and adapted:
+# https://github.com/wekan/wekan/blob/master/docker-compose.yml
 version: '2'
 services:
+  # ---- !!!!!! This doesn't work !!!! ----
   # wekancli:
   #   image: concafe/wekan-cli:0.0.1
   #   container_name: wekan-cli

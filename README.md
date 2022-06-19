@@ -45,7 +45,7 @@ SUBCOMMANDS:
 ```
 
 
-## Features
+# Features
 
 - Login via prompt, can be insecure as well or localhost.
 - Set context to have multiple WEKAN hosts.
@@ -64,7 +64,7 @@ SUBCOMMANDS:
 - `table` subcommand tires to build a table, but it doesn't work yet.
 
 
-## View
+# View
 
 By default, we will show table style, highly inspired by Docker. The detail view also has date information.
 
@@ -74,159 +74,74 @@ ID    TITLE
 ```
 
 
-## Architecture
+# ARCHITECTURE
 
-This repo contains three crates.
-
-- wekan-cli uses clap to build a CLI with the help of derive API
-- wekan-core uses mostly reqwest crate to do the heavy lifting of http requests.
-- wekan-common keeps all the structs comming from the Wekan API and structs to build bodies for requests.
-
-Motivation:
-
-Not so sure, if that is a good way right now, but it could help if I upgrade to a new API version. Also wekan-core can be reused and not use it with the CLI.
+Please take a look in [DEVELOPMENT](./DEVELOPMENT.md).
 
 
-## BACKLOG (not sorted)
+# INSTALL
 
-- Currently there is not a good way on when a name argument is expected or not. I want to change that and make it more transparent and coherent in all subcommand but this takes time.
-- Return messages schema.
-- Exit and error codes are random.
-- Apply all traits (CommonRunner, SubcommandRunner...) to the Runners.
-- Remove vector in Display.
-- Remove format field in runners.
+Download the binary from the release page or clone the repository and build it yourself.
+Afterwards you get binary in crates/wekan-cli/target/release/${platform}/wekan-cli to use.
 
-## ENV VARIABLES
+# BUILD 
 
-### USAGE
+
+- Clone the repo
+- `cd wekan-cli/crates/wekan-cli` in the directory
+- Run:
+- - `cargo build -r --features store` and move it where you want ti.
+- - `cargo install --features store` and use it.
+
+# ENV VARIABLES
+
+The CLI places everything inside WEKAN_CLI_CONFIG_PATH.
+
+## USAGE
 
 - WEKAN_CLI_CONFIG_PATH sets the config_path. If you don't like $HOME/.config/wekan, you can change it.
 
-### LOGGING
+## LOGGING
 
 - WEKAN_LOG prints logging messages.
 - WEKAN_BACKTRACE also printss external crates module messages.
 - WEKAN_LOG_MFILTER allows to filter the logs, based on the modules.
 
-All the ENV variables can be used in any combination, but MFILTER only filters non-third party modules.
+All the ENV variables can be used in any combination, but MFILTER only filters wekan-* modules.
 
 
 ## DEVELOPMENT
 
-Quick test access. Please it in $HOME/.cargo/config.
-
-```
-[alias]
-t = "test -- --nocapture --color always"
-ts = "test --features store -- --nocapture --color always"
-```
+[DEVELOPMENt](.DEVELOPMENT.md)
 
 ## TESTS
 
+## Unittests
+
+`cargo run test` for wekan-cli and wekan-core. WekanCommon doesn't need tests.
+
+
 ### E2E
 
-I call E2E, the one, who are tested against an isolated environment, which cleans itself up after each run.
-
-`./manager e2e` does exacly that. But first you need to create a user. Change directory to crates/wekan-cli/e2e and run `docker-compose up -d`. Visit `http://localhost:9999`and register a user. If you don't want to change everything, use testuser:testuser123.
-If you have done this, you can run `./manager.sh e2e` and at the end, you can run `docker logs wekan-cli`. Hopefully, it will look like this:
-
-```sh
-STDOUT: Login success.
-STDERR: Login success.
-STDOUT: BOARD success.
-STDERR: BOARD success.
-STDOUT: LIST success.
-STDERR: LIST success.
-STDOUT: CARD success.
-STDERR: CARD success.
-STDOUT: DESCRIBE success.
-STDERR: DESCRIBE success.
-STDOUT: CONTEXT success.
-STDERR: CONTEXT success.
-STDOUT: DELETE success.
-STDERR: DELETE success.
-STDOUT: CONFIG success.
-STDERR: CONFIG success
-```
-
+[E2E](./E2E.md)
 
 ### Coverage
 
+[COVERAGE](./COVERAGE.md)
 
-#### GRCOV
-
-[GRCOV](https://github.com/mozilla/grcov)
-
-Build: `rustup component add llvm-tools-preview`
-Export: `export RUSTFLAGS="-Cinstrument-coverage"`
-
-
-#### KCOV
-
-Install:
-
-```basg
-apt-get install libcurl4-openssl-dev libelf-dev libdw-dev cmake gcc
-```
-
-Build KCOV:
-
-```bash
-wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz
-tar xzf master.tar.gz
-cd kcov-master
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
-```
-
-Collect coverage:
-
-```bash
-cargo test --no-run
-kcov target/cov target/debug/$TEST_EXECUTABLE
-```
-
-
-Thx to [lifthrasiir](https://users.rust-lang.org/u/lifthrasiir/summary)
-
-```bash
-#!/bin/bash
-PKGID="$(cargo pkgid)"
-[ -z "$PKGID" ] && exit 1
-ORIGIN="${PKGID%#*}"
-ORIGIN="${ORIGIN:7}"
-PKGNAMEVER="${PKGID#*#}"
-PKGNAME="${PKGNAMEVER%:*}"
-shift
-cargo test --no-run || exit $?
-EXE=($ORIGIN/target/debug/$PKGNAME-*)
-if [ ${#EXE[@]} -ne 1 ]; then
-    echo 'Non-unique test file, retrying...' >2
-    rm -f ${EXE[@]}
-    cargo test --no-run || exit $?
-fi
-rm -rf $ORIGIN/target/cov
-kcov $ORIGIN/target/cov $ORIGIN/target/debug/$PKGNAME-* "$@"
-```
-
-- [Reference](https://users.rust-lang.org/t/tutorial-how-to-collect-test-coverages-for-rust-project/650)
-- [Github](https://github.com/mozilla/grcov)
 
 ## THANK YOU
 
 Obviously, a lot of the usually research and thanks for the wonderful documentation from the RUST community, the rust book and especially the RUST compiler.  <3
 
 
-## REFERENCES
+# REFERENCES
 
 - [WekanAPI v6.11](https://wekan.github.io/api/v6.11/#wekan-rest-api)
 - [Wekan open-source Kanban](https://wekan.github.io/)
 - [Github Wekan](https://github.com/wekan/wekan)
 
 
-## LICENSE
+# LICENSE
 
-Based on RUST, this project uses Apache and MIT license, please see the files [LICENSE-APACHE](./LICENSE-APACHE), [LICENSE-MIT](./LICENSE-MIT).
+Based on RUST and different crates. This project uses Apache and MIT license, please see the files [LICENSE-APACHE](./LICENSE-APACHE) and [LICENSE-MIT](./LICENSE-MIT).
