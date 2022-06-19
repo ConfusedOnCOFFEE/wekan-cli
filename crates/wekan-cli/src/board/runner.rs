@@ -229,7 +229,10 @@ impl<'a> Runner<'a> {
         let query = Query {
             config: self.client.config.clone(),
         };
-        match query.inquire(AType::Board, Some(board_id), None).await {
+        match query
+            .inquire(AType::Board, Some(board_id), None, false)
+            .await
+        {
             Ok(lists) => {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {

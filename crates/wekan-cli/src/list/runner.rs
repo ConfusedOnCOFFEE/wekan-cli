@@ -212,7 +212,7 @@ impl<'a> Runner<'a> {
             config: self.client.config.clone(),
         };
         match query
-            .inquire(AType::Card, Some(board_id), Some(list_id))
+            .inquire(AType::Card, Some(board_id), Some(list_id), false)
             .await
         {
             Ok(cards) => {

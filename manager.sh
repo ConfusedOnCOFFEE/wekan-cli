@@ -328,7 +328,7 @@ case $flow in
     "qa")
         fmt
         clippy
-        t
+        test_crates
         e2e
         ;;
     *)

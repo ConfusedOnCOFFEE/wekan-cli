@@ -258,26 +258,37 @@ impl CliDisplay {
     >(
         &mut self,
         lists: Vec<T>,
-        mut cards: Vec<Vec<T>>,
+        cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
         let mut output = String::new();
+        let mut longest_card_name = String::new();
+        let longest_cards: &Vec<T>;
+        cards.iter().for_each(|x| {
+            longest_card_name.push_str(
+                &x.iter()
+                    .max_by(|p, n| cmp_by_length(&p.get_title(), &n.get_title()))
+                    .unwrap()
+                    .get_title(),
+            );
+        });
+        longest_cards = cards
+            .iter()
+            .max_by(|p, n| cmp_vec(p.len(), n.len()))
+            .unwrap();
         lists
             .iter()
-            .for_each(|x| output.push_str(&self.format(&x.get_title(), 3)));
+            .for_each(|x| output.push_str(&self.format(&x.get_title(), longest_card_name.len())));
         output.push('\n');
         if !cards.is_empty() {
-            let mut iterator = cards.iter_mut();
-            loop {
-                match iterator.next() {
-                    Some(r) => {
-                        trace!("{:?}", r);
-                        if !r.is_empty() {
-                            let next_card = r.remove(0);
-                            output.push_str(&self.format(&next_card.get_title(), 3))
-                        }
-                    }
-                    None => break,
+            for (i, _x) in longest_cards.iter().enumerate() {
+                for c in &cards {
+                    let next_card = match c.get(i) {
+                        Some(next_card_available) => next_card_available.get_title(),
+                        None => " ".repeat(longest_card_name.len()),
+                    };
+                    output.push_str(&self.format(&next_card, longest_card_name.len()));
                 }
+                output.push('\n');
             }
         };
         WekanResult::new_msg(&output.finish_up()).ok()
@@ -294,6 +305,16 @@ fn cmp_by_length(x: &str, y: &str) -> Ordering {
     }
 }
 
+fn cmp_vec(x: usize, y: usize) -> Ordering {
+    if x > y {
+        return Ordering::Greater;
+    };
+    if x == y {
+        Ordering::Equal
+    } else {
+        Ordering::Less
+    }
+}
 fn safely_unwrap_date(d: &str) -> String {
     match d.split_once('T') {
         Some(e) => e.0.to_string(),

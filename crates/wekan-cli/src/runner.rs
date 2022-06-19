@@ -245,16 +245,19 @@ impl<'a> Runner {
             .find_board_id(&table_args.name, &table_args.filter)
             .await
         {
-            Ok(board_id) => match query.inquire(AType::List, Some(&board_id), None).await {
+            Ok(board_id) => match query
+                .inquire(AType::List, Some(&board_id), None, true)
+                .await
+            {
                 Ok(lists) => {
-                    trace!("{:?}", lists);
+                    trace!("Lists: {:?}", lists);
                     let mut iterator = lists.iter();
                     let mut cards_of_lists = Vec::new();
                     if !lists.is_empty() {
                         for r in iterator.by_ref() {
                             trace!("List: {:?}", r.get_id());
                             match query
-                                .inquire(AType::Card, Some(&board_id), Some(&r.get_id()))
+                                .inquire(AType::Card, Some(&board_id), Some(&r.get_id()), true)
                                 .await
                             {
                                 Ok(cards) => {

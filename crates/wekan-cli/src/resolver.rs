@@ -35,7 +35,7 @@ impl Query {
     ) -> Result<String, Error> {
         info!("find_card_id");
         let cards = match self
-            .inquire(AType::Card, Some(board_id), Some(list_id))
+            .inquire(AType::Card, Some(board_id), Some(list_id), false)
             .await
         {
             Ok(o) => Ok(o),
@@ -54,7 +54,10 @@ impl Query {
         order: &Option<String>,
     ) -> Result<String, Error> {
         info!("find_swimlane_id");
-        let swimlane = match self.inquire(AType::Swimlane, Some(board_id), None).await {
+        let swimlane = match self
+            .inquire(AType::Swimlane, Some(board_id), None, false)
+            .await
+        {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
@@ -73,7 +76,7 @@ impl Query {
         order: &Option<String>,
     ) -> Result<String, Error> {
         info!("find_list_id");
-        let boards = match self.inquire(AType::List, Some(board_id), None).await {
+        let boards = match self.inquire(AType::List, Some(board_id), None, false).await {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
@@ -90,7 +93,7 @@ impl Query {
         order: &Option<String>,
     ) -> Result<String, Error> {
         info!("find_board_id");
-        let boards = match self.inquire(AType::Board, None, None).await {
+        let boards = match self.inquire(AType::Board, None, None, false).await {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
@@ -106,6 +109,7 @@ impl Query {
         artifact_variant: AType,
         board_id: Option<&str>,
         list_id: Option<&str>,
+        _fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
         self.fulfill_inquiry(artifact_variant, board_id, list_id)
             .await
@@ -117,9 +121,10 @@ impl Query {
         artifact_variant: AType,
         board_id: Option<&str>,
         list_id: Option<&str>,
+        fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
-        if self.deny_store_usage {
-            info!("Store disabled");
+        if self.deny_store_usage || fresh_request {
+            info!("Store disabled or fresh_request");
             self.fulfill_inquiry(artifact_variant, board_id, list_id)
                 .await
         } else {
@@ -130,13 +135,15 @@ impl Query {
                 },
                 None => String::new(),
             };
+            trace!("Joined ids: {}", join_ids);
             match self
                 .lookup_artifacts(artifact_variant.clone(), &join_ids)
                 .await
             {
                 Ok(o) => match o.age.parse::<DateTime<Utc>>() {
                     Ok(t) => {
-                        trace!("{:?}", o.payload);
+                        trace!("Payload: {:?}", o.payload);
+                        trace!("Minutes: {} - {}", t.minute(), Utc::now().minute());
                         match artifact_variant {
                             AType::Board => {
                                 if Utc::now().hour() > t.hour() + 1 {
@@ -149,7 +156,7 @@ impl Query {
                                 }
                             }
                             AType::List => {
-                                if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 15 {
+                                if Utc::now().minute() > t.minute() + 15 {
                                     debug!("New request");
                                     self.fulfill_inquiry(artifact_variant, board_id, list_id)
                                         .await
@@ -159,7 +166,7 @@ impl Query {
                                 }
                             }
                             AType::Card => {
-                                if t.minute() + 2 > 60 || Utc::now().minute() > t.minute() + 5 {
+                                if Utc::now().minute() > t.minute() + 5 {
                                     debug!("New request");
                                     self.fulfill_inquiry(artifact_variant, board_id, list_id)
                                         .await
@@ -514,7 +521,10 @@ mod tests {
         let query = Query::mock();
         #[cfg(feature = "store")]
         let query = Query::mock(false);
-        let mut res = query.inquire(AType::Board, None, None).await.unwrap();
+        let mut res = query
+            .inquire(AType::Board, None, None, false)
+            .await
+            .unwrap();
         assert_eq!(res.get_title(), "s");
         #[cfg(not(feature = "store"))]
         assert_eq!(res.remove(0).get_id(), "fake-board-id-1");

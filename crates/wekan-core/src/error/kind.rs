@@ -6,7 +6,7 @@ pub enum Error {
     Http(ReqError),
     Constraint(Constraint),
     Io(std::io::Error),
-    Yaml(serde_yaml::Error)
+    Yaml(serde_yaml::Error),
 }
 
 impl From<ReqError> for Error {
