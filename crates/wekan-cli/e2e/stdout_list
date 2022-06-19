@@ -11,7 +11,6 @@ OPTIONS:
     -b, --board <BOARD>    Board name
     -h, --help             Print help information
     -q, --quiet            Less output per occurrence
-    -r, --raw              Show the details of the object
     -v, --verbose          More output per occurrence
     -V, --version          Print version information
 
@@ -23,34 +22,29 @@ SUBCOMMANDS:
     ls         List Artifacts
     rm         Remove artifact
 ID    TITLE
-----
 
-The next recommended workflows:
-Get or update details of an artifact.
-New List created.
-The next recommended workflows:
-See the details of a list or create a card for it with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]'
+----
+Recommended workflow: Get or update details of an artifact
+Successfully created
 ID    TITLE
 AAAA  Test
+
 ----
-
-The next recommended workflows:
-Get or update details of an artifact.
-
+Recommended workflow: Get or update details of an artifact
 ID           TITLE        MODIFIED_AT  CREATED_AT
-AAAA   Test
+AAAA         Test
+----
+This list contains no card
+Recommended workflow: Create a card with subcommand 'card create --help'
+ID           TITLE        MODIFIED_AT  CREATED_AT
+AAAA         Test
+----
 Following lists are available:
 ID    TITLE
-AAAA  Templates
 AAAA  Test
+
 ----
-
-The next recommended workflows:
-Get or update details of an artifact.
-
+Recommended workflow: Get or update details of an artifact
 ID           TITLE        MODIFIED_AT  CREATED_AT
-AAAA  Test
+AAAA         Test
 ----
-
-The next recommended workflows:
-Nothing to recommend. Suggestions?

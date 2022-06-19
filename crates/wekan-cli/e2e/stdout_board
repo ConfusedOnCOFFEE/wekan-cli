@@ -21,24 +21,19 @@ SUBCOMMANDS:
     inspect    Describe artifact by id
     ls         List Artifacts
     rm         Remove artifact
-New board created.
-The next recommended workflows:
-Create a list with 'list -b <BOARD_NAME> create [LIST_NAME]
+Successfully created
+Recommended workflow: Create a list with subcommand 'list create --help'
 ID    TITLE
 AAAA  Templates
 AAAA  Test
+
 ----
-
-The next recommended workflows:
-Get or update details of an artifact.
-
-ID     TITLE   MODIFIED AT   CREATED AT
-AAAA   Test
-Following lists are available:
-ID    TITLE
-AAAA  Templates
-AAAA  Test
+Recommended workflow: Get or update details of an artifact
+ID           TITLE        MODIFIED_AT  CREATED_AT
+AAAA         Test
 ----
-
-The next recommended workflows:
-Get or update details of an artifact.
+This boards contains no lists
+Recommended workflow: Create a list with subcommand 'list create --help'
+ID           TITLE        MODIFIED_AT  CREATED_AT
+AAAA         Test
+----

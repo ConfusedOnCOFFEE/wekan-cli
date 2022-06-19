@@ -1,8 +1,9 @@
 FROM concafe/wekan-cli:integration
 
+RUN rm -rf /usr/src/myapp/crates/wekan-cli/e2e
 COPY crates/wekan-cli/e2e /usr/src/myapp/crates/wekan-cli/e2e
-WORKDIR /usr/src/myapp/crates/wekan-cli
+WORKDIR /usr/src/myapp/crates/wekan-cli/e2e
 ENV WEKAN_URL=wekan-e2e-app:8080
 ENV WEKAN_USER=testuser
 ENV WEKAN_PWD=testuser123
-CMD ["e2e/entrypoint.sh"]
+CMD ["entrypoint.sh"]

@@ -2,35 +2,45 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
-exec 2>&1
 script_home="$( cd "$( dirname "${BASH_SOURCE[0]}" ) " > /dev/null 2>&1 && pwd )"
+sleep 5
+exec 2>&1
+success=SUCCESS
+failed=FAILED
+
 result() {
-    if diff test_stdout $2; then
-        printf "STDOUT: ${GREEN}${1} success.\n${NC}"
-    else
-        printf "STDOUT: ${RED}ERROR: ${1} failed.\n${NC}"
-    fi
-    if diff test_stderr $3; then
-        printf "STDERR: ${GREEN}${1} success.\n${NC}"
-    else
-        printf "STDERR: ${RED}ERROR: ${1} failed.\n${NC}"
-    fi
+    diff_channels $1 $2 $3
     rm test_stderr
     rm test_stdout
 }
 
+diff_channels() {
+    std_out_msg=`echo "stdout - ${1}" | tr '[:lower:]' '[:upper:]'`
+    std_err_msg=`echo "stderr - ${1}" | tr '[:lower:]' '[:upper:]'`
+    diff_and_print_result "$std_out_msg" test_stdout $2
+    diff_and_print_result "$std_err_msg" test_stderr $3
+}
+
+diff_and_print_result() {
+    if diff $2 $3; then
+        printf "${GREEN}$success ${NC}$1\n"
+    else
+        printf "${RED}$failed ${NC}$1\n"
+    fi
+}
+
 board() {
-    for cmd_to_run in 'wekan-cli board --help' 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board Test'
+    for cmd_to_run in 'wekan-cli board --help' 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board Test' 'wekan-cli board Test details'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
 list() {
-   for cmd_to_run in 'wekan-cli list --help' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli board Test' 'wekan-cli board Test details'
-   do
-       $cmd_to_run >>test_stdout 2>>test_stderr
-   done
+    for cmd_to_run in 'wekan-cli list --help' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test Test details' 'wekan-cli board Test' 'wekan-cli board Test details'
+    do
+        $cmd_to_run >>test_stdout 2>>test_stderr
+    done
 }
 
 card() {
@@ -40,7 +50,7 @@ card() {
     done
 }
 
-cleanup() {
+delete() {
     for cmd_to_run in 'wekan-cli -d card -b Test -l Test rm test-card' 'wekan-cli -d list -b Test Test rm' 'wekan-cli -d board Test rm'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
@@ -55,34 +65,35 @@ describe() {
 }
 
 context() {
-    for cmd_to_run in 'wekan-cli config --help' 'wekan-cli config set-context local' 'wekan-cli config use-context local' 'wekan-cli config remove --help'
+    for cmd_to_run in 'wekan-cli config --help' 'wekan-cli config set-context local' 'wekan-cli config use-context local'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
 config() {
-    for cmd_to_run in 'wekan-cli config delete-context local'  'wekan-cli config delete-credentials' 'wekan-cli config remove please' 'wekan-cli config remove -c local -y please' 'wekan-cli config remove -c local -f -y please' 'wekan-cli config remove -y please'
+    for cmd_to_run in 'wekan-cli config remove-context local'  'wekan-cli config remove-credentials' 'wekan-cli config remove please' 'wekan-cli config remove -c local -y please' 'wekan-cli config remove -c local -f -y please' 'wekan-cli config remove -y please'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
+test_runner() {
+    $1
+    result "$1" stdout_$1 stderr_all
+}
+
+sleep 2
 cd e2e
 wekan-cli board ls >test_stdout 2>test_stderr # expected to fail
 wekan-cli config set-credentials -i --host $WEKAN_URL $WEKAN_USER >>test_stdout 2>>test_stderr
-result Login stdout_login stderr_pre_login
-board
-result BOARD stdout_board stderr_all
-list
-result LIST stdout_list stderr_all
-card
-result CARD stdout_card stderr_all
-describe
-result DESCRIBE stdout_describe stderr_all
-context
-result CONTEXT stdout_context stderr_all
-cleanup
-result DELETE stdout_delete stderr_all
+
+result LOGIN stdout_login stderr_pre_login
+test_runner board
+test_runner list
+test_runner card
+test_runner describe
+test_runner context
+test_runner delete
 config
-result CONFIG stdout_config stderr_config
+result LOGIN stdout_config stderr_config

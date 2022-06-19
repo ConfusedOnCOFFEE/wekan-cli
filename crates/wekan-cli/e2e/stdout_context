@@ -1,5 +1,5 @@
 wekan-cli-config 0.1.0
-CLI configuration.
+CLI configuration
 
 USAGE:
     wekan-cli config [OPTIONS] <SUBCOMMAND>
@@ -11,33 +11,12 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
-    delete-context        Delete Context
-    delete-credentials    Delete credentails
     help                  Print this message or the help of the given subcommand(s)
-    remove                Remove config or contexts.
-    set-context           Set Context
-    set-credentials       Set credentials.
-    use-context           Use Context
+    remove                Remove config or context
+    remove-context        Remove context
+    remove-credentials    Remove credentails
+    set-context           Set context
+    set-credentials       Set credentials
+    use-context           Use context
 Context saved
-The next recommended workflows:
-Nothing to recommend. Suggestions?
 Using specified context
-The next recommended workflows:
-Nothing to recommend. Suggestions?
-wekan-cli-config-remove 0.1.0
-Remove config or contexts.
-
-USAGE:
-    wekan-cli config remove [OPTIONS] <--confirm> <PLEASE>
-
-ARGS:
-    <PLEASE>    
-
-OPTIONS:
-    -c, --context <CONTEXT>    Select context to remove
-    -f, --confirm              Confirm deletion
-    -h, --help                 Print help information
-    -q, --quiet                Less output per occurrence
-    -v, --verbose              More output per occurrence
-    -V, --version              Print version information
-    -y, --context-confirm      Confirm context selection

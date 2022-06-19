@@ -2,6 +2,7 @@ FROM rust:1.61
 
 WORKDIR /usr/src/myapp
 COPY . .
+RUN rm rust-toolchain.toml
 WORKDIR /usr/src/myapp/crates/wekan-cli
 RUN cargo install --features integration --path .
 RUN chmod +x e2e/entrypoint.sh && \
