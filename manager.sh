@@ -3,7 +3,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 flow=$1
 selection=$2
 all_args="${@:2}"
-
+os_type=$(uname)
 # Spin up testing environment.
 echo "Quiet e2e docker-compose command."
 crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
@@ -137,6 +137,80 @@ function run() {
 }
 
 
+# RECOMMENDED
+# https://github.com/mozilla/grcov
+function mozilla_gcov() {
+    grcov_exist="$(grcov &>/dev/null)"
+    if [ "$?" != "1" ]; then
+        echo "Install grcov first with 'cargo install grcov'"
+        exit 1
+    fi
+    cd crates/wekan-cli
+    rustup component add llvm-tools-preview
+    RUSTFLAGS="-Cinstrument-coverage"
+    cargo build
+    LLVM_PROFILE_FILE="your_name-%p-%m.profraw"
+    cargo test
+    grcov . -s . --binary-path ./target/debug/ -t html \
+          --branch --ignore-not-existing -o ./target/debug/coverage/
+    if [ "$?" == "0" ]; then
+        case "$os_type" in
+            "Darwin")
+                # Opening with Safari as default choice. Please Firefox :)
+                open -a Safari ./target/debug/coverage/index.html
+                ;;
+            "*")
+                echo "Open ${pwd}/target/debug/coverage/index.html in the browser of your choice"
+                ;;
+        esac
+    fi
+}
+
+# ------ OUTDATED OR NOT WORKING ----
+# Not working!!
+# https://users.rust-lang.org/t/howto-generating-a-branch-coverage-report/8524
+function lcov_coverage() {
+    cd crates/wekan-cli
+    os_type=$(uname)
+    case "$os_type" in
+        "Darwin")
+            {
+                cargo +nightly rustc --bin wekan-cli -- \
+                      --test \
+                      -Ccodegen-units=1 \
+                      -Clink-dead-code \
+                      -Cpasses=insert-gcov-profiling \
+                      -Zno-landing-pads \
+                      -L/Library/Developer/CommandLineTools/usr/lib/clang/8.1.0/lib/darwin/ \
+                      -lclang_rt.profile_osx
+            } ;;
+        "Linux")
+            {
+                cargo +nightly rustc  --bin wekan-cli -- --test \
+                      -Ccodegen-units=1 \
+                      -Clink-dead-code \
+                      -Cpasses=insert-gcov-profiling \
+                      -Zno-landing-pads \
+                      -L/usr/lib/llvm-3.8/lib/clang/3.8.1/lib/linux/ \
+                      -lclang_rt.profile-x86_64
+            } ;;
+        *)
+            {
+                echo "Unsupported OS, exiting"
+                exit
+            } ;;
+    esac
+
+    LCOVOPTS="--gcov-tool llvm-gcov --rc lcov_branch_coverage=1"
+    LCOVOPTS="${LCOVOPTS} --rc lcov_excl_line=assert"
+    lcov ${LCOVOPTS} --capture --directory . --base-directory . \
+         -o target/coverage/raw.lcov
+    lcov ${LCOVOPTS} --extract target/coverage/raw.lcov "$(pwd)/*" \
+         -o target/coverage/raw_crate.lcov
+    genhtml --branch-coverage --demangle-cpp --legend \
+            -o target/coverage/ target/coverage/raw_crate.lcov
+}
+
 # Decide which flow to run.
 case $flow in
     "d"|"dev")
@@ -164,6 +238,10 @@ case $flow in
         ;;
     "c"|"clippy")
         clippy $selection
+        exit
+        ;;
+    "cov"|"lcov")
+        mozilla_gcov
         exit
         ;;
     "qa")
