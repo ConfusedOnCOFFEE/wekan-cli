@@ -350,34 +350,22 @@ mod tests {
 
     #[test]
     fn cmp_by_length_greater() {
-        assert_eq!(
-            cmp_by_length("202", "2"),
-            Ordering::Greater
-        )
+        assert_eq!(cmp_by_length("202", "2"), Ordering::Greater)
     }
 
     #[test]
     fn cmp_by_length_less() {
-        assert_eq!(
-            cmp_by_length("2", "202"),
-            Ordering::Less
-        )
+        assert_eq!(cmp_by_length("2", "202"), Ordering::Less)
     }
 
     #[test]
     fn cmp_by_length_equal() {
-        assert_eq!(
-            cmp_by_length("20", "20"),
-            Ordering::Equal
-        )
+        assert_eq!(cmp_by_length("20", "20"), Ordering::Equal)
     }
 
     #[test]
     fn safely_unwrap_date_exist() {
-        assert_eq!(
-            safely_unwrap_date("202T27Z"),
-            String::from("202")
-        )
+        assert_eq!(safely_unwrap_date("202T27Z"), String::from("202"))
     }
 
     #[test]
@@ -394,9 +382,6 @@ mod tests {
     }
     #[test]
     fn if_field_vailable_false() {
-        assert_eq!(
-            if_field_available("HEADER", ""),
-            String::new()
-        )
+        assert_eq!(if_field_available("HEADER", ""), String::new())
     }
 }

@@ -18,14 +18,17 @@ pub struct Args {
     task_file: Option<PathBuf>,
 }
 
-
 #[cfg(test)]
 impl Args {
-    pub fn mock(name: Option<String>, command: Option<CommonCommand>, task_file: Option<PathBuf>) -> Self {
+    pub fn mock(
+        name: Option<String>,
+        command: Option<CommonCommand>,
+        task_file: Option<PathBuf>,
+    ) -> Self {
         Args {
             name,
             command,
-            task_file
+            task_file,
         }
     }
 }

@@ -3,7 +3,7 @@ use super::common::{
     WipLimit,
 };
 #[cfg(feature = "test")]
-use super::tests::{MockResponse, MockDetails};
+use super::tests::{MockDetails, MockResponse};
 use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 #[allow(dead_code)]

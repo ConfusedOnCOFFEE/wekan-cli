@@ -12,7 +12,6 @@ pub struct Args {
     pub command: Option<CommonCommand>,
 }
 
-
 #[cfg(test)]
 impl Args {
     pub fn mock(name: Option<String>, board: String, command: Option<CommonCommand>) -> Self {

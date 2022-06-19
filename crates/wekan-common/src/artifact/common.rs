@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 #[cfg(feature = "test")]
-use super::tests::{MockResponse, MockDetails};
+use super::tests::{MockDetails, MockResponse};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq)]
 pub struct Artifact {
@@ -281,6 +281,10 @@ impl MockDetails for Artifact {
 #[cfg(feature = "test")]
 impl MockResponse for Artifact {
     fn mock() -> Self {
-        <Self as MockDetails>::mock("fake-artifact-id", "fake-artifact-title", &AType::Board.to_string())
+        <Self as MockDetails>::mock(
+            "fake-artifact-id",
+            "fake-artifact-title",
+            &AType::Board.to_string(),
+        )
     }
 }

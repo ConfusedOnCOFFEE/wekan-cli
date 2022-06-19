@@ -12,10 +12,10 @@ use crate::{
     display::CliDisplay, list::argument::Args as LArg,
 };
 
-#[cfg(not(test))]
-use clap_verbosity_flag::{ErrorLevel, Verbosity};
 #[cfg(test)]
 use crate::tests::mocks::Mock;
+#[cfg(not(test))]
+use clap_verbosity_flag::{ErrorLevel, Verbosity};
 
 /// Wekan CLI
 #[derive(Parser, Debug)]
@@ -86,7 +86,7 @@ impl Mock for Args {
             #[cfg(feature = "store")]
             no_store: false,
             output_format: None,
-            filter: None
+            filter: None,
         }
     }
 }
@@ -97,7 +97,7 @@ impl Args {
         Self {
             no_recommendations: r,
             output_format: Some(o.to_string()),
-            filter: Some(f.to_string())
+            filter: Some(f.to_string()),
         }
     }
     #[cfg(feature = "store")]
@@ -106,13 +106,20 @@ impl Args {
             no_recommendations: r,
             no_store: s,
             output_format: Some(o.to_string()),
-            filter: Some(f.to_string())
+            filter: Some(f.to_string()),
         }
     }
 }
 #[async_trait]
 pub trait ArtifactCommand<'a, A, H, C> {
-    fn new(args: A, client: H, constraint: C, format: String, display: CliDisplay, global_options: &'a Args) -> Self;
+    fn new(
+        args: A,
+        client: H,
+        constraint: C,
+        format: String,
+        display: CliDisplay,
+        global_options: &'a Args,
+    ) -> Self;
 }
 
 #[async_trait]

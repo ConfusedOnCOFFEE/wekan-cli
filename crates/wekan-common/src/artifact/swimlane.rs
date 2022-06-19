@@ -5,7 +5,7 @@ use super::common::{
 };
 
 #[cfg(feature = "test")]
-use crate::artifact::tests::{MockResponse, MockDetails};
+use crate::artifact::tests::{MockDetails, MockResponse};
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Serialize)]

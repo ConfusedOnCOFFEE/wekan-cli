@@ -26,10 +26,10 @@ use crate::{
     subcommand::Inspect,
 };
 
-#[cfg(not(test))]
-use wekan_core::http::operation::{Artifacts, Operation};
 #[cfg(test)]
 use crate::tests::mocks::{Artifacts, Operation};
+#[cfg(not(test))]
+use wekan_core::http::operation::{Artifacts, Operation};
 
 pub struct Runner {
     pub args: Args,

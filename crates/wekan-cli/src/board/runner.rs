@@ -107,10 +107,7 @@ impl<'a> CommonRunsSimplified for Runner<'a> {
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
-                self.display.print_artifacts(
-                    ok,
-                    self.format.to_owned(),
-                )
+                self.display.print_artifacts(ok, self.format.to_owned())
             }
             Err(e) => Err(Error::Core(e)),
         }
@@ -175,12 +172,7 @@ impl<'a> Runner<'a> {
                     }
                     Err(e) => {
                         debug!("{:?}", e);
-                        CliError::new(
-                            4,
-                            "Failed to create",
-                            Constraint::Login(true),
-                        )
-                        .err()
+                        CliError::new(4, "Failed to create", Constraint::Login(true)).err()
                     }
                 }
             }
@@ -222,7 +214,11 @@ impl<'a> Runner<'a> {
             None => Err(CliError::new_msg("No name supplied").as_enum()),
         }
     }
-    async fn get_list_by_board_id(&mut self, o: &WekanResult, board_id: &str) -> Result<WekanResult, Error> {
+    async fn get_list_by_board_id(
+        &mut self,
+        o: &WekanResult,
+        board_id: &str,
+    ) -> Result<WekanResult, Error> {
         info!("get_cards");
         #[cfg(feature = "store")]
         let query = Query {
@@ -238,7 +234,8 @@ impl<'a> Runner<'a> {
                 trace!("{:?}", lists);
                 if !lists.is_empty() {
                     o.get_msg().push_str("Following lists are available:\n");
-                    self.display.prepare_output(&o.get_msg(), lists, String::from("long"))
+                    self.display
+                        .prepare_output(&o.get_msg(), lists, String::from("long"))
                 } else {
                     WekanResult::new_workflow(
                         "This boards contains no lists.",
@@ -256,8 +253,8 @@ impl<'a> Runner<'a> {
 mod tests {
     use super::*;
     use crate::{
+        subcommand::{Create, Details as SDetails, Remove},
         tests::mocks::Mock,
-        subcommand::{Details as SDetails, Create, Remove}
     };
     use wekan_common::validation::{authentication::Token, user::User};
 
@@ -294,15 +291,18 @@ mod tests {
             "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
             "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
         );
-        assert_eq!(res.get_msg(),
-                   expected);
+        assert_eq!(res.get_msg(), expected);
     }
 
     #[tokio::test]
     async fn run_no_options_details() {
         let r_args = RArgs::mock();
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-board-title-2")), Some(Command::Details(SDetails {})), None),
+            Args::mock(
+                Some(String::from("fake-board-title-2")),
+                Some(Command::Details(SDetails {})),
+                None,
+            ),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -321,17 +321,20 @@ mod tests {
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n"
         );
-        assert_eq!(res.get_msg(),
-                   expected);
+        assert_eq!(res.get_msg(), expected);
     }
 
     #[tokio::test]
     async fn run_no_options_create() {
         let r_args = RArgs::mock();
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-title2")), Some(Command::Create(Create {
-                title: String::from("new-board")
-            })), None),
+            Args::mock(
+                Some(String::from("fake-title2")),
+                Some(Command::Create(Create {
+                    title: String::from("new-board"),
+                })),
+                None,
+            ),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -346,16 +349,18 @@ mod tests {
         let res = <Runner as RootCommandRunner>::run(&mut runner)
             .await
             .unwrap();
-        assert_eq!(res.get_msg(),
-                   "Successfully created");
+        assert_eq!(res.get_msg(), "Successfully created");
     }
-
 
     #[tokio::test]
     async fn run_no_options_remove() {
         let r_args = RArgs::mock();
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-board-title-1")), Some(Command::Remove(Remove {})), None),
+            Args::mock(
+                Some(String::from("fake-board-title-1")),
+                Some(Command::Remove(Remove {})),
+                None,
+            ),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -370,8 +375,7 @@ mod tests {
         let res = <Runner as RootCommandRunner>::run(&mut runner)
             .await
             .unwrap();
-        assert_eq!(res.get_msg(),
-                   "Successfully deleted");
+        assert_eq!(res.get_msg(), "Successfully deleted");
     }
 
     #[tokio::test]
@@ -412,7 +416,6 @@ mod tests {
             "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
             "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
         );
-        assert_eq!(res.get_msg(),
-                   expected);
+        assert_eq!(res.get_msg(), expected);
     }
 }

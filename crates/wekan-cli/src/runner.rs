@@ -5,7 +5,7 @@ use log::{debug, error, info, trace};
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, LoginClient},
     config::{MandatoryConfig, UserConfig},
-    http::{preflight_request::Client as PFRClient},
+    http::preflight_request::Client as PFRClient,
 };
 
 use crate::{
@@ -14,7 +14,9 @@ use crate::{
         argument::Args as CArgs,
         runner::{NewCardRunner, Runner as CRunner},
     },
-    command::{ArtifactCommand, BaseCommand, RootCommandRunner, Subcommand as Command, Args as RArgs},
+    command::{
+        Args as RArgs, ArtifactCommand, BaseCommand, RootCommandRunner, Subcommand as Command,
+    },
     config::runner::Runner as ConfigRunner,
     display::CliDisplay,
     error::kind::{CliError, Error, InputError, Transform},
@@ -37,15 +39,12 @@ use wekan_common::{
 
 #[cfg(feature = "store")]
 use crate::config::context::ReadContext;
+#[cfg(not(test))]
+use log::Level;
 #[cfg(feature = "store")]
 use wekan_core::persistence::store::Butler;
 #[cfg(not(test))]
-use log::Level;
-#[cfg(not(test))]
-use wekan_core::{
-    log::Logger,
-    http::operation::Artifacts
-};
+use wekan_core::{http::operation::Artifacts, log::Logger};
 
 #[cfg(test)]
 use crate::tests::mocks::Artifacts;
@@ -55,7 +54,7 @@ pub struct Runner {
     pub format: String,
     pub display: CliDisplay,
     pub subcommands: Command,
-    pub global_options: RArgs
+    pub global_options: RArgs,
 }
 
 impl<'a> Runner {
@@ -88,7 +87,7 @@ impl<'a> Runner {
             format,
             display: CliDisplay::new(vec),
             subcommands,
-            global_options: r_args
+            global_options: r_args,
         }
     }
 
@@ -139,7 +138,7 @@ impl<'a> Runner {
             constraint,
             self.format.to_owned(),
             self.display.to_owned(),
-            &self.global_options
+            &self.global_options,
         );
         runner.run().await
     }
@@ -177,7 +176,7 @@ impl<'a> Runner {
                         constraint,
                         self.format.to_owned(),
                         self.display.to_owned(),
-                        &self.global_options
+                        &self.global_options,
                     );
                     runner.apply().await
                 }
@@ -242,37 +241,32 @@ impl<'a> Runner {
             .find_board_id(&table_args.name, &table_args.filter)
             .await
         {
-            Ok(board_id) => {
-                match query
-                    .inquire(AType::List, Some(&board_id), None)
-                    .await
-                {
-                    Ok(lists) => {
-                        trace!("{:?}", lists);
-                        let mut iterator = lists.iter();
-                        let mut cards_of_lists = Vec::new();
-                        if !lists.is_empty() {
-                            for r in iterator.by_ref() {
-                                trace!("List: {:?}", r.get_id());
-                                match query
-                                    .inquire(AType::Card, Some(&board_id), Some(&r.get_id()))
-                                    .await
-                                {
-                                    Ok(cards) => {
-                                        trace!("{:?}", cards);
-                                        cards_of_lists.push(cards)
-                                    }
-                                    Err(_e) => cards_of_lists.push(Vec::new()),
-                                };
-                            }
-                            self.display.print_table(lists, cards_of_lists)
-                        } else {
-                            self.display.print_table(lists, Vec::new())
+            Ok(board_id) => match query.inquire(AType::List, Some(&board_id), None).await {
+                Ok(lists) => {
+                    trace!("{:?}", lists);
+                    let mut iterator = lists.iter();
+                    let mut cards_of_lists = Vec::new();
+                    if !lists.is_empty() {
+                        for r in iterator.by_ref() {
+                            trace!("List: {:?}", r.get_id());
+                            match query
+                                .inquire(AType::Card, Some(&board_id), Some(&r.get_id()))
+                                .await
+                            {
+                                Ok(cards) => {
+                                    trace!("{:?}", cards);
+                                    cards_of_lists.push(cards)
+                                }
+                                Err(_e) => cards_of_lists.push(Vec::new()),
+                            };
                         }
+                        self.display.print_table(lists, cards_of_lists)
+                    } else {
+                        self.display.print_table(lists, Vec::new())
                     }
-                    Err(_e) => Err(CliError::new_msg("List name doesn't exist.").as_enum()),
                 }
-            }
+                Err(_e) => Err(CliError::new_msg("List name doesn't exist.").as_enum()),
+            },
             Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
         }
     }
@@ -290,7 +284,9 @@ impl<'a> Runner {
                 "board" | "b" => {
                     let mut client = <Client as BoardApi>::new(self.client.config.clone());
                     match client.get_one::<BDetails>(id).await {
-                        Ok(b) => self.display.print_details(b, self.global_options.output_format.to_owned()),
+                        Ok(b) => self
+                            .display
+                            .print_details(b, self.global_options.output_format.to_owned()),
                         Err(e) => {
                             error!("Error: {:?}", e);
                             WekanResult::new_msg("Artifact not found.").ok()
@@ -321,8 +317,10 @@ impl<'a> Runner {
                                 );
                                 let artifact =
                                     client.get_one::<CDetails>(v.remove(2)).await.unwrap();
-                                self.display
-                                    .print_details(artifact, self.global_options.output_format.to_owned())
+                                self.display.print_details(
+                                    artifact,
+                                    self.global_options.output_format.to_owned(),
+                                )
                             }
                             None => WekanResult::new_msg("List id needs to be supplied.").ok(),
                         }
@@ -375,8 +373,10 @@ impl<'a> Runner {
                         match query.find_list_id(b_id, name, filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
-                                self.display
-                                    .print_details(board, self.global_options.output_format.to_owned())
+                                self.display.print_details(
+                                    board,
+                                    self.global_options.output_format.to_owned(),
+                                )
                             }
                             Err(_e) => {
                                 Err(CliError::new_msg("Board name doesn't exist.").as_enum())
@@ -396,8 +396,10 @@ impl<'a> Runner {
                             match query.find_card_id(b_id, l_id, name, filter).await {
                                 Ok(c_id) => {
                                     let board = client.get_one::<CDetails>(&c_id).await.unwrap();
-                                    self.display
-                                        .print_details(board, self.global_options.output_format.to_owned())
+                                    self.display.print_details(
+                                        board,
+                                        self.global_options.output_format.to_owned(),
+                                    )
                                 }
                                 Err(_e) => {
                                     Err(CliError::new_msg("Card name doesn't exist.").as_enum())
