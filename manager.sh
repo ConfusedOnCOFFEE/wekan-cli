@@ -48,10 +48,6 @@ function e2e() {
         "rerun")
             cd crates/wekan-cli/e2e
             ./e2e.sh rerun
-            echo "Sleeping 5 seconds so the test can run."
-            sleep 5
-            echo "Trying to present results:"
-            docker logs wekan-cli
             ;;
         "l")
             docker logs wekan-cli
@@ -63,8 +59,6 @@ function e2e() {
 }
 
 function run_e2e() {
-    # Spin up testing environment.
-    echo "Quiet e2e docker-compose command"
     crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
     cd crates/wekan-cli
     cargo build --features integration
@@ -105,7 +99,6 @@ function run_clippy() {
     cd crates/$1
     cargo clippy -- -Dwarnings
 }
-
 
 
 # Cmt all crates
@@ -186,7 +179,6 @@ function mozilla_gcov() {
         exit 1
     fi
     cd crates/wekan-cli
-    rustup component add llvm-tools-preview
     case "$1" in
         "gen")
             grcov . -s .  --binary-path ./target/debug/ -t html \
@@ -204,8 +196,8 @@ function mozilla_gcov() {
                 esac
             fi
             ;;
-        "clear")
-            delete_llvm_profiles
+        "rm")
+            rm_llvm_profiles
             ;;
         *)
             echo "Make sure, to clean the ENV variables after the run, so you don't have sidefects."
@@ -221,7 +213,7 @@ function mozilla_gcov() {
     esac
 }
 
-function delete_llvm_profile () {
+function rm_llvm_profiles () {
     echo "Cleaning up generated files"
     cd $script_dir
     rm default.profraw 2>/dev/null
@@ -230,6 +222,9 @@ function delete_llvm_profile () {
     rm default.profraw 2>/dev/null
     rm llvm-profile*.profraw 2>/dev/null
     cd "$script_dir/crates/wekan-core"
+    rm default.profraw 2>/dev/null
+    rm llvm-profile*.profraw 2>/dev/null
+    cd "$script_dir/crates/wekan-common"
     rm default.profraw 2>/dev/null
     rm llvm-profile*.profraw 2>/dev/null
 }
