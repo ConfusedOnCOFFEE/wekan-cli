@@ -121,7 +121,7 @@ impl<'a> Runner<'a> {
             Err(_e) => Vec::<Artifact>::new(),
         };
         self.display
-            .print_artifacts(results, Some(self.format.to_owned()))
+            .format_vec(results, Some(self.format.to_owned()))
     }
 
     async fn create_list(&self, card_title: String) -> Result<WekanResult, Error> {
@@ -143,7 +143,8 @@ impl<'a> Runner<'a> {
         info!("run_inspect");
         let mut client = self.client.clone();
         let list = client.get_one::<Details>(list_id).await.unwrap();
-        self.display.print_details(list, Some("long".to_string()))
+        self.display
+            .format_base_details(list, Some("long".to_string()))
     }
 
     async fn get_lists_or_details(&mut self, list_name: &str) -> Result<WekanResult, Error> {
@@ -184,7 +185,7 @@ impl<'a> Runner<'a> {
         let list = client.get_one::<Details>(list_id).await.unwrap();
         match self
             .display
-            .print_details(list, Some(self.format.to_owned()))
+            .format_base_details(list, Some(self.format.to_owned()))
         {
             Ok(o) => {
                 self.get_cards_by_list_id(&o, &self.constraint.board._id.to_owned(), list_id)

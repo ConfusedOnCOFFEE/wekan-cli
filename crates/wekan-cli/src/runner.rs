@@ -267,9 +267,9 @@ impl<'a> Runner {
                                 Err(_e) => cards_of_lists.push(Vec::new()),
                             };
                         }
-                        self.display.print_table(lists, cards_of_lists)
+                        self.display.format_to_table_layout(lists, cards_of_lists)
                     } else {
-                        self.display.print_table(lists, Vec::new())
+                        self.display.format_to_table_layout(lists, Vec::new())
                     }
                 }
                 Err(_e) => Err(CliError::new_msg("List name doesn't exist.").as_enum()),
@@ -293,7 +293,7 @@ impl<'a> Runner {
                     match client.get_one::<BDetails>(id).await {
                         Ok(b) => self
                             .display
-                            .print_details(b, self.global_options.output_format.to_owned()),
+                            .format_base_details(b, self.global_options.output_format.to_owned()),
                         Err(e) => {
                             error!("Error: {:?}", e);
                             WekanResult::new_msg("Artifact not found.").ok()
@@ -306,8 +306,10 @@ impl<'a> Runner {
                         let mut client =
                             <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
                         let artifact = client.get_one::<LDetails>(v.remove(0)).await.unwrap();
-                        self.display
-                            .print_details(artifact, self.global_options.output_format.to_owned())
+                        self.display.format_base_details(
+                            artifact,
+                            self.global_options.output_format.to_owned(),
+                        )
                     }
                     None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
                 },
@@ -324,7 +326,7 @@ impl<'a> Runner {
                                 );
                                 let artifact =
                                     client.get_one::<CDetails>(v.remove(2)).await.unwrap();
-                                self.display.print_details(
+                                self.display.format_base_details(
                                     artifact,
                                     self.global_options.output_format.to_owned(),
                                 )
@@ -367,8 +369,10 @@ impl<'a> Runner {
                     match query.find_board_id(name, filter).await {
                         Ok(board_id) => {
                             let board = client.get_one::<BDetails>(&board_id).await.unwrap();
-                            self.display
-                                .print_details(board, self.global_options.output_format.to_owned())
+                            self.display.format_base_details(
+                                board,
+                                self.global_options.output_format.to_owned(),
+                            )
                         }
                         Err(_e) => Err(CliError::new_msg("Board name doesn't exist.").as_enum()),
                     }
@@ -380,7 +384,7 @@ impl<'a> Runner {
                         match query.find_list_id(b_id, name, filter).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
-                                self.display.print_details(
+                                self.display.format_base_details(
                                     board,
                                     self.global_options.output_format.to_owned(),
                                 )
@@ -403,7 +407,7 @@ impl<'a> Runner {
                             match query.find_card_id(b_id, l_id, name, filter).await {
                                 Ok(c_id) => {
                                     let board = client.get_one::<CDetails>(&c_id).await.unwrap();
-                                    self.display.print_details(
+                                    self.display.format_base_details(
                                         board,
                                         self.global_options.output_format.to_owned(),
                                     )

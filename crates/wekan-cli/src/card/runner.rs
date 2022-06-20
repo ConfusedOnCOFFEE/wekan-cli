@@ -249,7 +249,7 @@ impl Runner {
                         {
                             Ok(_o) => {
                                 let card = self.client.get_one::<Details>(&card_id).await.unwrap();
-                                self.display.print_most_details(card)
+                                self.display.format_most_details(card)
                             }
                             Err(_e) => CliError::new_msg("Failed to update").err(),
                         }
@@ -274,7 +274,7 @@ impl Runner {
                 Some(_l_id) => {
                     let artifact = self.client.get_one::<Details>(&inspect.id).await.unwrap();
                     self.display
-                        .print_details(artifact, Some("long".to_string()))
+                        .format_base_details(artifact, Some("long".to_string()))
                 }
                 None => WekanResult::new_msg("List id needs to be supplied.").ok(),
             },
@@ -297,7 +297,7 @@ impl CommonRuns for Runner {
         trace!("{:?}", vecs);
         if !vecs.is_empty() {
             self.display
-                .print_artifacts(vecs.to_vec(), Some(self.format.to_owned()))
+                .format_vec(vecs.to_vec(), Some(self.format.to_owned()))
         } else {
             debug!("No cards have been found.");
             WekanResult::new_workflow("No cards in the list.", "Card create with 'card -b <BOARD_NAME> -l <LIST_NAME> create [CARD_NAME] --description [CARD_DESCRIPTION]").ok()
@@ -307,7 +307,7 @@ impl CommonRuns for Runner {
         let mut client = self.client.clone();
         let card = client.get_one::<Details>(&a.get_id()).await.unwrap();
         trace!("{:?}", card);
-        self.display.print_details(card, None)
+        self.display.format_base_details(card, None)
     }
 }
 

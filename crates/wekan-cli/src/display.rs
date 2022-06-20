@@ -45,7 +45,7 @@ impl CliDisplay {
         res
     }
 
-    pub fn print_most_details<T: WekanDisplay + BaseDetails + MostDetails>(
+    pub fn format_most_details<T: WekanDisplay + BaseDetails + MostDetails>(
         &mut self,
         artifact_details: T,
     ) -> Result<WekanResult, Error> {
@@ -105,12 +105,12 @@ impl CliDisplay {
         .ok()
     }
 
-    pub fn print_details<T: WekanDisplay + BaseDetails>(
+    pub fn format_base_details<T: WekanDisplay + BaseDetails>(
         &mut self,
         artifact_details: T,
         format: Option<String>,
     ) -> Result<WekanResult, Error> {
-        info!("print_details");
+        info!("format_base_details");
         let properties_to_show = vec![
             artifact_details
                 .get_id()
@@ -159,12 +159,12 @@ impl CliDisplay {
         output = output.trim().to_string();
         WekanResult::new_msg(&output.finish_up()).ok()
     }
-    pub fn print_artifacts<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
+    pub fn format_vec<T: IdReturner + std::fmt::Debug + Base + std::fmt::Display>(
         &mut self,
         artifacts: Vec<T>,
         format: Option<String>,
     ) -> Result<WekanResult, Error> {
-        info!("print_artifacts");
+        info!("format_vec");
         let headlines_to_show = vec![String::from("ID"), String::from("TITLE")];
         let mut output = String::new();
         headlines_to_show
@@ -199,12 +199,12 @@ impl CliDisplay {
     ) -> Result<WekanResult, Error> {
         let mut full_output = String::new();
         full_output.push_str(output);
-        let second_output = self.print_artifacts(artifacts, format).unwrap();
+        let second_output = self.format_vec(artifacts, format).unwrap();
         full_output.push_str(&second_output.get_msg());
         full_output = full_output.trim().to_string();
         WekanResult::new_workflow(&full_output, &second_output.get_next_workflow().unwrap()).ok()
     }
-    pub fn print_table<
+    pub fn format_to_table_layout<
         T: std::fmt::Debug
             + std::cmp::PartialOrd
             + std::cmp::Ord
@@ -315,11 +315,11 @@ mod tests {
     use wekan_common::artifact::{card::Details as CDetails, tests::MockDetails};
 
     #[test]
-    fn print_details_output_normal() {
+    fn format_base_details_output_normal() {
         let a = CDetails::mock("my-id", "my-title", "2022-10-15T208Z");
         let out = Vec::new();
         let mut display = CliDisplay::new(out);
-        let ok_res = display.print_details(a, None).unwrap();
+        let ok_res = display.format_base_details(a, None).unwrap();
         let expected_output = concat!(
             "ID           TITLE        MODIFIED_AT  CREATED_AT   ",
             "my-i         my-title     2022-10-15   2022-10-15   ",

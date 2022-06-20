@@ -88,7 +88,7 @@ impl<'a> RootCommandRunner for Runner<'a> {
                 let board = self.client.get_one::<Details>(&id).await.unwrap();
                 match self
                     .display
-                    .print_details(board, self.global_options.output_format.to_owned())
+                    .format_base_details(board, self.global_options.output_format.to_owned())
                 {
                     Ok(o) => self.get_list_by_board_id(&o, &id).await,
                     Err(e) => Err(e),
@@ -107,8 +107,7 @@ impl<'a> CommonRunsSimplified for Runner<'a> {
         match self.client.get_all(AType::Board).await {
             Ok(ok) => {
                 debug!("{:?}", ok);
-                self.display
-                    .print_artifacts(ok, Some(self.format.to_owned()))
+                self.display.format_vec(ok, Some(self.format.to_owned()))
             }
             Err(e) => Err(Error::Core(e)),
         }
@@ -133,7 +132,7 @@ impl<'a> CommonRunsSimplified for Runner<'a> {
                     Ok(board_id) => {
                         let board = self.client.get_one::<Details>(&board_id).await.unwrap();
                         self.display
-                            .print_details(board, Some(self.format.to_owned()))
+                            .format_base_details(board, Some(self.format.to_owned()))
                     }
                     Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
                 }
@@ -203,7 +202,8 @@ impl<'a> Runner<'a> {
             },
             Command::Inspect(i) => {
                 let board = client.get_one::<Details>(&i.id).await.unwrap();
-                self.display.print_details(board, Some("long".to_string()))
+                self.display
+                    .format_base_details(board, Some("long".to_string()))
             }
             Command::Details(_d) => self.details(self.args.name.to_owned()).await,
         }
