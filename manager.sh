@@ -45,7 +45,7 @@ function e2e() {
             run_e2e
             e2e rerun
             ;;
-        "rerun")
+        "rerun"|"r")
             cd crates/wekan-cli/e2e
             ./e2e.sh rerun
             ;;
