@@ -1,8 +1,8 @@
 FROM rust:1.61
 
 WORKDIR /usr/src/myapp
-COPY . .
-WORKDIR /usr/src/myapp/crates/wekan-cli
+COPY crates .
+WORKDIR /usr/src/myapp/wekan-cli
 
 FROM debian:buster-slim
 RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
