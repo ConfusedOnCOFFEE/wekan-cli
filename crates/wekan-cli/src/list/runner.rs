@@ -292,15 +292,15 @@ mod tests {
         let expected = concat!(
             "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
             "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
-            "ID    TITLE\nfake-card-id-1fake-card-title-1\n",
-            "fake-card-id-2fake-card-title-2\n\n----\n"
+            "Following cards are available:\nID    TITLE\nfake  fake-card-title-1\n",
+            "fake  fake-card-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
             "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
-            "ID    TITLE\nstore-fake-card-id-1store-fake-card-title-1\n",
-            "store-fake-card-id-2store-fake-card-title-2\n\n----\n"
+            "Following cards are available:\nID    TITLE\nstor  store-fake-card-title-1\n",
+            "stor  store-fake-card-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }

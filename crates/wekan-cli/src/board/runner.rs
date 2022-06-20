@@ -287,15 +287,15 @@ mod tests {
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "ID    TITLE\nfake-board-id-1fake-board-title-1\n",
-            "fake-board-id-2fake-board-title-2\n\n----\n"
+            "Following lists are available:\nID    TITLE\nfake  fake-list-title-1\n",
+            "fake  fake-list-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
-            "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
+            "Following lists are available:\nID    TITLE\nstor  store-fake-list-title-1\n",
+            "stor  store-fake-list-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }
@@ -412,15 +412,15 @@ mod tests {
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "ID    TITLE\nfake-board-id-1fake-board-title-1\n",
-            "fake-board-id-2fake-board-title-2\n\n----\n"
+            "Following lists are available:\nID    TITLE\nfake  fake-list-title-1\n",
+            "fake  fake-list-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "ID    TITLE\nstore-fake-board-id-1store-fake-board-title-1\n",
-            "store-fake-board-id-2store-fake-board-title-2\n\n----\n"
+            "Following lists are available:\nID    TITLE\nstor  store-fake-list-title-1\n",
+            "stor  store-fake-list-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }

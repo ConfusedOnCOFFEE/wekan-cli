@@ -255,10 +255,10 @@ impl CliDisplay {
                 if f.starts_with("long") || f.starts_with("extended") || f.starts_with("extd") {
                     a.get_id().len()
                 } else {
-                    std::cmp::min(3, a.get_id().len())
+                    std::cmp::min(4, a.get_id().len())
                 }
             }
-            None => std::cmp::min(3, a.get_id().len()),
+            None => std::cmp::min(4, a.get_id().len()),
         }
     }
 }
