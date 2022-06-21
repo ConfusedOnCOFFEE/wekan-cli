@@ -14,3 +14,16 @@ quote_type = double
 [*.md]
 max_line_length = off
 trim_trailing_whitespace = false
+
+[*.el]
+indent_style = space
+max_line_length = 80
+
+
+[Makefile]
+indent_style = tab
+tab_width = 4
+
+[*.yml]
+indent_style = space
+indent_size = 2

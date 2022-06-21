@@ -1,6 +1,21 @@
-/target
+Cargo.lock
+## Ignore target
+target/
+crates/wekan-cli/target/
+crates/wekan-common/target/
+crates/wekan-core/target/
+crates/wekan-core-derive/target/
+
+## Ignore emacs
 *~
+.dir-locals.el
 .emacs.desktop
 .emacs.desktop.lock
-releases/wekan-cli
+
+
+## Ignore coverage profiles
 *.profraw
+crates/wekan-cli/*.profraw
+crates/wekan-common/*.profraw
+crates/wekan-core/*.profraw
+crates/wekan-core-derive/*.profraw

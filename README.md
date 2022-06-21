@@ -13,12 +13,6 @@ Also I try to learn RUST with this, so if you have tips or isuses, please create
 
 
 ```sh
-wekan-cli 0.1.0
-CLI to manage Wekan users, boards, lists, cards...
-
-USAGE:
-    wekan-cli [OPTIONS] <SUBCOMMAND>
-
 OPTIONS:
     -d, --no-store              Disable store for your wekan artifacts
     -f, --filter <FILTER>       Filter out available artifacts by id in format: b:..,l:..,c:.. Be
@@ -76,7 +70,7 @@ ID    TITLE
 
 # ARCHITECTURE
 
-Please take a look in [DEVELOPMENT](./DEVELOPMENT.md).
+Please take a look in [DEVELOPMENT](./doc/DEVELOPMENT.md).
 
 
 # INSTALL
@@ -88,10 +82,11 @@ Afterwards you get binary in crates/wekan-cli/target/release/${platform}/wekan-c
 
 
 - Clone the repo
-- `cd wekan-cli/crates/wekan-cli` in the directory
 - Run:
-- - `cargo build -r --features store` and move it where you want ti.
-- - `cargo install --features store` and use it.
+-- `cargo build -r --features wekan-cli/store` and move it where you want it.
+-- `cargo install --features wekan-cli/store` and use it.
+-- `make use` and move it where you want it.
+
 
 # ENV VARIABLES
 
@@ -112,7 +107,7 @@ All the ENV variables can be used in any combination, but MFILTER only filters w
 
 ## DEVELOPMENT
 
-[DEVELOPMENt](.DEVELOPMENT.md)
+[DEVELOPMENT](./doc/DEVELOPMENT.md)
 
 ## TESTS
 
@@ -123,11 +118,11 @@ All the ENV variables can be used in any combination, but MFILTER only filters w
 
 ### E2E
 
-[E2E](./E2E.md)
+[E2E](./doc/E2E.md)
 
 ### Coverage
 
-[COVERAGE](./COVERAGE.md)
+[COVERAGE](./doc/COVERAGE.md)
 
 
 ## THANK YOU

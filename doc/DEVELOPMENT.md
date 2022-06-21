@@ -13,15 +13,6 @@ Not so sure, if that is a good way right now, but it could help if I upgrade to 
 
 # DEVELOPMENT
 
-If you like, you can add alias in $HOME/.cargo/config.
-
-```
-[alias]
-t = "test -- --nocapture --color always"
-ts = "test --features store -- --nocapture --color always"
-```
-
-
 # EDITOR
 
 Emacs:

@@ -3,27 +3,22 @@ name: All in one
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
+    workflow_dispatch:
 
-env:
-  CARGO_TERM_COLOR: always
+      env:
+        CARGO_TERM_COLOR: always
 
-jobs:
-  build:
+      jobs:
+        all:
 
-    runs-on: ubuntu-latest
+          runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v3
-    - name: 'All in one (save compilation)'
-      run: |
-          cd crates/wekan-cli && cargo build && cargo clippy -- -Dwarnings && \
-          cargo fmt -- --check && cargo test && \
-          cargo build --features store && cargo clippy --features store -- -Dwarnings && \
-          cargo test --features store && cd ../wekan-core && \
-          cargo fmt  -- --check && cargo test --features store && \
-          cargo build --features store && cargo clippy --features store -- -Dwarnings && \
-          cargo fmt  -- --check && cargo test --features store && cd ../wekan-common && \
-          cargo clippy -- -Dwarnings && cargo fmt  -- --check && cargo clippy -- -Dwarnings && \
-          cargo clippy --features test && cargo build --features test && \
-          cargo build -r && cd ../wekan-core-derive && cargo fmt  -- --check
+            steps:
+              - uses: actions/checkout@v3
+              - name: 'All in one (save compilation)'
+                run: |
+                  cargo fmt -- --check && cargo clippy -- -Dwarnings && \
+                  cargo test && cargo build && \
+                  cargo test --features wekan-cli/store && \
+                  cargo clippy --features wekan-cli/store -- -Dwarnings
+                  cargo build --features wekan-cli/store

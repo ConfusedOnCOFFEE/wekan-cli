@@ -22,12 +22,12 @@ function e2e() {
             ;;
         "b:wekan-cli")
             echo "docker build wekan-cli"
-            cd $script_dir/../../../
+            cd $script_dir/../
             docker build --no-cache -f Dockerfile.e2e -t concafe/wekan-cli:integration .
             ;;
         "b:tester")
             echo "docker build tester"
-            cd $script_dir/../../../
+            cd $script_dir/../
             docker build --no-cache -f Dockerfile.e2e-retest -t concafe/wekan-cli:tester .
             ;;
         "rm")

@@ -1,7 +1,0 @@
-/target
-*~
-.emacs.desktop
-.emacs.desktop.lock
-
-*.profraw
-.DS_Store

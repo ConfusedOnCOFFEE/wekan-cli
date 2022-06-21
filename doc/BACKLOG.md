@@ -11,14 +11,12 @@
 
 # Backlog (Missing features against API)
 
-- Fix table view.
 - Labels for card update doesn't work. Somehow the parsing panics or my derive is bad.
 - If an artifact is created, the age of the store should be removed or atleast make it in a way, that the new artifact can be found.
 - emacs integration.
 - Remove store feature and always disable it.
 - Find a way to E2E without extra build set.
 - Configure different build setups.
-- Rust Tests.
 
 
 This is basiclly a list of the API endpoints, which were not touched. I don't know, if I do them or not.

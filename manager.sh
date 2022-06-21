@@ -22,10 +22,7 @@ function test_crates() {
             cargo test  --features store
             ;;
         *)
-            run_test wekan-cli
-            cargo test  --features store
-            cd ../../
-            run_test wekan-core
+            cargo test
             cargo test  --features store
             ;;
     esac
@@ -46,7 +43,6 @@ function e2e() {
             e2e rerun
             ;;
         "rerun"|"r")
-            cd crates/wekan-cli/e2e
             ./e2e.sh rerun
             ;;
         "l")
@@ -59,10 +55,9 @@ function e2e() {
 }
 
 function run_e2e() {
-    crates/wekan-cli/e2e/e2e.sh rm >/dev/null 2>/dev/null
-    cd crates/wekan-cli
+    e2e/e2e.sh rm >/dev/null 2>/dev/null
     cargo build --features integration
-    cd ./e2e
+    cd e2e
     ./e2e.sh ab
 }
 
@@ -87,10 +82,7 @@ function clippy() {
             run_clippy wekan-core-derive
             ;;
         *)
-            clippy cli
-            clippy core
-            clippy common
-            clippy macro
+            cargo clippy -- -Dwarnings
             ;;
     esac
 }
@@ -104,17 +96,6 @@ function run_clippy() {
 # Cmt all crates
 function fmt() {
     echo "fmt crates"
-    cd $script_dir
-    cd crates/wekan-cli
-    cargo fmt
-    cd $script_dir
-    cd crates/wekan-core
-    cargo fmt
-    cd $script_dir
-    cd crates/wekan-core-derive
-    cargo fmt
-    cd $script_dir
-    cd crates/wekan-common
     cargo fmt
 }
 
@@ -151,12 +132,10 @@ function run() {
     case "$1" in
         "cli")
             echo "Run: $1 with $all_args"
-            cd crates/wekan-cli
             cargo run -- ${all_args}
             ;;
         "cli-store")
             echo "Run: $1 with $all_args"
-            cd crates/wekan-cli
             cargo run --features store -- $all_args
             ;;
         "container")
@@ -277,7 +256,6 @@ function lcov_coverage() {
 # Decide which flow to run.
 case $flow in
     "b"|"build")
-        cd crates/wekan-cli
         echo "Build without feature"
         cargo build
         echo "Build feture store"
@@ -295,7 +273,6 @@ case $flow in
         mozilla_gcov $selection
         ;;
     "d"|"dev")
-        cd crates/wekan-cli
         export EMACSSAVEMODEDIR=.
         emacs
         ;;
