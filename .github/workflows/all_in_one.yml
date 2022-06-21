@@ -5,20 +5,20 @@ on:
     branches: [ "main" ]
     workflow_dispatch:
 
-      env:
-        CARGO_TERM_COLOR: always
+env:
+  CARGO_TERM_COLOR: always
 
-      jobs:
-        all:
+jobs:
+  all:
 
-          runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-            steps:
-              - uses: actions/checkout@v3
-              - name: 'All in one (save compilation)'
-                run: |
-                  cargo fmt -- --check && cargo clippy -- -Dwarnings && \
-                  cargo test && cargo build && \
-                  cargo test --features wekan-cli/store && \
-                  cargo clippy --features wekan-cli/store -- -Dwarnings
-                  cargo build --features wekan-cli/store
+    steps:
+    - uses: actions/checkout@v3
+    - name: 'All in one (save compilation)'
+      run: |
+        cargo fmt -- --check && cargo clippy -- -Dwarnings && \
+        cargo test && cargo build && \
+        cargo test --features wekan-cli/store && \
+        cargo clippy --features wekan-cli/store -- -Dwarnings
+        cargo build --features wekan-cli/store
