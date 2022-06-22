@@ -1,12 +1,20 @@
-use crate::subcommand::{Details, Inspect};
+use crate::{
+    command::{
+        ArgumentRequester, ArtifactName, CommonCommandRequester, CreateSubcommand,
+        SubCommandValidator,
+    },
+    error::kind::{CliError, Error, Transform},
+    subcommand::{CommonCommand, Details, Inspect, List, Remove},
+};
 use chrono::prelude::*;
 use clap::{Args as ClapArgs, Subcommand};
-use std::path::PathBuf;
+use wekan_cli_derive::WekanArgs;
+use wekan_common::http::common::Create;
 
-#[derive(ClapArgs, Debug, Clone)]
+#[derive(ClapArgs, Debug, Clone, WekanArgs)]
 #[clap(version = "0.1.0", about = "Manage tasks")]
 pub struct Args {
-    /// Selected card
+    #[clap(short, long, help = "Card name")]
     pub name: Option<String>,
     #[clap(short = 'b', long, help = "Board name")]
     pub board: String,
@@ -19,12 +27,27 @@ pub struct Args {
     pub command: Option<Command>,
 }
 
+impl CommonCommandRequester<Command> for Args {
+    fn get_common_command(&self) -> Option<CommonCommand> {
+        match &self.command {
+            Some(c) => match c {
+                Command::Ls(ls) => Some(CommonCommand::Ls(ls.to_owned())),
+                Command::Remove(r) => Some(CommonCommand::Remove(r.to_owned())),
+                Command::Inspect(i) => Some(CommonCommand::Inspect(i.to_owned())),
+                Command::Details(d) => Some(CommonCommand::Details(d.to_owned())),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+}
 /// The following commands are available:
 #[derive(Subcommand, Debug, Clone)]
 pub enum Command {
+    Ls(List),
     Create(CardCreateArgs),
     #[clap(name = "rm")]
-    Remove(RemoveArgs),
+    Remove(Remove),
     #[clap(name = "update")]
     Update(UpdateArgs),
     #[clap(name = "mv")]
@@ -36,34 +59,32 @@ pub enum Command {
 #[derive(ClapArgs, Debug, Clone)]
 #[clap(version = "0.1.0", about = "Create card")]
 pub struct CardCreateArgs {
-    /// Selected card
-    pub name: String,
+    /// Card name
+    title: String,
     #[clap(short = 'd', long)]
-    pub description: String,
+    description: String,
     #[clap(short, long)]
     swimlane_name: Option<String>,
 }
+impl CreateSubcommand for CardCreateArgs {}
+impl Create for CardCreateArgs {
+    fn get_title(&self) -> String {
+        self.title.to_owned()
+    }
+    fn get_description(&self) -> String {
+        self.description.to_owned()
+    }
+}
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Move card to the next status")]
+#[clap(version = "0.1.0", about = "Move card to the next board")]
 pub struct CardMoveArgs {
-    /// Selected card
-    pub name: String,
     pub list: String,
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove card from the board")]
-pub struct RemoveArgs {
-    /// Selected card
-    pub name: String,
-}
-
-#[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Update card from the board")]
+#[clap(version = "0.1.0", about = "Update card")]
 pub struct UpdateArgs {
-    /// Selected card
-    pub current_name: String,
     #[clap(short, long, help = "Card sort order")]
     pub sort: Option<f32>,
     #[clap(short = 't', long, help = "Card title")]
@@ -76,41 +97,7 @@ pub struct UpdateArgs {
     pub due_at: Option<String>,
     #[clap(short, long, validator = valid_time, help = "Format: Gregorian in format (YYYY-MM-DD)")]
     pub end_at: Option<String>,
-    #[clap(
-        short = 'c',
-        long,
-        parse(from_os_str),
-        value_name = "FILE",
-        help = "Read a YAML file to update the card"
-    )]
-    pub card_file: Option<PathBuf>,
 }
-impl RemoveArgs {
-    pub fn get_name(&self) -> String {
-        self.name.to_owned()
-    }
-}
-impl CardMoveArgs {
-    pub fn get_name(&self) -> String {
-        self.name.to_owned()
-    }
-}
-impl UpdateArgs {
-    pub fn get_name(&self) -> String {
-        self.current_name.to_owned()
-    }
-}
-impl Args {
-    pub fn get_name(&self) -> String {
-        self.name.as_ref().unwrap().to_owned()
-    }
-}
-impl CardCreateArgs {
-    pub fn get_name(&self) -> String {
-        self.name.to_owned()
-    }
-}
-
 fn valid_time(s: &str) -> Result<Date<Utc>, String> {
     if s.len() > 10 {
         Err(String::from("Day format is too long"))

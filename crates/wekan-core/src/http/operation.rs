@@ -7,9 +7,7 @@ use crate::{
 };
 use crate::{config::ArtifactApi, error::kind::Error, http::client::HttpClient};
 use async_trait::async_trait;
-use log::debug;
-#[cfg(feature = "store")]
-use log::trace;
+use log::{info, trace};
 #[cfg(feature = "store")]
 use serde::Deserialize;
 use std::marker::Send;
@@ -27,7 +25,7 @@ impl Store for UserConfig {}
 pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
     async fn get_all(&mut self, t: AType) -> Result<Vec<Artifact>, Error> {
         let r = self.get_artifacts_url().to_owned();
-        debug!("get_all {:?}", r);
+        info!("get_all {}", r);
         match self.get_vec::<Artifact>(&r).await {
             Ok(mut v) => {
                 v.satisfy(t);
@@ -47,7 +45,7 @@ pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
         id: &str,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
-        debug!("get_one {:?}", url);
+        info!("get_one {}", url);
         match self.get_request::<T>(&url).await {
             Ok(mut r) => {
                 trace!("{:?}", r);
@@ -55,7 +53,7 @@ pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
                 #[cfg(feature = "store")]
                 let c = self.get_config();
                 #[cfg(feature = "store")]
-                let prepare_for_store = self.get_base_id() + id;
+                let prepare_for_store = self.get_base_id() + "_" + id;
                 #[cfg(feature = "store")]
                 <Client as Artifacts>::update_store(c, r.clone(), &prepare_for_store).await;
                 Ok(r)
@@ -83,11 +81,11 @@ pub trait Artifacts: Operation + ConfigRequester<UserConfig> {
 pub trait Artifacts: Operation {
     async fn get_all(&mut self, t: AType) -> Result<Vec<Artifact>, Error> {
         let r = self.get_artifacts_url().to_owned();
-        debug!("get_all {:?}", r);
+        info!("get_all {}", r);
         match self.get_vec(&r).await {
             Ok(mut v) => {
                 v.satisfy(t);
-                debug!("Response: {:?}", v);
+                trace!("Response: {:?}", v);
                 Ok(v)
             }
             Err(e) => Err(e),
@@ -98,7 +96,7 @@ pub trait Artifacts: Operation {
         id: &str,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
-        debug!("get_one {:?}", url);
+        info!("get_one {}", url);
         match self.get_request::<T>(&url).await {
             Ok(mut r) => {
                 r.set_id(id);
@@ -116,12 +114,12 @@ pub trait Operation: ArtifactApi + HttpClient {
         body: &U,
     ) -> Result<T, Error> {
         let r = self.get_artifacts_url().to_owned();
-        debug!("create {:?}", r);
+        info!("create {}", r);
         self.post_request(&r, body).await
     }
     async fn delete<T: Deleted + DeserializeExt>(&mut self, id: &str) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
-        debug!("delete {:?}", url);
+        info!("delete {}", url);
         self.delete_request(&url).await
     }
     async fn put<U: RequestBody, T: Send + DeserializeExt + 'static>(
@@ -130,7 +128,7 @@ pub trait Operation: ArtifactApi + HttpClient {
         body: &U,
     ) -> Result<T, Error> {
         let url = self.get_artifact_url(id);
-        debug!("put {:?}", url);
+        info!("put {}", url);
         self.put_request(&url, body).await
     }
 }

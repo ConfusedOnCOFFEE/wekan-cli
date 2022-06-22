@@ -5,7 +5,7 @@ use async_trait::async_trait;
 #[cfg(not(test))]
 use chrono::prelude::*;
 #[cfg(not(test))]
-use log::debug;
+use log::{info, trace};
 use serde::{Deserialize, Serialize};
 use wekan_common::artifact::common::StoreTrait;
 
@@ -51,14 +51,15 @@ pub trait Store: ConfigRequester<UserConfig> {
                 payload: partial_context,
             }
         };
-        debug!("Complete Entry: {:?}", entry);
+        trace!("Raw full entry: {:?}", entry);
         let mut path = entry.payload.get_type().to_string().to_owned();
         if entry.parent.to_string().is_empty() {
             path.push('s');
         } else {
+            path.push('_');
             path.push_str(&entry.parent);
         }
-        debug!("Path: {:?}", path);
+        info!("Write to file: {}", path);
         self.get_config().write(path.to_string(), entry).await;
     }
 }

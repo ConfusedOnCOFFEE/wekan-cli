@@ -58,6 +58,7 @@ impl SortedArtifact for Details {
 impl StoreTrait for Details {}
 impl WekanDisplay for Details {}
 impl DeserializeExt for Details {}
+
 #[cfg(feature = "test")]
 impl MockDetails for Details {
     fn mock(id: &str, title: &str, date: &str) -> Self {

@@ -108,7 +108,6 @@ pub trait ConfigRequester<T> {
     fn get_base_id(&self) -> String;
 }
 
-#[cfg(feature = "store")]
 impl ConfigRequester<UserConfig> for UserConfig {
     fn get_config(&self) -> Self {
         self.to_owned()

@@ -20,8 +20,8 @@ pub struct BoardConstraint {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CardConstraint {
-    pub board: Option<Artifact>,
-    pub list: Option<Artifact>,
+    pub board: Artifact,
+    pub list: Artifact,
 }
 
 #[allow(dead_code)]
@@ -33,5 +33,5 @@ pub struct ListConstraint {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct SwimlaneConstraint {
-    pub board: Option<Artifact>,
+    pub board: Artifact,
 }

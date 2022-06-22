@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::artifact::tests::MockResponse;
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub struct CreateBoard {
     pub title: String,

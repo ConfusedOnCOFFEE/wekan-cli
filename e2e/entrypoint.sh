@@ -30,28 +30,28 @@ diff_and_print_result() {
 }
 
 board() {
-    for cmd_to_run in 'wekan-cli board --help' 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board Test' 'wekan-cli board Test details'
+    for cmd_to_run in 'wekan-cli board --help' 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
 list() {
-    for cmd_to_run in 'wekan-cli list --help' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test Test details' 'wekan-cli board Test' 'wekan-cli board Test details'
+    for cmd_to_run in 'wekan-cli list --help' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test -n Test details' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
 card() {
-    for cmd_to_run in 'wekan-cli card --help' 'wekan-cli card -b Test -l Test create -d description test-card' 'wekan-cli card -b Test -l Test test-card' 'wekan-cli list -b Test Test details' 'wekan-cli card -b Test -l Test test-card details'
+    for cmd_to_run in 'wekan-cli card --help' 'wekan-cli card -b Test -l -n Test create -d description test-card' 'wekan-cli card -b Test -l Test -n test-card' 'wekan-cli list -b Test -n Test details' 'wekan-cli card -b Test -l Test -n test-card details'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done
 }
 
 delete() {
-    for cmd_to_run in 'wekan-cli -d card -b Test -l Test rm test-card' 'wekan-cli -d list -b Test Test rm' 'wekan-cli -d board Test rm'
+    for cmd_to_run in 'wekan-cli -d card -b Test -l Test -n test-card rm' 'wekan-cli -d list -b Test -n Test rm' 'wekan-cli -d board -n Test rm'
     do
         $cmd_to_run >>test_stdout 2>>test_stderr
     done

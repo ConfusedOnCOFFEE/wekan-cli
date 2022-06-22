@@ -36,6 +36,16 @@ impl Default for WipLimit {
         WipLimit::new()
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+pub enum AType {
+    Empty,
+    Board,
+    List,
+    Card,
+    Swimlane,
+}
+
 impl From<String> for AType {
     fn from(s: String) -> Self {
         let fixed = s.as_str();
@@ -67,15 +77,6 @@ impl From<AType> for String {
             AType::Empty => "artifact".to_string(),
         }
     }
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-pub enum AType {
-    Empty,
-    Board,
-    List,
-    Card,
-    Swimlane,
 }
 
 impl ToString for AType {
@@ -259,11 +260,20 @@ impl PartialEq for Artifact {
 impl RequestBody for Artifact {}
 #[cfg(feature = "test")]
 pub trait DeserializeExt:
-    serde::de::DeserializeOwned + std::fmt::Debug + super::tests::MockResponse
+    serde::de::DeserializeOwned
+    + std::fmt::Debug
+    + std::marker::Send
+    + 'static
+    + super::tests::MockResponse
 {
 }
 #[cfg(not(feature = "test"))]
-pub trait DeserializeExt: serde::de::DeserializeOwned + std::fmt::Debug {}
+pub trait DeserializeExt:
+    serde::de::DeserializeOwned + std::fmt::Debug + std::marker::Send + 'static
+{
+}
+pub trait WekanDisplayExt: DeserializeExt + StoreTrait + BaseDetails + WekanDisplay {}
+pub trait SerializeExt: serde::Serialize + std::fmt::Debug + Clone + std::marker::Send {}
 
 impl DeserializeExt for Artifact {}
 

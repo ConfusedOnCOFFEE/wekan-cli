@@ -1,4 +1,4 @@
-use crate::http::artifact::RequestBody;
+use super::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Debug, Clone)]
 #[serde(tag = "type", rename_all = "camelCase")]

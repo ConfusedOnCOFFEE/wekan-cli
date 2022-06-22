@@ -232,6 +232,8 @@ impl StoreTrait for Details {}
 impl RequestBody for Details {}
 impl WekanDisplay for Details {}
 impl DeserializeExt for Details {}
+impl super::common::WekanDisplayExt for Details {}
+impl crate::http::artifact::DetailsResponse for Details {}
 
 #[cfg(feature = "test")]
 impl MockDetails for Details {

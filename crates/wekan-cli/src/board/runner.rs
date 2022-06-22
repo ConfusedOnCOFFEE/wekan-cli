@@ -1,34 +1,25 @@
-use async_trait::async_trait;
-use log::{debug, info, trace};
-use wekan_common::{
-    artifact::board::Details,
-    artifact::common::AType,
-    http::{
-        artifact::ResponseOk,
-        board::{CreateBoard, CreatedBoard},
-    },
-    validation::{
-        authentication::TokenHeader,
-        constraint::{BoardConstraint as BConstraint, Constraint},
-    },
-};
-
 use super::argument::Args;
 use crate::{
-    command::{Args as RArgs, ArtifactCommand, CommonRunsSimplified, RootCommandRunner},
+    command::{
+        Args as RArgs, ArgumentRequester, ArtifactCommand, CreateSubcommand, Fulfillment, Operator,
+        RootCommandRunner,
+    },
     display::CliDisplay,
-    error::kind::{CliError, Error, Transform},
+    error::kind::Error,
     resolver::Query,
     result::kind::WekanResult,
-    subcommand::CommonCommand as Command,
+    subcommand::{CommonCommand as Command, Inspect},
 };
-
-#[cfg(test)]
-use crate::tests::mocks::{Artifacts, Operation};
+use async_trait::async_trait;
+use wekan_cli_derive::FulfilmentRunner;
+use wekan_common::{
+    artifact::{board::Details, common::AType},
+    http::board::{CreateBoard, CreatedBoard},
+    validation::{authentication::TokenHeader, constraint::BoardConstraint as BConstraint},
+};
 use wekan_core::client::{BoardApi, Client};
-#[cfg(not(test))]
-use wekan_core::http::operation::{Artifacts, Operation};
 
+#[derive(FulfilmentRunner)]
 pub struct Runner<'a> {
     pub args: Args,
     pub client: Client,
@@ -38,6 +29,36 @@ pub struct Runner<'a> {
     pub global_options: &'a RArgs,
 }
 
+#[async_trait]
+impl<'a> Operator<'a> for Runner<'a> {
+    async fn find_details_id(&mut self, name: &str) -> Result<String, Error> {
+        let mut filter = String::new();
+        match &self.global_options.filter {
+            Some(f) => filter.push_str(f),
+            None => {}
+        };
+        #[cfg(feature = "store")]
+        let mut query = Query {
+            filter: &filter,
+            config: self.get_client().config,
+            deny_store_usage: self.get_global_options().no_store,
+        };
+        #[cfg(not(feature = "store"))]
+        let mut query = Query {
+            filter: &filter,
+            config: self.get_client().config,
+        };
+        query.find_board_id(name).await
+    }
+
+    fn get_type(&self) -> AType {
+        AType::Board
+    }
+
+    fn get_children_type(&self) -> AType {
+        AType::List
+    }
+}
 impl<'a> ArtifactCommand<'a, Args, Client, BConstraint> for Runner<'a> {
     fn new(
         args: Args,
@@ -59,199 +80,35 @@ impl<'a> ArtifactCommand<'a, Args, Client, BConstraint> for Runner<'a> {
 }
 
 #[async_trait]
-impl<'a> RootCommandRunner for Runner<'a> {
-    async fn run(&mut self) -> Result<WekanResult, Error> {
-        debug!("run");
-        match self.args.command.clone() {
-            Some(cmd) => self.run_subcommand(cmd).await,
-            None => match self.check_supplied_name() {
-                Ok(n) => self.use_rootcommand(&n).await,
-                Err(e) => Err(e),
-            },
-        }
+impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
+    async fn use_specific_command(&mut self) -> Result<WekanResult, Error> {
+        self.use_common_command().await
     }
-    async fn use_rootcommand(&mut self, name: &str) -> Result<WekanResult, Error> {
-        #[cfg(feature = "store")]
-        let mut query = Query {
-            config: self.client.config.clone(),
-            deny_store_usage: self.global_options.no_store,
-        };
-        #[cfg(not(feature = "store"))]
-        let mut query = Query {
-            config: self.client.config.clone(),
-        };
-        match query
-            .find_board_id(name, &self.global_options.filter.to_owned())
-            .await
-        {
-            Ok(id) => {
-                let board = self.client.get_one::<Details>(&id).await.unwrap();
-                match self
-                    .display
-                    .format_base_details(board, self.global_options.output_format.to_owned())
-                {
-                    Ok(o) => self.get_list_by_board_id(&o, &id).await,
-                    Err(e) => Err(e),
-                }
-            }
-            Err(e) => Err(e),
-        }
-    }
-}
-
-#[async_trait]
-impl<'a> CommonRunsSimplified for Runner<'a> {
-    async fn list(&mut self) -> Result<WekanResult, Error> {
+    async fn use_ls(&mut self) -> Result<WekanResult, Error> {
         self.client
             .set_base(&("users/".to_owned() + &self.client.get_user_id() + "/boards"));
-        match self.client.get_all(AType::Board).await {
-            Ok(ok) => {
-                debug!("{:?}", ok);
-                self.display.format_vec(ok, Some(self.format.to_owned()))
-            }
-            Err(e) => Err(Error::Core(e)),
-        }
+        self.get_all().await
     }
-    async fn details(&mut self, name: Option<String>) -> Result<WekanResult, Error> {
-        match &name {
-            Some(n) => {
-                #[cfg(feature = "store")]
-                let mut query = Query {
-                    config: self.client.config.clone(),
-                    deny_store_usage: self.global_options.no_store,
-                };
-                #[cfg(not(feature = "store"))]
-                let mut query = Query {
-                    config: self.client.config.clone(),
-                };
-                let filter = match &self.global_options.filter {
-                    Some(f) => f.to_owned(),
-                    None => String::new(),
-                };
-                match query.find_board_id(n, &Some(filter)).await {
-                    Ok(board_id) => {
-                        let board = self.client.get_one::<Details>(&board_id).await.unwrap();
-                        self.display
-                            .format_base_details(board, Some(self.format.to_owned()))
-                    }
-                    Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
-                }
-            }
-            None => Err(CliError::new_msg("Board name not supplied").as_enum()),
-        }
-    }
-}
-impl<'a> Runner<'a> {
-    async fn run_subcommand(&mut self, cmd: Command) -> Result<WekanResult, Error> {
-        debug!("run_subcommand");
-        let mut client = self.client.clone();
-        client.set_base("boards/");
-        match cmd {
-            Command::Ls(_l) => self.list().await,
-            Command::Create(c) => {
-                trace!("{:?}", c);
-                let body = CreateBoard {
-                    title: c.title.to_string(),
-                    owner: client.get_user_id(),
-                    permission: Some(String::from("private")),
-                    color: None,
-                    is_admin: None,
-                    is_active: None,
-                    is_no_comments: None,
-                    is_comment_only: None,
-                    is_worker: None,
-                };
-                match client.create::<CreateBoard, CreatedBoard>(&body).await {
-                    Ok(ok) => {
-                        trace!("{:?}", ok);
-                        WekanResult::new_workflow(
-                            "Successfully created",
-                            "Create a list with subcommand 'list create --help'",
-                        )
-                        .ok()
-                    }
-                    Err(e) => {
-                        debug!("{:?}", e);
-                        CliError::new(4, "Failed to create", Constraint::Login(true)).err()
-                    }
-                }
-            }
-            Command::Remove(_r) => match &self.args.name {
-                Some(n) => {
-                    #[cfg(feature = "store")]
-                    let mut query = Query {
-                        config: self.client.config.clone(),
-                        deny_store_usage: self.global_options.no_store,
-                    };
-                    #[cfg(not(feature = "store"))]
-                    let mut query = Query {
-                        config: self.client.config.clone(),
-                    };
-                    match query.find_board_id(n, &self.global_options.filter).await {
-                        Ok(board_id) => match client.delete::<ResponseOk>(&board_id).await {
-                            Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
-                            Err(e) => {
-                                trace!("{:?}", e);
-                                CliError::new_msg("Failed to delete").err()
-                            }
-                        },
-                        Err(_e) => Err(CliError::new_msg("Board name does not exist").as_enum()),
-                    }
-                }
-                None => Err(CliError::new_msg("Board name not supplied").as_enum()),
-            },
-            Command::Inspect(i) => {
-                let board = client.get_one::<Details>(&i.id).await.unwrap();
-                self.display
-                    .format_base_details(board, Some("long".to_string()))
-            }
-            Command::Details(_d) => self.details(self.args.name.to_owned()).await,
-        }
-    }
-
-    fn check_supplied_name(&self) -> Result<String, Error> {
-        match &self.args.name {
-            Some(n) => Ok(n.to_string()),
-            None => Err(CliError::new_msg("No name supplied").as_enum()),
-        }
-    }
-    async fn get_list_by_board_id(
+    async fn use_create(
         &mut self,
-        o: &WekanResult,
-        board_id: &str,
+        create_args: &impl CreateSubcommand,
     ) -> Result<WekanResult, Error> {
-        info!("get_cards");
-        #[cfg(feature = "store")]
-        let query = Query {
-            config: self.client.config.clone(),
-            deny_store_usage: self.global_options.no_store,
+        let client = self.client.clone();
+        let body = CreateBoard {
+            title: create_args.get_title(),
+            owner: client.get_user_id(),
+            permission: Some(String::from("private")),
+            color: None,
+            is_admin: None,
+            is_active: None,
+            is_no_comments: None,
+            is_comment_only: None,
+            is_worker: None,
         };
-        #[cfg(not(feature = "store"))]
-        let query = Query {
-            config: self.client.config.clone(),
-        };
-        match query
-            .inquire(AType::List, Some(board_id), None, false)
-            .await
-        {
-            Ok(lists) => {
-                trace!("{:?}", lists);
-                if !lists.is_empty() {
-                    self.display.prepare_output(
-                        &(o.get_msg() + "Following lists are available:\n"),
-                        lists,
-                        None,
-                    )
-                } else {
-                    WekanResult::new_workflow(
-                        &(o.get_msg() + "This boards contains no lists"),
-                        "Create a list with subcommand 'list create --help'",
-                    )
-                    .ok()
-                }
-            }
-            Err(e) => Err(e),
-        }
+        self.create::<CreateBoard, CreatedBoard>(&body).await
+    }
+    async fn use_inspect(&mut self, inspect_args: &Inspect) -> Result<WekanResult, Error> {
+        self.get_one::<Details>(&inspect_args.id).await
     }
 }
 
@@ -268,7 +125,7 @@ mod tests {
     async fn run_no_options_specified() {
         let r_args = RArgs::mock();
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-board-title-2")), None, None),
+            Args::mock(Some(String::from("fake-board-title-2")), None),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -280,22 +137,20 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = <Runner as RootCommandRunner>::run(&mut runner)
-            .await
-            .unwrap();
+        let res = runner.run().await.unwrap();
         #[cfg(not(feature = "store"))]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "Following lists are available:\nID    TITLE\nfake  fake-list-title-1\n",
-            "fake  fake-list-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-list-title-1\nfake  fake-list-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "Following lists are available:\nID    TITLE\nstor  store-fake-list-title-1\n",
-            "stor  store-fake-list-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-list-title-1\nstor  store-fake-list-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }
@@ -307,7 +162,6 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-board-title-2")),
                 Some(Command::Details(SDetails {})),
-                None,
             ),
             Client::mock(),
             BConstraint {
@@ -320,12 +174,20 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = <Runner as RootCommandRunner>::run(&mut runner)
-            .await
-            .unwrap();
+        let res = runner.run().await.unwrap();
+        #[cfg(not(feature = "store"))]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
-            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n"
+            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-list-title-1\nfake  fake-list-title-2\n\n----"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
+            "my-f               fake-board-title   2020-10-12         2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-list-title-1\nstor  store-fake-list-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }
@@ -339,7 +201,6 @@ mod tests {
                 Some(Command::Create(Create {
                     title: String::from("new-board"),
                 })),
-                None,
             ),
             Client::mock(),
             BConstraint {
@@ -352,9 +213,7 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = <Runner as RootCommandRunner>::run(&mut runner)
-            .await
-            .unwrap();
+        let res = runner.run().await.unwrap();
         assert_eq!(res.get_msg(), "Successfully created");
     }
 
@@ -365,7 +224,6 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-board-title-1")),
                 Some(Command::Remove(Remove {})),
-                None,
             ),
             Client::mock(),
             BConstraint {
@@ -378,9 +236,7 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = <Runner as RootCommandRunner>::run(&mut runner)
-            .await
-            .unwrap();
+        let res = runner.run().await.unwrap();
         assert_eq!(res.get_msg(), "Successfully deleted");
     }
 
@@ -392,7 +248,7 @@ mod tests {
         let r_args = RArgs::mock_with(false, "long", "b:5");
 
         let mut runner = Runner::new(
-            Args::mock(Some(String::from("fake-board-title-2")), None, None),
+            Args::mock(Some(String::from("fake-board-title-2")), None),
             Client::mock(),
             BConstraint {
                 user: Ok(User {
@@ -404,23 +260,21 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = <Runner as RootCommandRunner>::run(&mut runner)
-            .await
-            .unwrap();
+        let res = runner.run().await.unwrap();
 
         #[cfg(not(feature = "store"))]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "Following lists are available:\nID    TITLE\nfake  fake-list-title-1\n",
-            "fake  fake-list-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-list-title-1\nfake  fake-list-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                 TITLE              MODIFIED_AT        CREATED_AT\n",
             "my-fake-board-id   fake-board-title   2020-10-12         2020-10-12\n----\n",
-            "Following lists are available:\nID    TITLE\nstor  store-fake-list-title-1\n",
-            "stor  store-fake-list-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-list-title-1\nstor  store-fake-list-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }

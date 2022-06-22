@@ -162,6 +162,9 @@ impl SortedArtifact for Details {
 impl StoreTrait for Details {}
 impl RequestBody for Details {}
 impl DeserializeExt for Details {}
+impl super::common::WekanDisplayExt for Details {}
+impl crate::http::artifact::DetailsResponse for Details {}
+
 #[cfg(feature = "test")]
 impl MockDetails for Details {
     fn mock(id: &str, title: &str, date: &str) -> Self {

@@ -1,5 +1,7 @@
+use crate::command::CreateSubcommand;
 use clap::{Args as ClapArgs, Subcommand};
-use wekan_common::artifact::common::AType;
+use std::path::PathBuf;
+use wekan_common::{artifact::common::AType, http::common::Create as CreateTrait};
 #[derive(Subcommand, Debug, Clone)]
 #[clap(about = "The following commands are available:")]
 pub enum CommonCommand {
@@ -12,19 +14,7 @@ pub enum CommonCommand {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "List Artifacts")]
-pub struct List {
-    #[clap(
-        short = 't',
-        long,
-        parse(from_flag),
-        help = "Show the artifacts in a table"
-    )]
-    table: bool,
-}
-
-#[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "List artifacts")]
+#[clap(version = "0.1.0", about = "Get an artifact")]
 pub struct Get {
     // Kind of artifact
     kind: AType,
@@ -35,23 +25,32 @@ pub struct Get {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Show details")]
+#[clap(version = "0.1.0", about = "List all artifacts")]
+pub struct List {}
+#[derive(ClapArgs, Debug, Clone)]
+#[clap(version = "0.1.0", about = "Show the details")]
 pub struct Details {}
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove artifact")]
+#[clap(version = "0.1.0", about = "Remove an artifact")]
 pub struct Remove {}
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Create artifact")]
+#[clap(version = "0.1.0", about = "Create an artifact")]
 pub struct Create {
-    /// Board to be created
+    /// Artifact title
     pub title: String,
 }
+
+impl CreateSubcommand for Create {}
+impl CreateTrait for Create {
+    fn get_title(&self) -> String {
+        self.title.to_owned()
+    }
+    fn get_description(&self) -> String {
+        String::from("Description not available")
+    }
+}
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(
-    version = "0.1.0",
-    about = "Describe artfifact by k8 syntax (type/name)"
-)]
 pub struct Delegate {
     #[clap(short = 'b', long, group = "card_arg", help = "Board id")]
     pub board_id: Option<String>,
@@ -86,4 +85,11 @@ pub struct Table {
     pub name: String,
     #[clap(short = 'f', long, help = "Filter by b:,l:")]
     pub filter: Option<String>,
+}
+
+#[derive(ClapArgs, Debug, Clone)]
+#[clap(version = "0.1.0", about = "Apply a change to an artifact")]
+pub struct Apply {
+    /// Artifact file
+    task_file: PathBuf,
 }

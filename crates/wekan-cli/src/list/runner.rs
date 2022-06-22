@@ -1,29 +1,25 @@
 use crate::{
-    command::{Args as RArgs, ArtifactCommand},
+    command::{
+        Args as RArgs, ArgumentRequester, ArtifactCommand, CreateSubcommand, Fulfillment, Operator,
+        RootCommandRunner,
+    },
     display::CliDisplay,
-    error::kind::{CliError, Error, Transform},
+    error::kind::Error,
     list::argument::Args,
     resolver::Query,
     result::kind::WekanResult,
-    subcommand::CommonCommand as Command,
+    subcommand::{CommonCommand as Command, Inspect},
 };
-use log::{debug, info, trace};
+use async_trait::async_trait;
+use wekan_cli_derive::FulfilmentRunner;
 use wekan_common::{
-    artifact::{
-        common::{AType, Artifact, Base, IdReturner},
-        list::Details,
-    },
+    artifact::{common::AType, list::Details},
     http::artifact::{CreateArtifact, ResponseOk},
     validation::constraint::ListConstraint as LConstraint,
 };
+use wekan_core::client::{Client, ListApi};
 
-use wekan_core::{client::Client, error::kind::Error as CoreError};
-
-#[cfg(test)]
-use crate::tests::mocks::{Artifacts, Operation};
-#[cfg(not(test))]
-use wekan_core::http::operation::{Artifacts, Operation};
-
+#[derive(FulfilmentRunner)]
 pub struct Runner<'a> {
     pub args: Args,
     pub client: Client,
@@ -31,6 +27,36 @@ pub struct Runner<'a> {
     pub format: String,
     pub display: CliDisplay,
     pub global_options: &'a RArgs,
+}
+
+#[async_trait]
+impl<'a> Operator<'a> for Runner<'a> {
+    async fn find_details_id(&mut self, name: &str) -> Result<String, Error> {
+        let mut filter = String::new();
+        match &self.global_options.filter {
+            Some(f) => filter.push_str(f),
+            None => {}
+        };
+        #[cfg(feature = "store")]
+        let mut query = Query {
+            filter: &filter,
+            config: self.get_client().config,
+            deny_store_usage: self.get_global_options().no_store,
+        };
+        #[cfg(not(feature = "store"))]
+        let mut query = Query {
+            filter: &filter,
+            config: self.get_client().config,
+        };
+        query.find_list_id(&self.constraint.board._id, name).await
+    }
+    fn get_type(&self) -> AType {
+        AType::List
+    }
+
+    fn get_children_type(&self) -> AType {
+        AType::Card
+    }
 }
 
 impl<'a> ArtifactCommand<'a, Args, Client, LConstraint> for Runner<'a> {
@@ -53,185 +79,32 @@ impl<'a> ArtifactCommand<'a, Args, Client, LConstraint> for Runner<'a> {
     }
 }
 
-impl<'a> Runner<'a> {
-    pub async fn apply(&mut self) -> Result<WekanResult, Error> {
-        info!("apply");
-        self.run_subcommand().await
+#[async_trait]
+impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
+    async fn use_specific_command(&mut self) -> Result<WekanResult, Error> {
+        self.use_common_command().await
     }
-
-    async fn run_subcommand(&mut self) -> Result<WekanResult, Error> {
-        info!("run_subcommand");
-        match self.args.command.to_owned() {
-            Some(c) => match c {
-                Command::Ls(_ls) => self.print_requested_lists().await,
-                Command::Create(c) => self.create_list(c.title.to_owned()).await,
-                Command::Remove(_r) => match &self.args.name {
-                    Some(n) => {
-                        #[cfg(feature = "store")]
-                        let mut query = Query {
-                            config: self.client.config.clone(),
-                            deny_store_usage: self.global_options.no_store,
-                        };
-                        #[cfg(not(feature = "store"))]
-                        let mut query = Query {
-                            config: self.client.config.clone(),
-                        };
-                        let filter = match &self.global_options.filter {
-                            Some(f) => f.to_owned(),
-                            None => String::new(),
-                        };
-                        match query
-                            .find_list_id(&self.constraint.board._id, n, &Some(filter))
-                            .await
-                        {
-                            Ok(board_id) => {
-                                match self.client.delete::<ResponseOk>(&board_id).await {
-                                    Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
-                                    Err(e) => {
-                                        trace!("{:?}", e);
-                                        CliError::new_msg("Failed to delete").err()
-                                    }
-                                }
-                            }
-                            Err(_e) => Err(CliError::new_msg("List name does not exist").as_enum()),
-                        }
-                    }
-                    None => Err(CliError::new_msg("List name not supplied").as_enum()),
-                },
-                Command::Inspect(i) => match &i.delegate.board_id {
-                    Some(_id) => self.run_inspect(&i.id.to_owned()).await,
-                    None => WekanResult::new_msg("Board id needs to be supplied.").ok(),
-                },
-                Command::Details(_d) => match self.args.name.to_owned() {
-                    Some(n) => self.get_lists_or_details(&n).await,
-                    None => WekanResult::new_msg("Board name needs to be supplied").ok(),
-                },
-            },
-            None => WekanResult::new_workflow("Nothing selected", "Run 'list --help'").ok(),
+    async fn use_ls(&mut self) -> Result<WekanResult, Error> {
+        self.get_all().await
+    }
+    async fn use_inspect(&mut self, inspect_args: &Inspect) -> Result<WekanResult, Error> {
+        match &inspect_args.delegate.board_id {
+            Some(id) => {
+                self.client.set_base(id);
+                self.get_one::<Details>(&inspect_args.id).await
+            }
+            None => WekanResult::new_msg("Board id needs to be supplied").ok(),
         }
     }
 
-    async fn print_requested_lists(&mut self) -> Result<WekanResult, Error> {
-        info!("print_requested_lists");
-        let mut client = self.client.clone();
-        debug!("{:?}", client);
-        let lists: Result<Vec<Artifact>, CoreError> = client.get_all(AType::Card).await;
-        let results: Vec<Artifact> = match lists {
-            Ok(res) => res,
-            Err(_e) => Vec::<Artifact>::new(),
-        };
-        self.display
-            .format_vec(results, Some(self.format.to_owned()))
-    }
-
-    async fn create_list(&self, card_title: String) -> Result<WekanResult, Error> {
-        let mut client = self.client.clone();
-        let c_a = CreateArtifact { title: card_title };
-        match client.create::<CreateArtifact, ResponseOk>(&c_a).await {
-            Ok(ok) => {
-                trace!("{:?}", ok);
-                WekanResult::new_msg("Successfully created").ok()
-            }
-            Err(e) => {
-                debug!("{:?}", e);
-                CliError::new_msg("Failed to create").err()
-            }
-        }
-    }
-
-    async fn run_inspect(&mut self, list_id: &str) -> Result<WekanResult, Error> {
-        info!("run_inspect");
-        let mut client = self.client.clone();
-        let list = client.get_one::<Details>(list_id).await.unwrap();
-        self.display
-            .format_base_details(list, Some("long".to_string()))
-    }
-
-    async fn get_lists_or_details(&mut self, list_name: &str) -> Result<WekanResult, Error> {
-        info!("get_lists");
-        let lists: Result<Vec<Artifact>, CoreError> =
-            self.client.to_owned().get_all(AType::List).await;
-        let results: Vec<Artifact> = match lists {
-            Ok(res) => res,
-            Err(_e) => Vec::<Artifact>::new(),
-        };
-        let mut iter = results.iter();
-        trace!("Lists: {:?} - {}", results, list_name);
-        loop {
-            match iter.next() {
-                Some(vec) => {
-                    if vec.get_title().contains(list_name) {
-                        trace!(
-                            "Matched with board_id: {} and list_name: {}",
-                            self.constraint.board._id,
-                            list_name
-                        );
-                        break self.get_details(&vec.get_id()).await;
-                    }
-                }
-                None => {
-                    break WekanResult::new_workflow(
-                        "List doesn't exist",
-                        "Try with option s or run 'board --help'",
-                    )
-                    .ok()
-                }
-            }
-        }
-    }
-
-    async fn get_details(&mut self, list_id: &str) -> Result<WekanResult, Error> {
-        let mut client = self.client.clone();
-        let list = client.get_one::<Details>(list_id).await.unwrap();
-        match self
-            .display
-            .format_base_details(list, Some(self.format.to_owned()))
-        {
-            Ok(o) => {
-                self.get_cards_by_list_id(&o, &self.constraint.board._id.to_owned(), list_id)
-                    .await
-            }
-            Err(e) => Err(e),
-        }
-    }
-    async fn get_cards_by_list_id(
+    async fn use_create(
         &mut self,
-        o: &WekanResult,
-        board_id: &str,
-        list_id: &str,
+        create_args: &impl CreateSubcommand,
     ) -> Result<WekanResult, Error> {
-        info!("get_cards");
-        #[cfg(feature = "store")]
-        let query = Query {
-            config: self.client.config.clone(),
-            deny_store_usage: self.global_options.no_store,
+        let c_a = CreateArtifact {
+            title: create_args.get_title(),
         };
-        #[cfg(not(feature = "store"))]
-        let query = Query {
-            config: self.client.config.clone(),
-        };
-        match query
-            .inquire(AType::Card, Some(board_id), Some(list_id), false)
-            .await
-        {
-            Ok(cards) => {
-                trace!("{:?}", cards);
-                if !cards.is_empty() {
-                    self.display.prepare_output(
-                        &(o.get_msg() + "Following cards are available:\n"),
-                        cards,
-                        None,
-                    )
-                } else {
-                    WekanResult::new_workflow(
-                        &(o.get_msg() + "This list contains no card"),
-                        "Create a card with subcommand 'card create --help'",
-                    )
-                    .ok()
-                }
-            }
-            Err(e) => Err(e),
-        }
+        self.create::<CreateArtifact, ResponseOk>(&c_a).await
     }
 }
 
@@ -242,6 +115,8 @@ mod tests {
         subcommand::{Create, Details as SDetails, Remove},
         tests::mocks::Mock,
     };
+    use wekan_common::artifact::common::Artifact;
+
     #[tokio::test]
     async fn run_no_options_specified() {
         let r_args = RArgs::mock();
@@ -263,8 +138,22 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = runner.apply().await.unwrap();
-        assert_eq!(res.get_msg(), "Nothing selected");
+        #[cfg(not(feature = "store"))]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-card-title-1\nfake  fake-card-title-2\n\n----"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-card-title-1\nstor  store-fake-card-title-2\n\n----"
+        );
+        let res = runner.run().await.unwrap();
+        assert_eq!(res.get_msg(), expected);
     }
 
     #[tokio::test]
@@ -288,20 +177,20 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = runner.apply().await.unwrap();
+        let res = runner.run().await.unwrap();
         #[cfg(not(feature = "store"))]
         let expected = concat!(
             "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
             "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
-            "Following cards are available:\nID    TITLE\nfake  fake-card-title-1\n",
-            "fake  fake-card-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-card-title-1\nfake  fake-card-title-2\n\n----"
         );
         #[cfg(feature = "store")]
         let expected = concat!(
             "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
             "my-f              fake-list-title   2020-10-12        2020-10-12\n----\n",
-            "Following cards are available:\nID    TITLE\nstor  store-fake-card-title-1\n",
-            "stor  store-fake-card-title-2\n\n----"
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-card-title-1\nstor  store-fake-card-title-2\n\n----"
         );
         assert_eq!(res.get_msg(), expected);
     }
@@ -329,7 +218,7 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = runner.apply().await.unwrap();
+        let res = runner.run().await.unwrap();
         assert_eq!(res.get_msg(), "Successfully created");
     }
 
@@ -354,7 +243,7 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = runner.apply().await.unwrap();
+        let res = runner.run().await.unwrap();
         assert_eq!(res.get_msg(), "Successfully deleted");
     }
 
@@ -383,7 +272,21 @@ mod tests {
             CliDisplay::new(Vec::new()),
             &r_args,
         );
-        let res = runner.apply().await.unwrap();
-        assert_eq!(res.get_msg(), "Nothing selected");
+        #[cfg(not(feature = "store"))]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-fake-list-id   fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nfake  fake-card-title-1\nfake  fake-card-title-2\n\n----"
+        );
+        #[cfg(feature = "store")]
+        let expected = concat!(
+            "ID                TITLE             MODIFIED_AT       CREATED_AT\n",
+            "my-fake-list-id   fake-list-title   2020-10-12        2020-10-12\n----\n",
+            "Following children are available:\n",
+            "ID    TITLE\nstor  store-fake-card-title-1\nstor  store-fake-card-title-2\n\n----"
+        );
+        let res = runner.run().await.unwrap();
+        assert_eq!(res.get_msg(), expected);
     }
 }

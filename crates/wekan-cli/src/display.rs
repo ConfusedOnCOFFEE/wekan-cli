@@ -49,6 +49,7 @@ impl CliDisplay {
         &mut self,
         artifact_details: T,
     ) -> Result<WekanResult, Error> {
+        info!("format_most_details");
         let mut properties_to_show = vec![
             artifact_details.get_id(),
             artifact_details.get_title(),
@@ -108,7 +109,7 @@ impl CliDisplay {
     pub fn format_base_details<T: WekanDisplay + BaseDetails>(
         &mut self,
         artifact_details: T,
-        format: Option<String>,
+        format: &Option<String>,
     ) -> Result<WekanResult, Error> {
         info!("format_base_details");
         let properties_to_show = vec![
@@ -197,6 +198,7 @@ impl CliDisplay {
         artifacts: Vec<T>,
         format: Option<String>,
     ) -> Result<WekanResult, Error> {
+        info!("prepare_output");
         let mut full_output = String::new();
         full_output.push_str(output);
         let second_output = self.format_vec(artifacts, format).unwrap();
@@ -216,6 +218,7 @@ impl CliDisplay {
         lists: Vec<T>,
         cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
+        info!("format_to_table_layout");
         let mut output = String::new();
         let mut longest_card_name = String::new();
         cards.iter().for_each(|x| {
@@ -319,7 +322,7 @@ mod tests {
         let a = CDetails::mock("my-id", "my-title", "2022-10-15T208Z");
         let out = Vec::new();
         let mut display = CliDisplay::new(out);
-        let ok_res = display.format_base_details(a, None).unwrap();
+        let ok_res = display.format_base_details(a, &None).unwrap();
         let expected_output = concat!(
             "ID           TITLE        MODIFIED_AT  CREATED_AT   ",
             "my-i         my-title     2022-10-15   2022-10-15   ",

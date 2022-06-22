@@ -14,7 +14,7 @@ keywords = [
 ]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-rust-version = "1.60.0"
+rust-version = "1.61.0"
 include = [
   "src/**/*",
   "Cargo.toml",
@@ -30,6 +30,8 @@ bench = false
 store = []
 
 [dependencies]
+wekan-common = { path = "../wekan-common" }
+wekan-core-derive = { path = "../wekan-core-derive"}
 chrono = "0.4"
 reqwest = { version = "0.11", features = ["json", "multipart" ] }
 futures = { version = "0.3.21" }
@@ -39,10 +41,9 @@ serde_json = { version = "1.0" }
 serde_yaml = { version = "0.8.21" }
 async-trait = { version = "0.1.7" }
 clap = { version = "3.0.14", features = ["derive", "env", "yaml"] }
-wekan-common = { path = "../wekan-common" }
 log = "0.4.0"
 env_logger = "0.8.4"
-wekan-core-derive = { path = "../wekan-core-derive"}
+
 
 [dev-dependencies]
 wekan-common = { path = "../wekan-common", features = ["test"] }

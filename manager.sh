@@ -15,22 +15,22 @@ function test_crates() {
             ;;
         "cli-store")
             cd crates/wekan-cli
-            cargo test --features store
+            cargo test --features store -- --nocapture
             ;;
         "core")
             run_test wekan-core
-            cargo test  --features store
+            cargo test --features store -- --nocapture
             ;;
         *)
             cargo test
-            cargo test  --features store
+            cargo test --features store -- --nocapture
             ;;
     esac
 }
 
 function run_test() {
     cd crates/$1
-    cargo test
+    cargo test -- --nocapture
 }
 
 # Run E2E tests and show results.
@@ -79,7 +79,8 @@ function clippy() {
             run_clippy wekan-common
             ;;
         "macro")
-            run_clippy wekan-core-derive
+            clippy wekan-core-derive
+            clippy wekan-cli-derive
             ;;
         *)
             cargo clippy -- -Dwarnings

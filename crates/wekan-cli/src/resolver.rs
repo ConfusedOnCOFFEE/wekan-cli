@@ -1,10 +1,9 @@
-#[cfg(feature = "store")]
-use chrono::{prelude::*, DateTime};
-use log::{debug, error, info, trace};
+use log::{error, info, trace};
 use regex::Regex;
 use wekan_common::{
     artifact::common::{AType, Artifact, Base, IdReturner, SortedArtifact, WekanDisplay},
     validation::authentication::TokenHeader,
+    validation::constraint::Constraint,
 };
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, SwimlaneApi},
@@ -15,23 +14,25 @@ use crate::error::kind::{CliError, Error, Transform};
 #[cfg(feature = "store")]
 use crate::store::Store;
 #[cfg(test)]
-use crate::tests::mocks::{Artifacts, Mock};
+use crate::tests::mocks::Artifacts;
+#[cfg(feature = "store")]
+use chrono::{prelude::*, DateTime};
 #[cfg(not(test))]
 use wekan_core::http::operation::Artifacts;
 
-pub struct Query {
+pub struct Query<'a> {
     pub config: UserConfig,
+    pub filter: &'a str,
     #[cfg(feature = "store")]
     pub deny_store_usage: bool,
 }
 
-impl Query {
+impl<'a> Query<'a> {
     pub async fn find_card_id(
         &mut self,
         board_id: &str,
         list_id: &str,
         name: &str,
-        order: &Option<String>,
     ) -> Result<String, Error> {
         info!("find_card_id");
         let cards = match self
@@ -45,14 +46,10 @@ impl Query {
                     .await
             }
         };
-        self.confirm_valid_name(cards, name, order).await
+        self.confirm_valid_name(cards, name).await
     }
 
-    pub async fn find_swimlane_id(
-        &mut self,
-        board_id: &str,
-        order: &Option<String>,
-    ) -> Result<String, Error> {
+    pub async fn find_swimlane_id(&mut self, board_id: &str) -> Result<String, Error> {
         info!("find_swimlane_id");
         let swimlane = match self
             .inquire(AType::Swimlane, Some(board_id), None, false)
@@ -61,46 +58,37 @@ impl Query {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
-                self.fulfill_inquiry(AType::Card, Some(board_id), None)
+                self.fulfill_inquiry(AType::Swimlane, Some(board_id), None)
                     .await
             }
         };
-        self.confirm_valid_name(swimlane, &String::from("Default"), order)
+        self.confirm_valid_name(swimlane, &String::from("Default"))
             .await
     }
 
-    pub async fn find_list_id(
-        &mut self,
-        board_id: &str,
-        name: &str,
-        order: &Option<String>,
-    ) -> Result<String, Error> {
+    pub async fn find_list_id(&mut self, board_id: &str, name: &str) -> Result<String, Error> {
         info!("find_list_id");
         let boards = match self.inquire(AType::List, Some(board_id), None, false).await {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
-                self.fulfill_inquiry(AType::Card, Some(board_id), None)
+                self.fulfill_inquiry(AType::List, Some(board_id), None)
                     .await
             }
         };
-        self.confirm_valid_name(boards, name, order).await
+        self.confirm_valid_name(boards, name).await
     }
 
-    pub async fn find_board_id(
-        &mut self,
-        name: &str,
-        order: &Option<String>,
-    ) -> Result<String, Error> {
+    pub async fn find_board_id(&mut self, name: &str) -> Result<String, Error> {
         info!("find_board_id");
         let boards = match self.inquire(AType::Board, None, None, false).await {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
-                self.fulfill_inquiry(AType::Card, None, None).await
+                self.fulfill_inquiry(AType::Board, None, None).await
             }
         };
-        self.confirm_valid_name(boards, name, order).await
+        self.confirm_valid_name(boards, name).await
     }
 
     #[cfg(not(feature = "store"))]
@@ -111,6 +99,7 @@ impl Query {
         list_id: Option<&str>,
         _fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
+        info!("inquire");
         self.fulfill_inquiry(artifact_variant, board_id, list_id)
             .await
     }
@@ -123,83 +112,84 @@ impl Query {
         list_id: Option<&str>,
         fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
+        info!("inquire");
         if self.deny_store_usage || fresh_request {
-            info!("Store disabled or fresh_request");
             self.fulfill_inquiry(artifact_variant, board_id, list_id)
                 .await
         } else {
-            let join_ids = match board_id {
-                Some(b) => match list_id {
-                    Some(l) => b.to_owned() + l,
-                    None => b.to_string(),
-                },
-                None => String::new(),
-            };
-            trace!("Joined ids: {}", join_ids);
-            match self
-                .lookup_artifacts(artifact_variant.clone(), &join_ids)
-                .await
-            {
-                Ok(o) => match o.age.parse::<DateTime<Utc>>() {
-                    Ok(t) => {
-                        trace!("Payload: {:?}", o.payload);
-                        trace!("Minutes: {} - {}", t.minute(), Utc::now().minute());
-                        match artifact_variant {
-                            AType::Board => {
-                                if Utc::now().hour() > t.hour() + 1 {
-                                    debug!("New request");
-                                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
-                                        .await
-                                } else {
-                                    debug!("Take store");
-                                    Ok(o.payload)
-                                }
-                            }
-                            AType::List => {
-                                if Utc::now().minute() > t.minute() + 15 {
-                                    debug!("New request");
-                                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
-                                        .await
-                                } else {
-                                    debug!("Take store");
-                                    Ok(o.payload)
-                                }
-                            }
-                            AType::Card => {
-                                if Utc::now().minute() > t.minute() + 5 {
-                                    debug!("New request");
-                                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
-                                        .await
-                                } else {
-                                    debug!("Take store");
-                                    Ok(o.payload)
-                                }
-                            }
-                            AType::Swimlane => {
-                                if t.minute() + 5 > 60 || Utc::now().minute() > t.minute() + 20 {
-                                    debug!("New request");
-                                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
-                                        .await
-                                } else {
-                                    debug!("Take store");
-                                    Ok(o.payload)
-                                }
-                            }
-                            _ => {
-                                error!("Not a AType or empty list");
-                                Ok(Vec::new())
-                            }
-                        }
+            match artifact_variant {
+                AType::Board => {
+                    self.compare_age(artifact_variant, board_id, list_id, &15)
+                        .await
+                }
+                AType::List => {
+                    self.compare_age(artifact_variant, board_id, list_id, &10)
+                        .await
+                }
+                AType::Card => {
+                    self.compare_age(artifact_variant, board_id, list_id, &3)
+                        .await
+                }
+                AType::Swimlane => {
+                    self.compare_age(artifact_variant, board_id, list_id, &15)
+                        .await
+                }
+                _ => {
+                    error!("Not a AType or empty list");
+                    Ok(Vec::new())
+                }
+            }
+        }
+    }
+    #[cfg(feature = "store")]
+    async fn compare_age(
+        &self,
+        artifact_variant: AType,
+        board_id: Option<&str>,
+        list_id: Option<&str>,
+        diff: &u32,
+    ) -> Result<Vec<Artifact>, Error> {
+        let join_ids = match board_id {
+            Some(b) => match list_id {
+                Some(l) => b.to_owned() + "_" + l,
+                None => b.to_string(),
+            },
+            None => String::new(),
+        };
+        trace!("Joined ids: {}", join_ids);
+        match self
+            .lookup_artifacts(artifact_variant.clone(), &join_ids)
+            .await
+        {
+            Ok(o) => match o.age.parse::<DateTime<Utc>>() {
+                Ok(t) => {
+                    let mut last_available_minute_of_store: u32 = t.minute() + *diff;
+                    if t.minute() > 60 {
+                        trace!("Over 60 => {}", t.minute());
+                        last_available_minute_of_store = t.minute() - 60;
                     }
-                    Err(_e) => {
+                    trace!(
+                        "Compare equation: {} < {}",
+                        last_available_minute_of_store,
+                        Utc::now().minute()
+                    );
+                    if last_available_minute_of_store < Utc::now().minute() {
+                        info!("Request");
                         self.fulfill_inquiry(artifact_variant, board_id, list_id)
                             .await
+                    } else {
+                        info!("Store");
+                        Ok(o.payload)
                     }
-                },
+                }
                 Err(_e) => {
                     self.fulfill_inquiry(artifact_variant, board_id, list_id)
                         .await
                 }
+            },
+            Err(_e) => {
+                self.fulfill_inquiry(artifact_variant, board_id, list_id)
+                    .await
             }
         }
     }
@@ -210,7 +200,8 @@ impl Query {
         board_id: Option<&str>,
         list_id: Option<&str>,
     ) -> Result<Vec<Artifact>, Error> {
-        trace!("{:?}", artifact_variant);
+        info!("fulfill_inquire");
+        trace!("AType: {:?}", artifact_variant);
         match artifact_variant {
             AType::Board => self.request_boards().await,
             AType::List | AType::Swimlane | AType::Card => match board_id {
@@ -276,11 +267,10 @@ impl Query {
         &mut self,
         vecs: Result<Vec<impl WekanDisplay>, Error>,
         name: &str,
-        order: &Option<String>,
     ) -> Result<String, Error> {
         match vecs {
-            Ok(r#as) => self.extract_id(r#as, name, order).await,
-            Err(_e) => Err(CliError::new_msg("No artifacts have been fonud.").as_enum()),
+            Ok(r#as) => self.extract_id(r#as, name).await,
+            Err(_e) => Err(CliError::new_msg("Artifact not found").as_enum()),
         }
     }
 
@@ -288,7 +278,6 @@ impl Query {
         &mut self,
         vecs: Vec<impl WekanDisplay>,
         name: &str,
-        order: &Option<String>,
     ) -> Result<String, Error> {
         let mut iter = vecs.iter();
         loop {
@@ -299,32 +288,26 @@ impl Query {
                         title: artifact.get_title(),
                         r#type: artifact.get_type(),
                     };
-                    debug!("extract_id");
-                    trace!("{:?} and the query name: {}", a, name);
-                    if Query::check_artifact(&a, name, order) {
-                        debug!("One artifact found.");
+                    trace!("{:?} - {}", a, name);
+                    if self.check_artifact(&a, name) {
+                        info!("Artifact found");
                         break Ok(a.get_id());
                     }
                 }
-                None => break Err(CliError::new_msg("Artifact not found.").as_enum()),
+                None => break Err(CliError::new_msg("Artifact not found").as_enum()),
             };
         }
     }
 
-    fn check_artifact(artifact: &Artifact, name: &str, order: &Option<String>) -> bool {
-        match order {
-            Some(ref s) => {
-                if !s.is_empty() && Query::match_title_by_type(artifact, s) {
-                    true
-                } else {
-                    Query::contains_title(artifact, name)
-                }
-            }
-            None => Query::contains_title(artifact, name),
+    fn check_artifact(&self, artifact: &Artifact, name: &str) -> bool {
+        if !self.filter.is_empty() && self.match_title_by_type(artifact) {
+            true
+        } else {
+            Query::contains_title(artifact, name)
         }
     }
 
-    fn match_title_by_type(artifact: &Artifact, filter: &str) -> bool {
+    fn match_title_by_type(&self, artifact: &Artifact) -> bool {
         match artifact.get_type() {
             AType::Board => {
                 let b = Regex::new(r"b:(?P<board>[a-z0-9A-Z]{1,4}),l:.*").unwrap();
@@ -334,8 +317,7 @@ impl Query {
                 let before = "b:a8as,l:Eklk,c:I09";
                 let after = b.captures(before).unwrap();
                 assert_eq!(after.name("board").unwrap().as_str(), "a8as");
-                trace!("Board: {:?} vs {:?}", filter, artifact.get_id());
-                Query::match_captured_user_input(b, filter, artifact)
+                self.match_captured_user_input(b, artifact)
             }
             AType::List => {
                 let b =
@@ -346,7 +328,7 @@ impl Query {
                 let before = "b:a8as,l:Eklk,c:I09";
                 let after = b.captures(before).unwrap();
                 assert_eq!(after.name("list").unwrap().as_str(), "Eklk");
-                Query::match_captured_user_input(b, filter, artifact)
+                self.match_captured_user_input(b, artifact)
             }
             AType::Card => {
                 let b = Regex::new(
@@ -359,15 +341,14 @@ impl Query {
                 let before = "b:a8as,l:Eklk,c:I09";
                 let after = b.captures(before).unwrap();
                 assert_eq!(after.name("card").unwrap().as_str(), "I09");
-                Query::match_captured_user_input(b, filter, artifact)
+                self.match_captured_user_input(b, artifact)
             }
             _ => false,
         }
     }
 
-    fn match_captured_user_input(regex: Regex, filter: &str, artifact: &Artifact) -> bool {
-        trace!("Card: {:?} vs {:?}", filter, artifact);
-        match regex.captures(filter) {
+    fn match_captured_user_input(&self, regex: Regex, artifact: &Artifact) -> bool {
+        match regex.captures(self.filter) {
             Some(s) => {
                 trace!("{:?}", s);
                 match s.name("card") {
@@ -379,24 +360,47 @@ impl Query {
         }
     }
     fn contains_title(user_input: &Artifact, artifact_title: &str) -> bool {
-        debug!("Artifact: {:?} - Title: {:?}", user_input, artifact_title);
+        trace!("Artifact: {:?} - Title: {}", user_input, artifact_title);
         user_input.get_title().contains(&artifact_title)
     }
 
     fn starts_with(artifact_id: &str, user_identfifier: &str) -> bool {
-        debug!(
-            "Artifact: {:?} - Title: {:?}",
-            user_identfifier, artifact_id
-        );
+        trace!("Artifact: {:?} - Title: {}", user_identfifier, artifact_id);
         artifact_id.starts_with(&user_identfifier)
     }
 
-    #[cfg(test)]
-    #[cfg(feature = "store")]
-    fn mock(store: bool) -> Self {
-        Query {
-            config: UserConfig::mock(),
-            deny_store_usage: store,
+    pub async fn fulfill_constraint(
+        &mut self,
+        constraint: Constraint,
+    ) -> Result<Constraint, Error> {
+        info!("fulfill_contsraint");
+        match constraint {
+            Constraint::List(mut con) => match self.find_board_id(&con.board.title).await {
+                Ok(id) => {
+                    con.board._id = id;
+                    Ok(Constraint::List(con.clone()))
+                }
+                Err(_e) => Err(CliError::new_msg("Board not found").as_enum()),
+            },
+            Constraint::Card(mut con) => match self.find_board_id(&con.board.title).await {
+                Ok(b_id) => match self.find_list_id(&b_id, &con.list.title).await {
+                    Ok(l_id) => {
+                        con.board._id = b_id;
+                        con.list._id = l_id;
+                        Ok(Constraint::Card(con.clone()))
+                    }
+                    Err(e) => {
+                        trace!("{:?}", e);
+                        Err(CliError::new_msg("List not found").as_enum())
+                    }
+                },
+                Err(e) => {
+                    trace!("{:?}", e);
+                    Err(CliError::new_msg("Board not found").as_enum())
+                }
+            },
+            Constraint::Board(con) => Ok(Constraint::Board(con)),
+            _ => Err(CliError::new_msg("NOT IMPLEMENTED").as_enum()),
         }
     }
 }
@@ -404,37 +408,39 @@ impl Query {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::mocks::Mocks;
-    #[cfg(not(feature = "store"))]
-    impl Mock for Query {
-        fn mock() -> Self {
-            Query {
-                config: UserConfig::mock(),
-            }
-        }
-    }
-
+    use crate::tests::mocks::{Mock, Mocks};
     #[tokio::test]
     async fn find_board_id() {
         #[cfg(not(feature = "store"))]
-        let mut query = Query::mock();
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let mut query = Query::mock(true);
-        let res = query
-            .find_board_id("fake-board-title-1", &None)
-            .await
-            .unwrap();
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: true,
+        };
+        let res = query.find_board_id("fake-board-title-1").await.unwrap();
         assert_eq!(res, "fake-board-id-1");
     }
 
     #[tokio::test]
     async fn find_list_id() {
         #[cfg(not(feature = "store"))]
-        let mut query = Query::mock();
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let mut query = Query::mock(true);
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: true,
+        };
         let res = query
-            .find_list_id("fake-board-id-1", "fake-list-title-1", &None)
+            .find_list_id("fake-board-id-1", "fake-list-title-1")
             .await
             .unwrap();
         assert_eq!(res, "fake-list-id-1");
@@ -443,16 +449,19 @@ mod tests {
     #[tokio::test]
     async fn find_card_id() {
         #[cfg(not(feature = "store"))]
-        let mut query = Query::mock();
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let mut query = Query::mock(true);
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: true,
+        };
+
         let res = query
-            .find_card_id(
-                "fake-board-id-2",
-                "fake-list-id-1",
-                "fake-card-title-1",
-                &None,
-            )
+            .find_card_id("fake-board-id-2", "fake-list-id-1", "fake-card-title-1")
             .await
             .unwrap();
         assert_eq!(res, "fake-card-id-1");
@@ -461,16 +470,18 @@ mod tests {
     #[tokio::test]
     async fn find_card_id_with_order() {
         #[cfg(not(feature = "store"))]
-        let mut query = Query::mock();
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::from("b:f"),
+        };
         #[cfg(feature = "store")]
-        let mut query = Query::mock(true);
+        let mut query = Query {
+            config: UserConfig::mock(),
+            filter: &String::from("b:f"),
+            deny_store_usage: true,
+        };
         let res = query
-            .find_card_id(
-                "fake-board-id-2",
-                "fake-list-id-1",
-                "fake-card-title-1",
-                &Some(String::from("b:f")),
-            )
+            .find_card_id("fake-board-id-2", "fake-list-id-1", "fake-card-title-1")
             .await
             .unwrap();
         assert_eq!(res, "fake-card-id-1");
@@ -478,9 +489,16 @@ mod tests {
     #[tokio::test]
     async fn request_boards() {
         #[cfg(not(feature = "store"))]
-        let query = Query::mock();
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let query = Query::mock(false);
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: false,
+        };
         let res = query.request_boards().await.unwrap();
         assert_eq!(res, Vec::mocks(AType::Board));
     }
@@ -488,9 +506,16 @@ mod tests {
     #[tokio::test]
     async fn request_lists() {
         #[cfg(not(feature = "store"))]
-        let query = Query::mock();
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let query = Query::mock(false);
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: false,
+        };
         let res = query.request_lists("fake-id-2").await.unwrap();
         assert_eq!(res, Vec::mocks(AType::List));
     }
@@ -498,9 +523,16 @@ mod tests {
     #[tokio::test]
     async fn request_cards() {
         #[cfg(not(feature = "store"))]
-        let query = Query::mock();
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let query = Query::mock(false);
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: false,
+        };
         let res = query.request_cards("fake-id-2", "fake-id-2").await.unwrap();
         assert_eq!(res, Vec::mocks(AType::Card));
     }
@@ -508,9 +540,16 @@ mod tests {
     #[tokio::test]
     async fn request_swimlanes() {
         #[cfg(not(feature = "store"))]
-        let query = Query::mock();
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let query = Query::mock(false);
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: false,
+        };
         let res = query.request_swimlanes("fake-id-2").await.unwrap();
         assert_eq!(res, Vec::mocks(AType::Swimlane));
     }
@@ -518,9 +557,16 @@ mod tests {
     #[tokio::test]
     async fn inquire() {
         #[cfg(not(feature = "store"))]
-        let query = Query::mock();
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+        };
         #[cfg(feature = "store")]
-        let query = Query::mock(false);
+        let query = Query {
+            config: UserConfig::mock(),
+            filter: &String::new(),
+            deny_store_usage: false,
+        };
         let mut res = query
             .inquire(AType::Board, None, None, false)
             .await
@@ -539,11 +585,12 @@ mod tests {
 
         #[tokio::test]
         async fn find_board_id_with_store() {
-            let mut query = Query::mock(false);
-            let res = query
-                .find_board_id("fake-board-title-1", &None)
-                .await
-                .unwrap();
+            let mut query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: false,
+            };
+            let res = query.find_board_id("fake-board-title-1").await.unwrap();
             #[cfg(not(feature = "store"))]
             assert_eq!(res, "fake-board-id-1");
             #[cfg(feature = "store")]
@@ -552,9 +599,13 @@ mod tests {
 
         #[tokio::test]
         async fn find_list_id_with_store() {
-            let mut query = Query::mock(false);
+            let mut query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: false,
+            };
             let res = query
-                .find_list_id("store-fake-board-id-1", "fake-list-title-1", &None)
+                .find_list_id("store-fake-board-id-1", "fake-list-title-1")
                 .await
                 .unwrap();
             #[cfg(not(feature = "store"))]
@@ -565,14 +616,13 @@ mod tests {
 
         #[tokio::test]
         async fn find_card_id_with_store_request_again() {
-            let mut query = Query::mock(false);
+            let mut query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: false,
+            };
             let res = query
-                .find_card_id(
-                    "fake-id-board-2",
-                    "fake-id-card-1",
-                    "fake-card-title-1",
-                    &None,
-                )
+                .find_card_id("fake-id-board-2", "fake-id-card-1", "fake-card-title-1")
                 .await
                 .unwrap();
             #[cfg(not(feature = "store"))]
@@ -582,13 +632,16 @@ mod tests {
         }
         #[tokio::test]
         async fn find_card_id_with_store() {
-            let mut query = Query::mock(false);
+            let mut query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: false,
+            };
             let res = query
                 .find_card_id(
                     "fake-id-board-2",
                     "fake-id-card-1",
                     "store-fake-card-title-1",
-                    &None,
                 )
                 .await
                 .unwrap();
@@ -601,14 +654,13 @@ mod tests {
 
         #[tokio::test]
         async fn find_card_id_with_store_with_order() {
-            let mut query = Query::mock(false);
+            let mut query = Query {
+                config: UserConfig::mock(),
+                filter: &String::from("b:1"),
+                deny_store_usage: false,
+            };
             let res = query
-                .find_card_id(
-                    "fake-id-board-2",
-                    "fake-id-list-1",
-                    "fake-card-title-1",
-                    &Some(String::from("b:1")),
-                )
+                .find_card_id("fake-id-board-2", "fake-id-list-1", "fake-card-title-1")
                 .await
                 .unwrap();
             #[cfg(not(feature = "store"))]
@@ -618,29 +670,45 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn request_boards_with_store() {
-            let query = Query::mock(true);
+        async fn request_boards_without_store() {
+            let query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: true,
+            };
             let res = query.request_boards().await.unwrap();
             assert_eq!(res, Vec::mocks(AType::Board));
         }
 
         #[tokio::test]
         async fn request_lists_with_store() {
-            let query = Query::mock(true);
+            let query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: true,
+            };
             let res = query.request_lists("fake-id-2").await.unwrap();
             assert_eq!(res, Vec::mocks(AType::List));
         }
 
         #[tokio::test]
         async fn request_card_with_store() {
-            let query = Query::mock(true);
+            let query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: true,
+            };
             let res = query.request_cards("fake-id-2", "fake-id-2").await.unwrap();
             assert_eq!(res, Vec::mocks(AType::Card));
         }
 
         #[tokio::test]
         async fn request_swimlanes_with_store() {
-            let query = Query::mock(true);
+            let query = Query {
+                config: UserConfig::mock(),
+                filter: &String::new(),
+                deny_store_usage: true,
+            };
             let res = query.request_swimlanes("fake-id-2").await.unwrap();
             assert_eq!(res, Vec::mocks(AType::Swimlane));
         }

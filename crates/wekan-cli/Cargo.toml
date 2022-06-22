@@ -30,6 +30,10 @@ store = [ "wekan-core/store"]
 integration = [ "store"]
 
 [dependencies]
+wekan-common = { path = "../wekan-common" }
+wekan-core = { path = "../wekan-core" }
+wekan-core-derive = { path = "../wekan-core-derive"}
+wekan-cli-derive = { path = "../wekan-cli-derive"}
 reqwest = { version = "0.11.10", features = ["json", "multipart" ] }
 tokio = { version = "1.18.2", features = ["full"] }
 serde = { version = "1.0", features = ["derive"]}
@@ -38,9 +42,6 @@ serde_yaml = { version = "0.8.21" }
 async-trait = { version = "0.1.7" }
 clap = { version = "3.0.14", features = ["derive", "env", "yaml"] }
 clap-verbosity-flag = "1.0.0"
-wekan-common = { path = "../wekan-common" }
-wekan-core = { path = "../wekan-core" }
-wekan-core-derive = { path = "../wekan-core-derive"}
 log = "0.4.0"
 env_logger = "0.8.4"
 rpassword = "6.0.1"

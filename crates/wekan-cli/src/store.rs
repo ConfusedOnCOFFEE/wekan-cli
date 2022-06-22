@@ -27,7 +27,7 @@ pub trait Store {
 }
 
 #[async_trait]
-impl Store for Query {
+impl<'a> Store for Query<'a> {
     async fn lookup_artifacts(
         &self,
         artifact_variant: AType,
@@ -38,7 +38,7 @@ impl Store for Query {
             title: String::new(),
             r#type: artifact_variant,
         };
-        info!("request_artifacts");
+        info!("lookup_artifacts");
         trace!("{:?}", artifact);
         match self.stock_up(&artifact).await {
             Ok(a) => Ok(a),
@@ -46,9 +46,9 @@ impl Store for Query {
         }
     }
     async fn lookup_id(&self, artifact: &Artifact) -> Result<String, Error> {
-        info!("request_artifact");
+        info!("lookup_id");
         trace!("{:?}", artifact);
-        let identifier = artifact.get_type().to_string() + &artifact.get_id();
+        let identifier = artifact.get_type().to_string() + "_" + &artifact.get_id();
         trace!("Identifier: {:?}", identifier);
         match self.approve_id(&identifier).await {
             Ok(a) => Ok(a),
@@ -61,22 +61,18 @@ impl Store for Query {
         let config_path = self.config.get_path();
         let to_load_from = match artifact.get_type() {
             AType::Board => config_path.to_owned() + &artifact.get_type().to_string() + "s",
-            _ => config_path.to_owned() + &artifact.get_type().to_string() + &artifact.get_id(),
+            _ => {
+                config_path.to_owned() + &artifact.get_type().to_string() + "_" + &artifact.get_id()
+            }
         };
-        trace!("Load artifact from: {:?}", to_load_from);
+        trace!("Load from: {:?}", to_load_from);
         match tokio::fs::read(to_load_from).await {
-            Ok(v) => match String::from_utf8_lossy(&v).parse::<String>() {
-                Ok(s) => {
-                    trace!("{:?}", s);
-                    match serde_yaml::from_slice::<Entry<Vec<Artifact>>>(&v) {
-                        Ok(v) => {
-                            trace!("Read succesffully: {:?}", v);
-                            Ok(v)
-                        }
-                        Err(e) => Err(Error::Yaml(e)),
-                    }
+            Ok(v) => match serde_yaml::from_slice::<Entry<Vec<Artifact>>>(&v) {
+                Ok(v) => {
+                    trace!("Success: {:?}", v);
+                    Ok(v)
                 }
-                Err(_e) => Err(Error::Store(StoreError { found: false })),
+                Err(e) => Err(Error::Yaml(e)),
             },
             Err(e) => Err(Error::Io(e)),
         }
@@ -118,23 +114,17 @@ impl Store for Query {
         };
         trace!("Identifier: {:?}", unqiue_identifier);
         match tokio::fs::read(config_path.to_owned() + unqiue_identifier).await {
-            Ok(v) => match String::from_utf8_lossy(&v).parse::<String>() {
-                Ok(s) => {
-                    trace!("{:?}", s);
-                    match serde_yaml::from_slice::<Artifact>(&v) {
-                        Ok(c) => {
-                            trace!("Read succesffully: {:?}", c);
-                            if unqiue_identifier == (c._id.to_owned() + &c.title) {
-                                debug!("It is a match!");
-                                Ok(c._id)
-                            } else {
-                                Err(Error::Store(StoreError { found: false }))
-                            }
-                        }
-                        Err(e) => Err(Error::Yaml(e)),
+            Ok(v) => match serde_yaml::from_slice::<Artifact>(&v) {
+                Ok(c) => {
+                    trace!("Success: {:?}", c);
+                    if unqiue_identifier == (c._id.to_owned() + &c.title) {
+                        debug!("Loaded artifact match");
+                        Ok(c._id)
+                    } else {
+                        Err(Error::Store(StoreError { found: false }))
                     }
                 }
-                Err(_e) => Err(Error::Store(StoreError { found: false })),
+                Err(e) => Err(Error::Yaml(e)),
             },
             Err(e) => Err(Error::Io(e)),
         }

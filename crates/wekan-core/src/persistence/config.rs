@@ -1,12 +1,8 @@
 use super::store::Butler;
-use crate::{
-    config::{MandatoryConfig, UserConfig},
-    error::kind::Error,
-};
+use crate::{config::UserConfig, error::kind::Error};
 use async_trait::async_trait;
-use log::debug;
 #[cfg(not(test))]
-use log::trace;
+use log::{info, trace};
 use serde::{Deserialize, Serialize};
 #[cfg(not(test))]
 use std::fs;
@@ -14,6 +10,9 @@ use std::fs;
 use tokio::fs::File;
 #[cfg(not(test))]
 use tokio::io::AsyncWriteExt;
+
+#[cfg(test)]
+use crate::config::MandatoryConfig;
 
 #[async_trait]
 impl Butler for UserConfig {}
@@ -37,27 +36,20 @@ impl PersistenceConfig for UserConfig {
     }
 
     async fn write_config(&self, config: UserConfig) {
-        debug!("/write_context");
+        info!("/write_context");
         self.write_into_config(config).await;
     }
 
     async fn read_config(&self) -> Result<UserConfig, Error> {
-        debug!("read_config");
         let config_path = self.get_path();
-        debug!("read from file: {}", config_path);
+        info!("Read file: {}", config_path);
         match tokio::fs::read(config_path.to_owned() + "/config").await {
-            Ok(v) => match String::from_utf8_lossy(&v).parse::<String>() {
-                Ok(s) => {
-                    trace!("{:?}", s);
-                    match serde_yaml::from_slice::<UserConfig>(&v) {
-                        Ok(c) => {
-                            trace!("Read succesffully: {:?}", c);
-                            Ok(c)
-                        }
-                        Err(e) => Err(Error::Yaml(e)),
-                    }
+            Ok(v) => match serde_yaml::from_slice::<UserConfig>(&v) {
+                Ok(c) => {
+                    trace!("Success: {:?}", c);
+                    Ok(c)
                 }
-                Err(_e) => Ok(UserConfig::new()),
+                Err(e) => Err(Error::Yaml(e)),
             },
             Err(e) => Err(Error::Io(e)),
         }
@@ -75,14 +67,10 @@ impl PersistenceConfig for UserConfig {
     }
 
     async fn write_config(&self, config: UserConfig) {
-        debug!("/write_context");
         self.write_into_config(config).await;
     }
 
     async fn read_config(&self) -> Result<UserConfig, Error> {
-        debug!("read_config");
-        let config_path = self.get_path();
-        debug!("read from file: {}", config_path);
         Ok(UserConfig::new())
     }
 }
@@ -98,7 +86,6 @@ impl FileWriter for UserConfig {
     async fn write<'de, T: Send + Deserialize<'de> + Serialize>(&self, path: String, artifact: T) {
         let s: String = serde_yaml::to_string(&artifact).unwrap();
         let config_path = self.get_path();
-        debug!("write to file: {}{}", config_path, path);
         if !config_path.is_empty() {
             match fs::create_dir_all(&config_path) {
                 Ok(_created) => {

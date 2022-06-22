@@ -1,4 +1,3 @@
-#[cfg(feature = "store")]
 use crate::config::ConfigRequester;
 use crate::config::{AddressConfig, OptionalConfig, UserConfig};
 use async_trait::async_trait;
@@ -23,7 +22,6 @@ pub struct Client {
     pub id: String,
 }
 
-#[cfg(feature = "store")]
 impl ConfigRequester<UserConfig> for Client {
     fn get_config(&self) -> UserConfig {
         self.config.get_config()
@@ -99,7 +97,7 @@ impl CardApi for Client {
         Self {
             config,
             base: "boards/".to_owned() + &board_id + "/lists/" + &list_id + "/cards/",
-            id: board_id + &list_id,
+            id: board_id + "_" + &list_id,
         }
     }
     fn set_base(&mut self, board_id: &str, list_id: &str) -> String {

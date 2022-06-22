@@ -1,4 +1,4 @@
-use crate::artifact::common::{Base, DeserializeExt, IdReturner};
+use crate::artifact::common::{Base, DeserializeExt, IdReturner, WekanDisplayExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -22,9 +22,8 @@ pub struct ResponseOk {
 pub trait RequestBody: std::marker::Sync + Debug + Serialize + Send {}
 pub trait Deleted: Debug + DeserializeOwned + 'static {}
 pub trait IdResponse: Send + Debug + IdReturner + DeserializeOwned + 'static {}
-
+pub trait DetailsResponse: WekanDisplayExt + RequestBody {}
 impl RequestBody for CreateArtifact {}
-
 impl Deleted for ResponseOk {}
 impl RequestBody for ResponseOk {}
 impl IdResponse for ResponseOk {}
