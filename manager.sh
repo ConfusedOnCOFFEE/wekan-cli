@@ -7,7 +7,7 @@ os_type=$(uname)
 
 # Run tests with different crates including the available features.
 function test_crates() {
-    echo "Run test ${1}"
+    echo "${1}"
     cd $script_dir
     case "$1" in
         "cli")
@@ -22,6 +22,7 @@ function test_crates() {
             cargo test --features store -- --nocapture
             ;;
         *)
+            echo "Run members tests"
             cargo test
             cargo test --features store -- --nocapture
             ;;
@@ -35,12 +36,11 @@ function run_test() {
 
 # Run E2E tests and show results.
 function e2e() {
-    echo "Run e2e $1"
+    echo "Run $1"
     cd $script_dir
     case "$1" in
         "c")
             run_e2e
-            e2e rerun
             ;;
         "rerun"|"r")
             cd e2e
@@ -50,13 +50,12 @@ function e2e() {
             docker logs wekan-cli
             ;;
         *)
-            run_e2e
+            e2e c
             ;;
     esac
 }
 
 function run_e2e() {
-    e2e/e2e.sh rm >/dev/null 2>/dev/null
     cargo build --features integration
     cd e2e
     ./e2e.sh ab
@@ -65,7 +64,7 @@ function run_e2e() {
 
 # Clippy all crates
 function clippy() {
-    echo "Run clippy ${1}"
+    echo "${1}"
     cd $script_dir
     case "$1" in
         "cli")
@@ -84,6 +83,7 @@ function clippy() {
             clippy wekan-cli-derive
             ;;
         *)
+            echo "Run members clippy"
             cargo clippy -- -Dwarnings
             ;;
     esac
@@ -104,7 +104,7 @@ function fmt() {
 
 # Build release artifact for specified platforms.
 function release() {
-    echo "Release ${1}"
+    echo "${1}"
     cd $script_dir
     case "$1" in
         "apple")
@@ -266,9 +266,11 @@ case $flow in
         cargo build --features integration
         ;;
     "b:target")
+        echo "Build release binary"
         release $selection
         ;;
     "c"|"clippy")
+        echo "Run clippy"
         clippy $selection
         ;;
     "cov"|"lcov")
@@ -282,6 +284,7 @@ case $flow in
         docker build -t concafe/wekan-cli:release .
         ;;
     "e"|"e2e"|"2e"|"2ee")
+        echo "Run e2e"
         e2e $selection
         ;;
     "f"|"fmt")
@@ -294,14 +297,19 @@ case $flow in
         run cli-store
         ;;
     "t"|"test")
+        echo "Run test"
         test_crates $selection
         ;;
     "ts")
+        echo "Run test"
         test_crates cli-store
         ;;
-    "qa")
+    "qa"|"q")
+        echo "Run fmt, clippy, all possible kind of tests"
+        set -e
         fmt
         clippy
+        echo "Run test"
         test_crates
         e2e
         ;;
