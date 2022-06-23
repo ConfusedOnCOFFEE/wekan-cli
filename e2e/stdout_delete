@@ -1,3 +1,6 @@
+-------------------    wekan-cli -d card -b Test -l Test -n test-card rm    -------------------
 Successfully deleted
+-------------------    wekan-cli -d list -b Test -n Test rm    -------------------
 Successfully deleted
+-------------------    wekan-cli -d board -n Test rm    -------------------
 Successfully deleted

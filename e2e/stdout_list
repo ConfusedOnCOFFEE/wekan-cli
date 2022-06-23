@@ -1,50 +1,61 @@
+-------------------    wekan-cli list --help    -------------------
 wekan-cli-list 0.1.0
 Manage lists
 
 USAGE:
-    wekan-cli list [OPTIONS] --board <BOARD> [NAME] [SUBCOMMAND]
-
-ARGS:
-    <NAME>    List name
+    wekan-cli list [OPTIONS] --board <BOARD> [SUBCOMMAND]
 
 OPTIONS:
     -b, --board <BOARD>    Board name
     -h, --help             Print help information
+    -n, --name <NAME>      List name
     -q, --quiet            Less output per occurrence
     -v, --verbose          More output per occurrence
     -V, --version          Print version information
 
 SUBCOMMANDS:
-    create     Create artifact
-    details    Show details
+    create     Create an artifact
+    details    Show the details
     help       Print this message or the help of the given subcommand(s)
     inspect    Describe artifact by id
-    ls         List Artifacts
-    rm         Remove artifact
+    ls         List all artifacts
+    rm         Remove an artifact
+-------------------    wekan-cli list -b Test ls    -------------------
 ID    TITLE
 
 ----
 Recommended workflow: Get or update details of an artifact
+-------------------    wekan-cli list -b Test create Test    -------------------
 Successfully created
+-------------------    wekan-cli list -b Test ls    -------------------
 ID    TITLE
 AAAA  Test
 
 ----
 Recommended workflow: Get or update details of an artifact
+-------------------    wekan-cli list -b Test -n Test details    -------------------
 ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA         Test
 ----
-This list contains no card
-Recommended workflow: Create a card with subcommand 'card create --help'
+This artifact contains no children
+Recommended workflow: Create a children using the subcommand
+-------------------    wekan-cli board -n Test    -------------------
 ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA         Test
 ----
-Following lists are available:
+Following children are available:
 ID    TITLE
 AAAA  Test
 
 ----
 Recommended workflow: Get or update details of an artifact
+-------------------    wekan-cli board -n Test details    -------------------
 ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA         Test
 ----
+Following children are available:
+ID    TITLE
+AAAA  Test
+
+----
+Recommended workflow: Get or update details of an artifact

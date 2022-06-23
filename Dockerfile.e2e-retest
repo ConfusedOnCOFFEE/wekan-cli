@@ -1,9 +1,10 @@
 FROM concafe/wekan-cli:integration
-
-RUN rm -rf /usr/src/myapp/wekan-cli/e2e
-COPY e2e /usr/src/myapp/wekan-cli/e2e
-WORKDIR /usr/src/myapp/wekan-cli
+COPY e2e .
+RUN chmod +x entrypoint.sh && \
+    mkdir /log && \
+    touch /log/stdout.log && \
+    touch /log/stderr.log
 ENV WEKAN_URL=wekan-e2e-app:8080
 ENV WEKAN_USER=testuser
 ENV WEKAN_PWD=testuser123
-CMD ["e2e/entrypoint.sh"]
+CMD ["./entrypoint.sh"]

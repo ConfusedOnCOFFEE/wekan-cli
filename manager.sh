@@ -43,6 +43,7 @@ function e2e() {
             e2e rerun
             ;;
         "rerun"|"r")
+            cd e2e
             ./e2e.sh rerun
             ;;
         "l")

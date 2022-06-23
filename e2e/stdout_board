@@ -1,39 +1,42 @@
+-------------------    wekan-cli board --help    -------------------
 wekan-cli-board 0.1.0
 Manage boards
 
 USAGE:
-    wekan-cli board [OPTIONS] [NAME] [SUBCOMMAND]
-
-ARGS:
-    <NAME>    Specify the board to be updated
+    wekan-cli board [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
-    -h, --help                Print help information
-    -q, --quiet               Less output per occurrence
-    -t, --task-file <FILE>    Specify the file to create/update a task
-    -v, --verbose             More output per occurrence
-    -V, --version             Print version information
+    -h, --help           Print help information
+    -n, --name <NAME>    Board name
+    -q, --quiet          Less output per occurrence
+    -v, --verbose        More output per occurrence
+    -V, --version        Print version information
 
 SUBCOMMANDS:
-    create     Create artifact
-    details    Show details
+    create     Create an artifact
+    details    Show the details
     help       Print this message or the help of the given subcommand(s)
     inspect    Describe artifact by id
-    ls         List Artifacts
-    rm         Remove artifact
+    ls         List all artifacts
+    rm         Remove an artifact
+-------------------    wekan-cli board create Test    -------------------
 Successfully created
-Recommended workflow: Create a list with subcommand 'list create --help'
+-------------------    wekan-cli board ls    -------------------
 ID    TITLE
 AAAA  Templates
 AAAA  Test
 
 ----
 Recommended workflow: Get or update details of an artifact
+-------------------    wekan-cli board -n Test    -------------------
 ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA         Test
 ----
-This boards contains no lists
-Recommended workflow: Create a list with subcommand 'list create --help'
+This artifact contains no children
+Recommended workflow: Create a children using the subcommand
+-------------------    wekan-cli board -n Test details    -------------------
 ID           TITLE        MODIFIED_AT  CREATED_AT
 AAAA         Test
 ----
+This artifact contains no children
+Recommended workflow: Create a children using the subcommand

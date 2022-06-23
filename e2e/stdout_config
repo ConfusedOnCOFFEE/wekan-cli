@@ -1,5 +1,11 @@
+-------------------    wekan-cli config remove-context local    -------------------
 Successfully deleted
 Recommended workflow: config set-context
+-------------------    wekan-cli config remove-credentials    -------------------
 Successfully logged out and credentials successfully deleted
 Recommended workflow: 'login --host <HOST> [USER]'
+-------------------    wekan-cli config remove please    -------------------
+-------------------    wekan-cli config remove -c local -y please    -------------------
+-------------------    wekan-cli config remove -c local -f -y please    -------------------
 Context and config successfully deleted
+-------------------    wekan-cli config remove -y please    -------------------

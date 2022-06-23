@@ -4,8 +4,5 @@ WORKDIR /usr/src/myapp
 COPY crates .
 WORKDIR /usr/src/myapp/wekan-cli
 RUN cargo install --features integration --path .
-RUN chmod +x e2e/entrypoint.sh && \
-    mkdir /log && \
-    touch /log/stdout.log && \
-    touch /log/stderr.log
+RUN rm -rf /usr/src/myapp
 CMD ["wekan-cli"]
