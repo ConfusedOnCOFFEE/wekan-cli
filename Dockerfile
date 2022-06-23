@@ -3,8 +3,7 @@ FROM rust:1.61
 WORKDIR /usr/src/myapp
 COPY crates .
 WORKDIR /usr/src/myapp/wekan-cli
+RUN cargo install --features wekan-cli/store --path .
 
-FROM debian:buster-slim
-RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /usr/local/cargo/bin/wekan-cli /usr/local/bin/wekan-cli
-CMD ["wekan-cli"]
+# Use 'docker cp CONTAINER:/usr/local/cargo/bin/wekan-cli $PWD/wekan-cli
+# to copy the binary to your local filesystem

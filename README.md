@@ -82,11 +82,11 @@ Afterwards you get binary in crates/wekan-cli/target/release/${platform}/wekan-c
 
 
 - Clone the repo
-- Run
-    - `cargo build -r --features wekan-cli/store`. 
-    - `cargo install --features wekan-cli/store`. Ready to be used.
-    - `make use`
-
+- Run one of the following steps:
+    - `cargo build -r --features wekan-cli/store` and move it where you want it
+    - `cargo install --features wekan-cli/store` and use it
+    - `make use` and move it where you want it
+    - `docker build -name wekan-cli -t wekan-cli:YOUR_TAG .` and `docker cp wekan-cli:/usr/local/cargo/bin/wekan-cli $PWD/wekan-cli` to install it via Docker
 
 # ENV VARIABLES
 
