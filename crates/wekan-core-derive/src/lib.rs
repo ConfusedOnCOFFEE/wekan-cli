@@ -8,7 +8,7 @@ pub fn derive_unauthorized_client(input: proc_macro::TokenStream) -> proc_macro:
     let name = input.ident;
 
     let output: proc_macro2::TokenStream = quote! {
-        impl crate::http::authentication::Unauthorized for #name {}
+        impl Unauthorized for #name {}
         impl AddressConfig for LoginClient {
             fn get_address(&self) -> String {
                 self.config.get_address()
@@ -30,9 +30,9 @@ pub fn derive_authentication_client(input: proc_macro::TokenStream) -> proc_macr
 
     let output: proc_macro2::TokenStream = quote! {
 
-        impl crate::http::authentication::Login for #name {}
-        impl crate::http::authentication::TokenManager for #name {}
-        impl crate::http::preflight_request::Client for #name {}
+        impl Login for #name {}
+        impl TokenManager for #name {}
+        impl HealthCheck for #name {}
 
         impl crate::config::AddressConfig for #name {
             fn get_address(&self) -> String {
@@ -63,12 +63,12 @@ pub fn derive_artifact_client(input: proc_macro::TokenStream) -> proc_macro::Tok
     let (_impl_generics, _ty_generics, _where_clause) = generics.split_for_impl();
 
     let output: proc_macro2::TokenStream = quote! {
-        impl crate::http::authentication::TokenManager for #name {}
-        impl crate::http::authentication::Login for #name {}
-        impl crate::http::client::HttpClient for #name {}
-        impl crate::http::operation::Artifacts for #name {}
-        impl crate::http::operation::Operation for #name {}
-        impl crate::config::ArtifactApi for  #name {
+        impl TokenManager for #name {}
+        impl Login for #name {}
+        impl HttpClient for #name {}
+        impl Artifacts for #name {}
+        impl Operation for #name {}
+        impl ArtifactApi for  #name {
             fn get_artifacts_url(&self) -> String {
                 self.config.get_api_address() + &self.base
             }
@@ -76,7 +76,7 @@ pub fn derive_artifact_client(input: proc_macro::TokenStream) -> proc_macro::Tok
                 self.config.get_api_address() + &self.base + id
             }
         }
-        impl crate::config::AddressConfig for #name {
+        impl AddressConfig for #name {
             fn get_address(&self) -> String {
                 self.config.get_address()
             }
@@ -86,7 +86,7 @@ pub fn derive_artifact_client(input: proc_macro::TokenStream) -> proc_macro::Tok
             }
         }
         #[async_trait]
-        impl wekan_common::validation::authentication::StoreToken for #name {
+        impl StoreToken for #name {
             async fn store_token(&mut self, t: Token) -> Token {
                 self.config.store_token(t).await
             }
@@ -100,10 +100,9 @@ pub fn derive_artifact_client(input: proc_macro::TokenStream) -> proc_macro::Tok
 pub fn derive_token_config(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
-
     let output: proc_macro2::TokenStream = quote! {
         #[cfg(not(test))]
-        impl wekan_common::validation::authentication::TokenHeader for #name {
+        impl TokenHeader for #name {
             fn get_usertoken(&self) -> Token {
                 match &self.config.usertoken {
                     Some(t) => t.to_owned(),
@@ -124,7 +123,7 @@ pub fn derive_token_config(input: proc_macro::TokenStream) -> proc_macro::TokenS
             }
         }
         #[cfg(test)]
-        impl wekan_common::validation::authentication::TokenHeader for #name {
+        impl TokenHeader for #name {
             fn get_usertoken(&self) -> Token {
                 Token {
                     id: Box::new(String::from("B8D3e2qeXitTeqm9s")),

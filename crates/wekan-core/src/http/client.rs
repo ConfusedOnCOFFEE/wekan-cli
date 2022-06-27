@@ -1,6 +1,6 @@
 use super::{
     authentication::{Header, TokenManager},
-    preflight_request::Client as PFRClient,
+    preflight_request::HealthCheck,
 };
 use crate::config::{AddressConfig, UserConfig};
 use crate::error::kind::Error;
@@ -43,7 +43,7 @@ impl AddressConfig for Client {
     }
 }
 
-impl PFRClient for Client {}
+impl HealthCheck for Client {}
 
 #[async_trait]
 pub trait HttpClient: TokenManager + Header {

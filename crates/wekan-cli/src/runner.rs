@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use wekan_core::{
     client::{BoardApi, CardApi, Client, ListApi, LoginClient},
     config::{MandatoryConfig, UserConfig},
-    http::preflight_request::Client as PFRClient,
+    http::preflight_request::HealthCheck,
 };
 
 #[cfg(feature = "store")]

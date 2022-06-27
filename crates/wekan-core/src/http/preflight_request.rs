@@ -6,7 +6,7 @@ use log::{debug, trace};
 use reqwest::{header::HeaderMap, Client as ReqClient, Response};
 
 #[async_trait]
-pub trait Client: AddressConfig {
+pub trait HealthCheck: AddressConfig {
     #[cfg(test)]
     async fn healthcheck(&mut self) -> Result<(), Error> {
         Ok(())
