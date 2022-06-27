@@ -93,3 +93,15 @@ pub struct Apply {
     /// Artifact file
     task_file: PathBuf,
 }
+
+#[derive(ClapArgs, Debug, Clone)]
+#[clap(version = "0.1.0", about = "Archive an artifact (API doesn't support it :( )")]
+pub struct Archive {
+    #[clap(
+        short = 'r',
+        long,
+        parse(from_flag),
+        help = "Restore an archived artifact"
+    )]
+    pub restore: bool,
+}

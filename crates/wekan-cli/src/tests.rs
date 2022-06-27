@@ -29,12 +29,11 @@ pub mod mocks {
         ) -> Result<T, Error> {
             Ok(T::success(Some(id.to_string())))
         }
-        async fn put<U: RequestBody, T: MockReturn + IdResponse>(
+        async fn put<B: RequestBody, T: MockReturn + IdResponse>(
             &mut self,
-            id: &str,
-            _body: &U,
+            body: &B,
         ) -> Result<T, Error> {
-            Ok(T::success(Some(id.to_string())))
+            Ok(T::success(Some(body.get_id())))
         }
     }
     impl Operation for Client {}

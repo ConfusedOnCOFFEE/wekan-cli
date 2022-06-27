@@ -15,6 +15,8 @@ use wekan_common::validation::authentication::{Credentials, Token, TokenHeader};
 #[cfg(test)]
 use crate::http::client::tests::{MResponse, MockClient};
 use crate::http::client::MethodMiddleware;
+#[cfg(test)]
+use wekan_common::artifact::tests::MockResponse;
 
 use log::info;
 use wekan_common::validation::authentication::StoreToken;
@@ -194,7 +196,7 @@ pub trait Unauthorized {
         Ok(MockClient {})
     }
     async fn get(_url: &str) -> Result<MResponse, Error> {
-        Ok(MResponse {})
+        Ok(MResponse::mock())
     }
 }
 

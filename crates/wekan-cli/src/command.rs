@@ -21,8 +21,8 @@ use wekan_core::config::ConfigRequester;
 use wekan_core::http::operation::{Artifacts, Operation};
 
 use wekan_common::{
-    artifact::common::{AType, DeserializeExt},
-    http::artifact::DetailsResponse,
+    artifact::common::{AType, DeserializeExt, MostDetails},
+    http::artifact::{DetailsResponse, ResponseOk},
 };
 /// Wekan CLI
 #[derive(Parser, Debug)]
@@ -204,6 +204,26 @@ pub trait RootCommandRunner<'a, R: DetailsResponse, C: std::marker::Send>:
         create_args: &impl CreateSubcommand,
     ) -> Result<WekanResult, Error>;
     async fn use_inspect(&mut self, inspect_args: &Inspect) -> Result<WekanResult, Error>;
+    async fn use_archive<
+        B: wekan_common::http::artifact::RequestBody,
+        MD: DetailsResponse + MostDetails,
+    >(
+        &mut self,
+        body: &B,
+    ) -> Result<WekanResult, Error> {
+        info!("use_archive");
+        match self.get_client().put::<B, ResponseOk>(body).await {
+            Ok(_o) => {
+                let details = self
+                    .get_client()
+                    .get_one::<MD>(&body.get_id())
+                    .await
+                    .unwrap();
+                self.get_display().format_most_details(details)
+            }
+            Err(_e) => CliError::new_msg("Failed to update").err(),
+        }
+    }
 }
 
 #[async_trait]
@@ -234,15 +254,12 @@ pub trait Operator<'a>: Fulfillment<'a> + std::marker::Send + std::marker::Sync 
         self.get_children(&base_result, &id).await
     }
 
-    async fn create<
-        T: serde::Serialize + std::fmt::Debug + Clone + wekan_common::http::artifact::RequestBody,
-        R: DeserializeExt,
-    >(
+    async fn create<B: wekan_common::http::artifact::RequestBody, R: DeserializeExt>(
         &mut self,
-        body: &T,
+        body: &B,
     ) -> Result<WekanResult, Error> {
         info!("create");
-        match self.get_client().create::<T, R>(body).await {
+        match self.get_client().create::<B, R>(body).await {
             Ok(ok) => {
                 trace!("{:?}", ok);
                 WekanResult::new_msg("Successfully created").ok()
@@ -257,11 +274,7 @@ pub trait Operator<'a>: Fulfillment<'a> + std::marker::Send + std::marker::Sync 
     async fn remove(&mut self, name: Option<String>) -> Result<WekanResult, Error> {
         info!("remove");
         let id = self.unwrap_and_find_id(name).await?;
-        match self
-            .get_client()
-            .delete::<wekan_common::http::artifact::ResponseOk>(&id)
-            .await
-        {
+        match self.get_client().delete::<ResponseOk>(&id).await {
             Ok(_o) => WekanResult::new_msg("Successfully deleted").ok(),
             Err(e) => {
                 trace!("{:?}", e);

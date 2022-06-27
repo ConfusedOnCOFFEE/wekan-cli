@@ -1,4 +1,5 @@
-use crate::http::artifact::RequestBody;
+use super::artifact::RequestBody;
+use crate::artifact::common::IdReturner;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "test")]
@@ -8,6 +9,7 @@ use crate::artifact::tests::MockResponse;
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub struct CreateBoard {
+    pub _id: String,
     pub title: String,
     pub owner: String,
     pub permission: Option<String>,
@@ -17,6 +19,11 @@ pub struct CreateBoard {
     pub is_no_comments: Option<bool>,
     pub is_comment_only: Option<bool>,
     pub is_worker: Option<bool>,
+}
+impl IdReturner for CreateBoard {
+    fn get_id(&self) -> String {
+        self._id.to_owned()
+    }
 }
 
 #[allow(dead_code)]

@@ -102,6 +102,7 @@ impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
         create_args: &impl CreateSubcommand,
     ) -> Result<WekanResult, Error> {
         let c_a = CreateArtifact {
+            _id: String::new(),
             title: create_args.get_title(),
         };
         self.create::<CreateArtifact, ResponseOk>(&c_a).await

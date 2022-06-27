@@ -5,7 +5,7 @@ use super::{
 use crate::config::{AddressConfig, UserConfig};
 use crate::error::kind::Error;
 use async_trait::async_trait;
-use log::{debug, trace};
+use log::{info, trace};
 #[cfg(not(test))]
 use reqwest::Response as RResponse;
 use serde::de::DeserializeOwned;
@@ -65,13 +65,13 @@ pub trait HttpClient: TokenManager + Header {
         url: &str,
         body: &T,
     ) -> Result<U, Error> {
-        debug!("post");
+        info!("post_request");
         trace!("{:?}", body);
         self.header().await?.post_ext::<T, U>(url, body).await
     }
 
     async fn delete_request<R: DeserializeExt>(&mut self, url: &str) -> Result<R, Error> {
-        debug!("delete");
+        info!("delete_request");
         trace!("{:?}", url);
         self.header().await?.delete_ext::<R>(url).await
     }
@@ -81,8 +81,7 @@ pub trait HttpClient: TokenManager + Header {
         url: &str,
         body: &B,
     ) -> Result<U, Error> {
-        trace!("put-URL: {:?}", url);
-        trace!("put-BODY: {:?}", body);
+        info!("put_request");
         self.header().await?.put_ext::<B, U>(url, body).await
     }
 }
@@ -210,18 +209,27 @@ pub mod tests {
     };
     use serde::{Deserialize, Serialize};
     use wekan_common::{
-        artifact::common::AType,
+        artifact::common::{AType, IdReturner},
         http::artifact::RequestBody,
         validation::authentication::{Token, TokenHeader},
     };
     #[derive(Clone, Deserialize, Serialize, Debug)]
-    pub struct MResponse {}
+    pub struct MResponse {
+        _id: String,
+    }
+    impl IdReturner for MResponse {
+        fn get_id(&self) -> String {
+            self._id.to_owned()
+        }
+    }
     impl RequestBody for MResponse {}
     impl Deleted for MResponse {}
     pub struct MockClient {}
     impl MockResponse for MResponse {
         fn mock() -> Self {
-            MResponse {}
+            MResponse {
+                _id: String::from("fake-mock-response-id"),
+            }
         }
     }
     pub trait ConvertVec {

@@ -4,7 +4,7 @@ use crate::{
         SubCommandValidator,
     },
     error::kind::{CliError, Error, Transform},
-    subcommand::{CommonCommand, Details, Inspect, List, Remove},
+    subcommand::{Archive, CommonCommand, Details, Inspect, List, Remove},
 };
 use chrono::prelude::*;
 use clap::{Args as ClapArgs, Subcommand};
@@ -52,6 +52,7 @@ pub enum Command {
     Update(UpdateArgs),
     #[clap(name = "mv")]
     Move(CardMoveArgs),
+    Archive(Archive),
     Inspect(Inspect),
     Details(Details),
 }

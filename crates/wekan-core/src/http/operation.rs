@@ -122,12 +122,11 @@ pub trait Operation: ArtifactApi + HttpClient {
         info!("delete {}", url);
         self.delete_request(&url).await
     }
-    async fn put<U: RequestBody, T: Send + DeserializeExt + 'static>(
+    async fn put<B: RequestBody, T: Send + DeserializeExt + 'static>(
         &mut self,
-        id: &str,
-        body: &U,
+        body: &B,
     ) -> Result<T, Error> {
-        let url = self.get_artifact_url(id);
+        let url = self.get_artifact_url(&body.get_id());
         info!("put {}", url);
         self.put_request(&url, body).await
     }

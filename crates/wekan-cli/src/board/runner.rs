@@ -95,6 +95,7 @@ impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
     ) -> Result<WekanResult, Error> {
         let client = self.client.clone();
         let body = CreateBoard {
+            _id: String::new(),
             title: create_args.get_title(),
             owner: client.get_user_id(),
             permission: Some(String::from("private")),

@@ -4,6 +4,12 @@ use std::fmt::Debug;
 
 #[cfg(feature = "test")]
 use crate::artifact::tests::{MockResponse, MockReturn};
+
+pub trait RequestBody: std::marker::Sync + Debug + Serialize + Send + IdReturner {}
+pub trait Deleted: Debug + DeserializeOwned + 'static {}
+pub trait IdResponse: Send + Debug + IdReturner + DeserializeOwned + 'static {}
+pub trait DetailsResponse: WekanDisplayExt + RequestBody {}
+
 #[derive(Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct Response<T> {
@@ -11,6 +17,7 @@ pub struct Response<T> {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CreateArtifact {
+    pub _id: String,
     pub title: String,
 }
 
@@ -19,10 +26,11 @@ pub struct ResponseOk {
     pub _id: String,
 }
 
-pub trait RequestBody: std::marker::Sync + Debug + Serialize + Send {}
-pub trait Deleted: Debug + DeserializeOwned + 'static {}
-pub trait IdResponse: Send + Debug + IdReturner + DeserializeOwned + 'static {}
-pub trait DetailsResponse: WekanDisplayExt + RequestBody {}
+impl IdReturner for CreateArtifact {
+    fn get_id(&self) -> String {
+        self._id.to_owned()
+    }
+}
 impl RequestBody for CreateArtifact {}
 impl Deleted for ResponseOk {}
 impl RequestBody for ResponseOk {}
