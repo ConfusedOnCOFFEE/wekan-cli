@@ -36,10 +36,10 @@ function run_test() {
 
 # Run E2E tests and show results.
 function e2e() {
-    echo "Run $1"
+    echo "E2E $1"
     cd $script_dir
     case "$1" in
-        "c")
+        "c"|"cli")
             run_e2e
             ;;
         "rerun"|"r")
@@ -50,7 +50,7 @@ function e2e() {
             docker logs wekan-cli
             ;;
         *)
-            e2e c
+            e2e cli
             ;;
     esac
 }
@@ -270,7 +270,6 @@ case $flow in
         release $selection
         ;;
     "c"|"clippy")
-        echo "Run clippy"
         clippy $selection
         ;;
     "cov"|"lcov")
@@ -284,7 +283,6 @@ case $flow in
         docker build -t concafe/wekan-cli:release .
         ;;
     "e"|"e2e"|"2e"|"2ee")
-        echo "Run e2e"
         e2e $selection
         ;;
     "f"|"fmt")
@@ -297,19 +295,18 @@ case $flow in
         run cli-store
         ;;
     "t"|"test")
-        echo "Run test"
         test_crates $selection
         ;;
     "ts")
-        echo "Run test"
+        echo "TEST cli with feature store"
         test_crates cli-store
         ;;
     "qa"|"q")
-        echo "Run fmt, clippy, all possible kind of tests"
+        echo "QA (fmt, clippy, ut, e2e)"
         set -e
         fmt
         clippy
-        echo "Run test"
+        echo "TEST"
         test_crates
         e2e
         ;;
