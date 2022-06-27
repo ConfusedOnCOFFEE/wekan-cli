@@ -1,0 +1,42 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    -   id: check-executables-have-shebangs
+    -   id: check-yaml
+    -   id: trailing-whitespace
+        exclude: ^test/
+    -   id: mixed-line-ending
+        exclude: ^test/
+-   repo: https://github.com/DevinR528/cargo-sort
+    rev: v1.0.7
+    hooks:
+    -   id: cargo-sort
+-   repo: meta
+    hooks:
+    -   id: check-useless-excludes
+-   repo: local
+    hooks:
+      - id: fmt
+        name: fmt
+        language: system
+        types: [file, rust]
+        entry: cargo fmt -- --check
+        pass_filenames: false
+
+      - id: clippy
+        name: clippy
+        language: system
+        types: [file, rust]
+        entry: cargo clippy --bins --tests --examples --all -- -D rust_2021_idioms -D warnings # Use -D warnings option to ensure the job fails when encountering warnings
+        pass_filenames: false
+
+      - id: test
+        name: test
+        language: system
+        types: [file, rust]
+        entry: cargo test --lib
+        pass_filenames: false
+
+default_language_version:
+    python: python3
