@@ -1,5 +1,6 @@
 pub mod board;
 pub mod card;
+pub mod checklist;
 pub mod command;
 pub mod config;
 pub mod display;

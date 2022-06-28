@@ -7,7 +7,7 @@ pub enum Constraint {
     Board(BoardConstraint),
     List(ListConstraint),
     Card(CardConstraint),
-    Checklist(SwimlaneConstraint),
+    Checklist(ChecklistConstraint),
     Login(bool),
 }
 
@@ -34,4 +34,12 @@ pub struct ListConstraint {
 #[derive(Debug, Clone)]
 pub struct SwimlaneConstraint {
     pub board: Artifact,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ChecklistConstraint {
+    pub board: Artifact,
+    pub list: Artifact,
+    pub card: Artifact,
 }

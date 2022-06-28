@@ -1,23 +1,46 @@
 use crate::{
     command::{
-        Args as RArgs, ArgumentRequester, ArtifactCommand, CreateSubcommand, Fulfillment, Operator,
-        RootCommandRunner,
+        Args as RArgs, ArgumentRequester, ArtifactCommand, ArtifactName, CommonCommandRequester,
+        CreateSubcommand, Fulfillment, Operator, RootCommandRunner, SubCommandValidator,
     },
     display::CliDisplay,
-    error::kind::Error,
-    list::argument::Args,
+    error::{CliError, Error, Transform},
     resolver::Query,
-    result::kind::WekanResult,
+    result::WekanResult,
     subcommand::{CommonCommand as Command, Inspect},
 };
 use async_trait::async_trait;
-use wekan_cli_derive::FulfilmentRunner;
+use wekan_cli_derive::{CommonSubcommands, FulfilmentRunner, WekanArgs};
 use wekan_common::{
     artifact::{common::AType, list::Details},
     http::artifact::{CreateArtifact, ResponseOk},
     validation::constraint::ListConstraint as LConstraint,
 };
 use wekan_core::client::{Client, ListApi};
+
+use clap::Args as ClapArgs;
+
+#[derive(ClapArgs, Debug, Clone, WekanArgs, CommonSubcommands)]
+#[clap(version = "0.1.0", about = "Manage lists")]
+pub struct Args {
+    #[clap(short, long, help = "List name")]
+    pub name: Option<String>,
+    #[clap(short = 'b', long, help = "Board name")]
+    pub board: String,
+    #[clap(subcommand)]
+    pub command: Option<Command>,
+}
+
+#[cfg(test)]
+impl Args {
+    pub fn mock(name: Option<String>, board: String, command: Option<Command>) -> Self {
+        Args {
+            name,
+            board,
+            command,
+        }
+    }
+}
 
 #[derive(FulfilmentRunner)]
 pub struct Runner<'a> {

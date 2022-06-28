@@ -5,9 +5,9 @@ use crate::{
         RootCommandRunner,
     },
     display::CliDisplay,
-    error::kind::{CliError, Error, Transform},
+    error::{CliError, Error, Transform},
     resolver::Query,
-    result::kind::WekanResult,
+    result::WekanResult,
     subcommand::{Archive, Inspect},
 };
 use async_trait::async_trait;

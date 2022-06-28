@@ -1,14 +1,15 @@
 #[cfg(test)]
 use crate::tests::mocks::{Artifacts, Mock, Operation};
 use crate::{
-    board::argument::Args as BArg,
+    board::Args as BArg,
     card::argument::Args as CArg,
+    checklist::Args as ChArg,
     config::argument::Args as Config,
     display::CliDisplay,
-    error::kind::{CliError, Error, Transform},
-    list::argument::Args as LArg,
+    error::{CliError, Error, Transform},
+    list::Args as LArg,
     resolver::Query,
-    result::kind::WekanResult,
+    result::WekanResult,
     subcommand::{Apply, CommonCommand as Command, Describe, Get, Inspect, Table},
 };
 use async_trait::async_trait;
@@ -46,6 +47,7 @@ pub enum Subcommand {
     Board(BArg),
     Card(CArg),
     List(LArg),
+    Checklist(ChArg),
     Table(Table),
     Get(Get),
     Describe(Describe),
@@ -340,6 +342,7 @@ pub trait Operator<'a>: Fulfillment<'a> + std::marker::Send + std::marker::Sync 
                     )
                     .await
             }
+            AType::Empty => Ok(Vec::new()),
             _ => Ok(Vec::new()),
         };
         match childrens {

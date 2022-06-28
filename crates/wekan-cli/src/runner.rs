@@ -2,7 +2,7 @@ extern crate log;
 #[cfg(feature = "store")]
 use async_trait::async_trait;
 use wekan_core::{
-    client::{BoardApi, CardApi, Client, ListApi, LoginClient},
+    client::{BoardApi, CardApi, ChecklistApi, Client, ListApi, LoginClient},
     config::{MandatoryConfig, UserConfig},
     http::preflight_request::HealthCheck,
 };
@@ -10,17 +10,18 @@ use wekan_core::{
 #[cfg(feature = "store")]
 use crate::config::context::ReadContext;
 use crate::{
-    board::{argument::Args as BArgs, runner::Runner as BRunner},
+    board::{Args as BArgs, Runner as BRunner},
     card::{argument::Args as CArgs, runner::Runner as CRunner},
+    checklist::{Args as ChArgs, Runner as CheckRunner},
     command::{
         Args as RArgs, ArtifactCommand, BaseCommand, RootCommandRunner, Subcommand as Command,
     },
     config::runner::Runner as ConfigRunner,
     display::CliDisplay,
-    error::kind::{CliError, Error, InputError, Transform},
-    list::{argument::Args as LArgs, runner::Runner as LRunner},
+    error::{CliError, Error, InputError, Transform},
+    list::{Args as LArgs, Runner as LRunner},
     resolver::Query,
-    result::kind::WekanResult,
+    result::WekanResult,
     subcommand::{Describe, Inspect, Table as TArgs},
 };
 #[cfg(not(test))]
@@ -30,8 +31,8 @@ use wekan_common::{
     artifact::{board::Details as BDetails, card::Details as CDetails, list::Details as LDetails},
     validation::{
         constraint::{
-            BoardConstraint as BConstraint, CardConstraint as CConstraint, Constraint,
-            ListConstraint as LConstraint,
+            BoardConstraint as BConstraint, CardConstraint as CConstraint, ChecklistConstraint,
+            Constraint, ListConstraint as LConstraint,
         },
         user::User,
     },
@@ -92,6 +93,7 @@ impl<'a> Runner {
                     Command::Board(b) => self.run_board(&b).await,
                     Command::List(l) => self.run_list(&l).await,
                     Command::Card(c) => self.run_card(&c).await,
+                    Command::Checklist(c) => self.run_checklist(&c).await,
                     Command::Table(t) => self.run_table(&t).await,
                     Command::Inspect(i) => self.run_inspect(i).await,
                     Command::Describe(d) => self.run_describe(d).await,
@@ -156,10 +158,8 @@ impl<'a> Runner {
                             r#type: AType::Board,
                         },
                     };
-                    let client = <Client as ListApi>::new(
-                        self.client.config.clone(),
-                        constraint.board._id.to_owned(),
-                    );
+                    let client =
+                        <Client as ListApi>::new(self.client.config.clone(), &constraint.board._id);
                     let mut runner: LRunner = LRunner::new(
                         l_args.clone(),
                         client,
@@ -221,8 +221,8 @@ impl<'a> Runner {
                     constraint = c;
                     let client = <Client as CardApi>::new(
                         self.client.config.clone(),
-                        constraint.board._id.to_owned(),
-                        constraint.list._id.to_owned(),
+                        &constraint.board._id,
+                        &constraint.list._id,
                     );
                     let mut runner: CRunner = CRunner::new(
                         c_args.clone(),
@@ -230,6 +230,68 @@ impl<'a> Runner {
                         constraint,
                         &mut query,
                         format,
+                        self.display.to_owned(),
+                        &self.global_options,
+                    );
+                    runner.run().await
+                }
+                _ => CliError::new_msg("Wrong constraint").err(),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn run_checklist(&self, c_args: &ChArgs) -> Result<WekanResult, Error> {
+        let mut constraint = ChecklistConstraint {
+            board: Artifact {
+                _id: String::new(),
+                title: c_args.board.to_owned(),
+                r#type: AType::Board,
+            },
+            list: Artifact {
+                _id: String::new(),
+                title: c_args.list.to_owned(),
+                r#type: AType::List,
+            },
+            card: Artifact {
+                _id: String::new(),
+                title: c_args.card.to_owned(),
+                r#type: AType::Checklist,
+            },
+        };
+        let mut filter = String::new();
+        match &self.global_options.filter {
+            Some(f) => filter.push_str(f),
+            None => {}
+        };
+        #[cfg(feature = "store")]
+        let mut query = Query {
+            filter: &filter,
+            config: self.client.config.clone(),
+            deny_store_usage: self.global_options.no_store,
+        };
+        #[cfg(not(feature = "store"))]
+        let mut query = Query {
+            filter: &filter,
+            config: self.client.config.clone(),
+        };
+        match query
+            .fulfill_constraint(Constraint::Checklist(constraint.to_owned()))
+            .await
+        {
+            Ok(constraints) => match constraints {
+                Constraint::Checklist(c) => {
+                    constraint = c;
+                    let client = <Client as ChecklistApi>::new(
+                        self.client.config.clone(),
+                        &constraint.board._id.to_owned(),
+                        &constraint.card._id.to_owned(),
+                    );
+                    let mut runner: CheckRunner = CheckRunner::new(
+                        c_args.clone(),
+                        client,
+                        constraint,
+                        self.format.to_owned(),
                         self.display.to_owned(),
                         &self.global_options,
                     );
@@ -308,7 +370,7 @@ impl<'a> Runner {
                     Some(b_id) => {
                         self.verify_id_length(b_id.to_string())?;
                         let mut client =
-                            <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
+                            <Client as ListApi>::new(self.client.config.clone(), &b_id);
                         let artifact = client.get_one::<LDetails>(v.remove(0)).await.unwrap();
                         self.display.format_base_details(
                             artifact,
@@ -325,8 +387,8 @@ impl<'a> Runner {
                                 self.verify_id_length(l_id.to_string())?;
                                 let mut client = <Client as CardApi>::new(
                                     self.client.config.clone(),
-                                    b_id.to_string(),
-                                    l_id.to_string(),
+                                    &b_id,
+                                    l_id,
                                 );
                                 let artifact =
                                     client.get_one::<CDetails>(v.remove(2)).await.unwrap();
@@ -387,8 +449,7 @@ impl<'a> Runner {
                 }
                 "list" | "l" => match &d.delegate.board_id {
                     Some(b_id) => {
-                        let mut client =
-                            <Client as ListApi>::new(self.client.config.clone(), b_id.to_string());
+                        let mut client = <Client as ListApi>::new(self.client.config.clone(), b_id);
                         match query.find_list_id(b_id, name).await {
                             Ok(l_id) => {
                                 let board = client.get_one::<LDetails>(&l_id).await.unwrap();
@@ -405,11 +466,8 @@ impl<'a> Runner {
                 "card" | "c" => match &d.delegate.board_id {
                     Some(b_id) => match &d.delegate.list_id {
                         Some(l_id) => {
-                            let mut client = <Client as CardApi>::new(
-                                self.client.config.clone(),
-                                b_id.to_string(),
-                                l_id.to_string(),
-                            );
+                            let mut client =
+                                <Client as CardApi>::new(self.client.config.clone(), b_id, l_id);
                             match query.find_card_id(b_id, l_id, name).await {
                                 Ok(c_id) => {
                                     let board = client.get_one::<CDetails>(&c_id).await.unwrap();

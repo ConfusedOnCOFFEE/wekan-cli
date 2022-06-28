@@ -58,16 +58,16 @@ impl BoardApi for Client {
 }
 
 pub trait ListApi {
-    fn new(config: UserConfig, board_id: String) -> Self;
+    fn new(config: UserConfig, board_id: &str) -> Self;
     fn set_base(&mut self, board_id: &str) -> String;
 }
 
 impl ListApi for Client {
-    fn new(config: UserConfig, board_id: String) -> Self {
+    fn new(config: UserConfig, board_id: &str) -> Self {
         Self {
             config,
-            base: "boards/".to_owned() + &board_id + "/lists/",
-            id: board_id,
+            base: "boards/".to_owned() + board_id + "/lists/",
+            id: board_id.to_string(),
         }
     }
     fn set_base(&mut self, board_id: &str) -> String {
@@ -96,19 +96,37 @@ impl SwimlaneApi for Client {
 }
 
 pub trait CardApi {
-    fn new(config: UserConfig, board_id: String, list_id: String) -> Self;
+    fn new(config: UserConfig, board_id: &str, list_id: &str) -> Self;
     fn set_base(&mut self, board_id: &str, list_id: &str) -> String;
 }
 impl CardApi for Client {
-    fn new(config: UserConfig, board_id: String, list_id: String) -> Self {
+    fn new(config: UserConfig, board_id: &str, list_id: &str) -> Self {
         Self {
             config,
-            base: "boards/".to_owned() + &board_id + "/lists/" + &list_id + "/cards/",
-            id: board_id + "_" + &list_id,
+            base: "boards/".to_owned() + board_id + "/lists/" + list_id + "/cards/",
+            id: board_id.to_owned() + "_" + list_id,
         }
     }
     fn set_base(&mut self, board_id: &str, list_id: &str) -> String {
         self.base = "boards/".to_owned() + board_id + "/lists/" + list_id + "/cards/";
+        self.base.to_owned()
+    }
+}
+
+pub trait ChecklistApi {
+    fn new(config: UserConfig, board_id: &str, card_id: &str) -> Self;
+    fn set_base(&mut self, card_id: &str, card_id: &str) -> String;
+}
+impl ChecklistApi for Client {
+    fn new(config: UserConfig, board_id: &str, card_id: &str) -> Self {
+        Self {
+            config,
+            base: "boards/".to_owned() + board_id + "/cards/" + card_id + "/checklists/",
+            id: board_id.to_owned() + "_" + card_id,
+        }
+    }
+    fn set_base(&mut self, board_id: &str, card_id: &str) -> String {
+        self.base = "boards/".to_owned() + board_id + "/cards/" + card_id + "/checklists/";
         self.base.to_owned()
     }
 }

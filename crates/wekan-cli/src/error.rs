@@ -1,6 +1,6 @@
-use crate::result::kind::WekanResult;
+use crate::result::WekanResult;
 use wekan_common::validation::constraint::Constraint;
-use wekan_core::error::kind::Error as CoreError;
+use wekan_core::error::Error as CoreError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -96,8 +96,8 @@ impl From<serde_yaml::Error> for Error {
         Error::Yaml(error)
     }
 }
-impl From<wekan_core::error::kind::Error> for Error {
-    fn from(error: wekan_core::error::kind::Error) -> Self {
+impl From<CoreError> for Error {
+    fn from(error: CoreError) -> Self {
         Error::Core(error)
     }
 }

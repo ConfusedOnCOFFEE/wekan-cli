@@ -1,4 +1,4 @@
-use crate::{command::BaseCommand, error::kind::Error, result::kind::WekanResult};
+use crate::{command::BaseCommand, error::Error, result::WekanResult};
 
 use super::{
     argument::{Args, Command as ConfigCommand},
@@ -8,7 +8,7 @@ use super::{
 #[cfg(feature = "store")]
 use crate::config::{context::Context, credentials::ClearConfig};
 #[cfg(feature = "store")]
-use crate::error::kind::{CliError, Transform};
+use crate::error::{CliError, Transform};
 use async_trait::async_trait;
 #[cfg(feature = "store")]
 use clap::Args as ClapArgs;

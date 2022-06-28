@@ -1,5 +1,5 @@
 use super::store::Butler;
-use crate::{config::UserConfig, error::kind::Error};
+use crate::{config::UserConfig, error::Error};
 use async_trait::async_trait;
 #[cfg(not(test))]
 use log::{info, trace};

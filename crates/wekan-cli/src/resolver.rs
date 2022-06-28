@@ -6,11 +6,11 @@ use wekan_common::{
     validation::constraint::Constraint,
 };
 use wekan_core::{
-    client::{BoardApi, CardApi, Client, ListApi, SwimlaneApi},
+    client::{BoardApi, CardApi, ChecklistApi, Client, ListApi, SwimlaneApi},
     config::UserConfig,
 };
 
-use crate::error::kind::{CliError, Error, Transform};
+use crate::error::{CliError, Error, Transform};
 #[cfg(feature = "store")]
 use crate::store::Store;
 #[cfg(test)]
@@ -91,6 +91,27 @@ impl<'a> Query<'a> {
         self.confirm_valid_name(boards, name).await
     }
 
+    pub async fn find_checklist_id(
+        &mut self,
+        board_id: &str,
+        card_id: &str,
+        name: &str,
+    ) -> Result<String, Error> {
+        info!("find_board_id");
+        let checklists = match self
+            .inquire(AType::Checklist, Some(board_id), Some(card_id), false)
+            .await
+        {
+            Ok(o) => Ok(o),
+            Err(e) => {
+                trace!("{:?}", e);
+                self.fulfill_inquiry(AType::Checklist, Some(board_id), Some(card_id))
+                    .await
+            }
+        };
+        self.confirm_valid_name(checklists, name).await
+    }
+
     #[cfg(not(feature = "store"))]
     pub async fn inquire(
         &self,
@@ -131,6 +152,10 @@ impl<'a> Query<'a> {
                         .await
                 }
                 AType::Swimlane => {
+                    self.compare_age(artifact_variant, board_id, list_id, &15)
+                        .await
+                }
+                AType::Checklist => {
                     self.compare_age(artifact_variant, board_id, list_id, &15)
                         .await
                 }
@@ -198,19 +223,23 @@ impl<'a> Query<'a> {
         &self,
         artifact_variant: AType,
         board_id: Option<&str>,
-        list_id: Option<&str>,
+        second_artifact_id: Option<&str>,
     ) -> Result<Vec<Artifact>, Error> {
         info!("fulfill_inquire");
         trace!("AType: {:?}", artifact_variant);
         match artifact_variant {
             AType::Board => self.request_boards().await,
-            AType::List | AType::Swimlane | AType::Card => match board_id {
+            AType::List | AType::Swimlane | AType::Card | AType::Checklist => match board_id {
                 Some(b) => match artifact_variant {
                     AType::List => self.request_lists(b).await,
                     AType::Swimlane => self.request_swimlanes(b).await,
-                    AType::Card => match list_id {
+                    AType::Card => match second_artifact_id {
                         Some(l) => self.request_cards(b, l).await,
                         None => panic!("List id needs to be supplied"),
+                    },
+                    AType::Checklist => match second_artifact_id {
+                        Some(c) => self.request_checklists(b, c).await,
+                        None => panic!("Card it needs to be supplied"),
                     },
                     _ => Ok(Vec::new()),
                 },
@@ -244,11 +273,7 @@ impl<'a> Query<'a> {
 
     async fn request_cards(&self, board_id: &str, list_id: &str) -> Result<Vec<Artifact>, Error> {
         info!("request_cards");
-        let mut client = <Client as CardApi>::new(
-            self.config.to_owned(),
-            board_id.to_string(),
-            list_id.to_string(),
-        );
+        let mut client = <Client as CardApi>::new(self.config.to_owned(), board_id, list_id);
         match client.get_all(AType::Card).await {
             Ok(o) => Ok(o),
             Err(e) => Err(Error::from(e)),
@@ -256,13 +281,24 @@ impl<'a> Query<'a> {
     }
     async fn request_lists(&self, board_id: &str) -> Result<Vec<Artifact>, Error> {
         info!("request_lists");
-        let mut client = <Client as ListApi>::new(self.config.to_owned(), board_id.to_string());
+        let mut client = <Client as ListApi>::new(self.config.to_owned(), board_id);
         match client.get_all(AType::List).await {
             Ok(o) => Ok(o),
             Err(e) => Err(Error::from(e)),
         }
     }
-
+    async fn request_checklists(
+        &self,
+        board_id: &str,
+        card_id: &str,
+    ) -> Result<Vec<Artifact>, Error> {
+        info!("request_cheklists");
+        let mut client = <Client as ChecklistApi>::new(self.config.to_owned(), board_id, card_id);
+        match client.get_all(AType::Checklist).await {
+            Ok(o) => Ok(o),
+            Err(e) => Err(Error::from(e)),
+        }
+    }
     async fn confirm_valid_name(
         &mut self,
         vecs: Result<Vec<impl WekanDisplay>, Error>,
@@ -389,6 +425,29 @@ impl<'a> Query<'a> {
                         con.list._id = l_id;
                         Ok(Constraint::Card(con.clone()))
                     }
+                    Err(e) => {
+                        trace!("{:?}", e);
+                        Err(CliError::new_msg("List not found").as_enum())
+                    }
+                },
+                Err(e) => {
+                    trace!("{:?}", e);
+                    Err(CliError::new_msg("Board not found").as_enum())
+                }
+            },
+            Constraint::Checklist(mut con) => match self.find_board_id(&con.board.title).await {
+                Ok(b_id) => match self.find_list_id(&b_id, &con.list.title).await {
+                    Ok(l_id) => match self.find_card_id(&b_id, &l_id, &con.card.title).await {
+                        Ok(c_id) => {
+                            con.board._id = b_id;
+                            con.card._id = c_id;
+                            Ok(Constraint::Checklist(con.clone()))
+                        }
+                        Err(e) => {
+                            trace!("{:?}", e);
+                            Err(CliError::new_msg("Card not found").as_enum())
+                        }
+                    },
                     Err(e) => {
                         trace!("{:?}", e);
                         Err(CliError::new_msg("List not found").as_enum())

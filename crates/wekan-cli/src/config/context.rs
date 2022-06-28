@@ -6,8 +6,8 @@ use wekan_core::persistence::store::Butler;
 use wekan_core::{client::LoginClient as Client, config::UserConfig};
 
 use crate::{
-    error::kind::{CliError, Error, Transform},
-    result::kind::WekanResult,
+    error::{CliError, Error, Transform},
+    result::WekanResult,
 };
 
 #[derive(ClapArgs, Debug, Clone)]

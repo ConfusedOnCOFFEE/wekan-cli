@@ -1,9 +1,7 @@
 use clap::Parser;
 use log::{debug, error, info, trace};
-use wekan_cli::{
-    command::WekanParser, error::kind::Error, result::kind::WekanResult, runner::Runner,
-};
-use wekan_core::error::kind::Error as CoreError;
+use wekan_cli::{command::WekanParser, error::Error, result::WekanResult, runner::Runner};
+use wekan_core::error::Error as CoreError;
 #[tokio::main]
 async fn main() {
     let parser = WekanParser::parse();

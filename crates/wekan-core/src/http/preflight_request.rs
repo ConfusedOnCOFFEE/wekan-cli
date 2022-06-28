@@ -1,4 +1,4 @@
-use crate::{config::AddressConfig, error::kind::Error};
+use crate::{config::AddressConfig, error::Error};
 use async_trait::async_trait;
 #[cfg(not(test))]
 use log::{debug, trace};

@@ -1,5 +1,6 @@
 pub mod board;
 pub mod card;
+pub mod checklist;
 pub mod common;
 pub mod item;
 pub mod list;

@@ -3,7 +3,7 @@ use crate::{
         ArgumentRequester, ArtifactName, CommonCommandRequester, CreateSubcommand,
         SubCommandValidator,
     },
-    error::kind::{CliError, Error, Transform},
+    error::{CliError, Error, Transform},
     subcommand::{Archive, CommonCommand, Details, Inspect, List, Remove},
 };
 use chrono::prelude::*;

@@ -52,10 +52,12 @@ impl CreateTrait for Create {
 }
 #[derive(ClapArgs, Debug, Clone)]
 pub struct Delegate {
-    #[clap(short = 'b', long, group = "card_arg", help = "Board id")]
+    #[clap(short = 'b', long, group = "base_arg", help = "Board id")]
     pub board_id: Option<String>,
-    #[clap(short = 'l', long, requires = "card_arg", help = "List id")]
+    #[clap(short = 'l', long, requires = "base_arg", help = "List id")]
     pub list_id: Option<String>,
+    #[clap(short = 'c', long, requires = "base_arg", help = "Card id")]
+    pub card_id: Option<String>,
 }
 #[derive(ClapArgs, Debug, Clone)]
 #[clap(version = "0.1.0", about = "Describe artifact by id")]
@@ -95,7 +97,10 @@ pub struct Apply {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Archive an artifact (API doesn't support it :( )")]
+#[clap(
+    version = "0.1.0",
+    about = "Archive an artifact (API doesn't support it :( )"
+)]
 pub struct Archive {
     #[clap(
         short = 'r',

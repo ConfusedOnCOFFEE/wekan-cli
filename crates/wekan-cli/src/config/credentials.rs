@@ -11,8 +11,8 @@ use wekan_core::{
 };
 
 use crate::{
-    error::kind::{CliError, Error, Transform},
-    result::kind::WekanResult,
+    error::{CliError, Error, Transform},
+    result::WekanResult,
 };
 #[cfg(feature = "store")]
 #[cfg(not(feature = "integration"))]

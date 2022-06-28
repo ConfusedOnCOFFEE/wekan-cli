@@ -1,4 +1,4 @@
-use crate::{error::kind::Error, result::kind::WekanResult};
+use crate::{error::Error, result::WekanResult};
 use log::info;
 use std::cmp::Ordering;
 use wekan_common::artifact::common::{

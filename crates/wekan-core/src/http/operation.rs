@@ -5,7 +5,7 @@ use crate::{
     config::{ConfigRequester, UserConfig},
     persistence::store::Store,
 };
-use crate::{config::ArtifactApi, error::kind::Error, http::client::HttpClient};
+use crate::{config::ArtifactApi, error::Error, http::client::HttpClient};
 use async_trait::async_trait;
 use log::{info, trace};
 #[cfg(feature = "store")]

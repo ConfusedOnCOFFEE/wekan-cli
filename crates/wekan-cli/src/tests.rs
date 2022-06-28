@@ -6,7 +6,7 @@ use wekan_common::{
     artifact::tests::{MockDetails, MockResponse, MockReturn},
     http::artifact::{Deleted, IdResponse, RequestBody},
 };
-use wekan_core::{client::Client, error::kind::Error};
+use wekan_core::{client::Client, error::Error};
 
 pub mod mocks {
     use super::*;

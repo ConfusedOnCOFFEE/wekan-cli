@@ -276,6 +276,7 @@ case $flow in
         mozilla_gcov $selection
         ;;
     "d"|"dev")
+        cd $script_dir
         export EMACSSAVEMODEDIR=.
         emacs
         ;;

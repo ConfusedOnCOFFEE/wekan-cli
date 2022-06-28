@@ -1,4 +1,4 @@
-use crate::error::kind::Error;
+use crate::error::Error;
 #[derive(Debug)]
 pub struct WekanResult {
     message: String,

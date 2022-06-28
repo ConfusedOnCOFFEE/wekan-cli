@@ -3,7 +3,7 @@ use super::{
     preflight_request::HealthCheck,
 };
 use crate::config::{AddressConfig, UserConfig};
-use crate::error::kind::Error;
+use crate::error::Error;
 use async_trait::async_trait;
 use log::{info, trace};
 #[cfg(not(test))]

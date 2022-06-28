@@ -1,5 +1,5 @@
 use crate::{
-    error::kind::{Error, StoreError},
+    error::{Error, StoreError},
     resolver::Query,
 };
 use async_trait::async_trait;

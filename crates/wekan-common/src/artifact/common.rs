@@ -1,4 +1,4 @@
-use crate::error::kind::ParseError;
+use crate::error::ParseError;
 use crate::http::artifact::RequestBody;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -44,6 +44,7 @@ pub enum AType {
     List,
     Card,
     Swimlane,
+    Checklist,
 }
 
 impl From<String> for AType {
@@ -56,6 +57,7 @@ impl From<String> for AType {
             "swimlane" => AType::Swimlane,
             "artifact" => AType::Empty,
             "template-container" => AType::Empty,
+            "checklist" => AType::Checklist,
             _ => panic!("AType for {:?} not implemented.", fixed),
         }
     }
@@ -75,6 +77,7 @@ impl From<AType> for String {
             AType::Card => "card".to_string(),
             AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
+            AType::Checklist => "checklist".to_string(),
         }
     }
 }
@@ -87,6 +90,7 @@ impl ToString for AType {
             AType::Card => "card".to_string(),
             AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
+            AType::Checklist => "checklist".to_string(),
         }
     }
 }
@@ -101,6 +105,7 @@ impl FromStr for AType {
             "card" | "cardType-card" => Ok(AType::Card),
             "swimlane" => Ok(AType::Swimlane),
             "template-container" => Ok(AType::Empty),
+            "checklist" => Ok(AType::Checklist),
             _ => Err(ParseError::new("Not a Wekan kind")),
         }
     }

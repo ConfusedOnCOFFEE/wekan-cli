@@ -1,6 +1,6 @@
 use crate::{
     config::AddressConfig,
-    error::kind::{CoreOk, Error},
+    error::{CoreOk, Error},
 };
 
 use async_trait::async_trait;
