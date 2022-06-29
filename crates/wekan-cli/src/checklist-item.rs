@@ -7,7 +7,7 @@ use crate::{
     error::{CliError, Error, Transform},
     resolver::Query,
     result::WekanResult,
-    subcommand::{CommonCommand, Details as SDetails, Inspect, List, Remove},
+    subcommand::{CommonCommand as Command, Details as SDetails, Inspect, List, Remove},
 };
 use async_trait::async_trait;
 use log::info;
@@ -18,40 +18,24 @@ use wekan_common::{
         artifact::{CreateArtifact, ResponseOk},
         common::Create,
     },
-    validation::constraint::ChecklistConstraint as ChConstraint,
+    validation::constraint::ChecklistItemConstraint as ChItConstraint,
 };
-use wekan_core::client::{ChecklistApi, Client};
+use wekan_core::client::{ChecklistItemApi, Client};
 
 use clap::{Args as ClapArgs, Subcommand};
 
-#[derive(ClapArgs, Debug, Clone, WekanArgs)]
+#[derive(ClapArgs, Debug, Clone, CommonSubcommands)]
 #[clap(
     about = "Manage checklists",
     long_about = "Create, remove and show details"
 )]
 pub struct Args {
-    #[clap(short, long, help = "Checklist name")]
+    #[clap(short, long, help = "ChecklistItem name")]
     pub name: Option<String>,
-    #[clap(short = 'b', long, help = "Board name")]
-    pub board: String,
-    #[clap(short = 'l', long, help = "List name")]
-    pub list: String,
-    #[clap(short = 'c', long, help = "Card name")]
-    pub card: String,
     #[clap(subcommand)]
     pub command: Option<Command>,
 }
 
-/// The following commands are available:
-#[derive(Subcommand, Debug, Clone)]
-pub enum Command {
-    Ls(List),
-    Create(ChecklistCreateArgs),
-    #[clap(name = "rm")]
-    Remove(Remove),
-    Inspect(Inspect),
-    Details(SDetails),
-}
 #[cfg(test)]
 impl Args {
     pub fn mock(
@@ -71,47 +55,11 @@ impl Args {
     }
 }
 
-impl CommonCommandRequester<Command> for Args {
-    fn get_common_command(&self) -> Option<CommonCommand> {
-        match &self.command {
-            Some(c) => match c {
-                Command::Ls(ls) => Some(CommonCommand::Ls(ls.to_owned())),
-                Command::Remove(r) => Some(CommonCommand::Remove(r.to_owned())),
-                Command::Inspect(i) => Some(CommonCommand::Inspect(i.to_owned())),
-                Command::Details(d) => Some(CommonCommand::Details(d.to_owned())),
-                _ => None,
-            },
-            None => None,
-        }
-    }
-}
-#[derive(ClapArgs, Debug, Clone)]
-#[clap(
-    about = "Create checklist",
-    long_about = "Create a checklist with title and items"
-)]
-pub struct ChecklistCreateArgs {
-    /// Card name
-    title: String,
-    #[clap(short = 'i', long)]
-    /// Items with komma
-    items: String,
-}
-impl CreateSubcommand for ChecklistCreateArgs {}
-impl Create for ChecklistCreateArgs {
-    fn get_title(&self) -> String {
-        self.title.to_owned()
-    }
-    fn get_description(&self) -> String {
-        String::new()
-    }
-}
-
 #[derive(FulfilmentRunner)]
 pub struct Runner<'a> {
     pub args: Args,
     pub client: Client,
-    pub constraint: ChConstraint,
+    pub constraint: ChItConstraint,
     pub format: String,
     pub display: CliDisplay,
     pub global_options: &'a RArgs,
@@ -137,11 +85,11 @@ impl<'a> Operator<'a> for Runner<'a> {
             config: self.get_client().config,
         };
         query
-            .find_checklist_id(&self.constraint.board._id, &self.constraint.card._id, name)
+            .find_checklist_item_id(&self.constraint.board._id, &self.constraint.card._id, , &self.constraint.checklist._id, name)
             .await
     }
     fn get_type(&self) -> AType {
-        AType::Checklist
+        AType::ChecklistItem
     }
 
     fn get_children_type(&self) -> AType {
@@ -149,11 +97,11 @@ impl<'a> Operator<'a> for Runner<'a> {
     }
 }
 
-impl<'a> ArtifactCommand<'a, Args, Client, ChConstraint> for Runner<'a> {
+impl<'a> ArtifactCommand<'a, Args, Client, ChItConstraint> for Runner<'a> {
     fn new(
         args: Args,
         client: Client,
-        constraint: ChConstraint,
+        constraint: ChItConstraint,
         format: String,
         display: CliDisplay,
         global_options: &'a RArgs,
@@ -173,39 +121,20 @@ impl<'a> ArtifactCommand<'a, Args, Client, ChConstraint> for Runner<'a> {
 impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
     async fn use_specific_command(&mut self) -> Result<WekanResult, Error> {
         info!("use_specific_command");
-        match self.args.command.to_owned() {
-            Some(c) => match c {
-                Command::Create(c) => self.use_create(&c).await,
-                _ => self.use_common_command().await,
-            },
-            None => CliError::new_msg("Subcommand not implemented").err(),
-        }
+        self.use_common_command().await,
     }
     async fn use_ls(&mut self) -> Result<WekanResult, Error> {
-        self.get_all().await
+        WekanResult::new_msg("Not possible").ok()
     }
     async fn use_inspect(&mut self, inspect_args: &Inspect) -> Result<WekanResult, Error> {
-        match &inspect_args.delegate.board_id {
-            Some(id) => match &inspect_args.delegate.card_id {
-                Some(card_id) => {
-                    self.client.set_base(id, card_id);
-                    self.get_one::<Details>(&inspect_args.id).await
-                }
-                None => WekanResult::new_msg("Card id needs to be supplied").ok(),
-            },
-            None => WekanResult::new_msg("Board id needs to be supplied").ok(),
-        }
+        WekanResult::new_msg("Not implemented").ok()
     }
 
     async fn use_create(
         &mut self,
         create_args: &impl CreateSubcommand,
     ) -> Result<WekanResult, Error> {
-        let c_a = CreateArtifact {
-            _id: String::new(),
-            title: create_args.get_title(),
-        };
-        self.create::<CreateArtifact, ResponseOk>(&c_a).await
+        WekanResult::new_msg("Not implemented").ok()
     }
 }
 
@@ -213,7 +142,7 @@ impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
 mod tests {
     use super::*;
     use crate::{
-        subcommand::{Details as SDetails, Remove},
+        subcommand::{Create, Details as SDetails, Remove},
         tests::mocks::Mock,
     };
     use wekan_common::artifact::common::Artifact;
@@ -225,26 +154,27 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-checklist-title-2")),
                 String::from("fake-board-title-1"),
-                String::from("fake-list-title-2"),
                 String::from("fake-card-title-2"),
+                String::from("fake-checklist-title-2"),
                 None,
             ),
             Client::mock(),
-            ChConstraint {
+            ChItConstraint {
                 board: Artifact {
                     _id: String::from("fake-board-id-1"),
                     title: String::from("fake-board-title-1"),
                     r#type: AType::Board,
                 },
-                list: Artifact {
-                    _id: String::from("fake-list-id-2"),
-                    title: String::from("fake-card-title-2"),
-                    r#type: AType::List,
-                },
+
                 card: Artifact {
                     _id: String::from("fake-card-id-2"),
                     title: String::from("fake-card-title-2"),
                     r#type: AType::Card,
+                },
+                checklist: Artifact {
+                    _id: String::from("fake-list-id-2"),
+                    title: String::from("fake-card-title-2"),
+                    r#type: AType::Checklist,
                 },
             },
             String::new(),
@@ -274,26 +204,27 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-checklist-title-2")),
                 String::from("fake-board-title-2"),
-                String::from("fake-list-title-2"),
                 String::from("fake-card-title-2"),
+                String::from("fake-checklist-title-2"),
                 Some(Command::Details(SDetails {})),
             ),
             Client::mock(),
-            ChConstraint {
+            ChItConstraint {
                 board: Artifact {
                     _id: String::from("fake-board-id-2"),
                     title: String::from("fake-board-title-2"),
                     r#type: AType::Board,
                 },
-                list: Artifact {
-                    _id: String::from("fake-list-id-2"),
-                    title: String::from("fake-card-title-2"),
-                    r#type: AType::List,
-                },
+
                 card: Artifact {
                     _id: String::from("fake-card-id-2"),
                     title: String::from("fake-card-title-2"),
                     r#type: AType::Card,
+                },
+                checklist: Artifact {
+                    _id: String::from("fake-list-id-2"),
+                    title: String::from("fake-card-title-2"),
+                    r#type: AType::Checklist,
                 },
             },
             String::new(),
@@ -323,29 +254,29 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-checklist-title-2")),
                 String::from("fake-board-title-1"),
-                String::from("fake-list-title-2"),
                 String::from("fake-card-title-2"),
-                Some(Command::Create(ChecklistCreateArgs {
+                String::from("fake-checklist-title-2"),
+                Some(Command::Create(Create {
                     title: String::from("new-board"),
-                    items: String::from("first,second,third"),
                 })),
             ),
             Client::mock(),
-            ChConstraint {
+            ChItConstraint {
                 board: Artifact {
                     _id: String::from("fake-board-id-1"),
                     title: String::from("fake-board-title-1"),
                     r#type: AType::Board,
                 },
-                list: Artifact {
-                    _id: String::from("fake-list-id-2"),
-                    title: String::from("fake-card-title-2"),
-                    r#type: AType::List,
-                },
+
                 card: Artifact {
                     _id: String::from("fake-card-id-2"),
                     title: String::from("fake-card-title-2"),
                     r#type: AType::Card,
+                },
+                checklist: Artifact {
+                    _id: String::from("fake-list-id-2"),
+                    title: String::from("fake-card-title-2"),
+                    r#type: AType::Checklist,
                 },
             },
             String::new(),
@@ -363,26 +294,27 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-checklist-title-2")),
                 String::from("fake-board-title-1"),
-                String::from("fake-list-title-2"),
                 String::from("fake-card-title-2"),
+                String::from("fake-checklist-title-2"),
                 Some(Command::Remove(Remove {})),
             ),
             Client::mock(),
-            ChConstraint {
+            ChItConstraint {
                 board: Artifact {
                     _id: String::from("fake-board-id-1"),
                     title: String::from("fake-board-title-1"),
                     r#type: AType::Board,
                 },
-                list: Artifact {
-                    _id: String::from("fake-list-id-2"),
-                    title: String::from("fake-card-title-2"),
-                    r#type: AType::List,
-                },
+
                 card: Artifact {
                     _id: String::from("fake-card-id-2"),
                     title: String::from("fake-card-title-2"),
                     r#type: AType::Card,
+                },
+                checklist: Artifact {
+                    _id: String::from("fake-list-id-2"),
+                    title: String::from("fake-card-title-2"),
+                    r#type: AType::Checklist,
                 },
             },
             String::new(),
@@ -404,26 +336,26 @@ mod tests {
             Args::mock(
                 Some(String::from("fake-checklist-title-2")),
                 String::from("fake-board-title-2"),
-                String::from("fake-list-title-2"),
                 String::from("fake-card-title-2"),
+                String::from("fake-checklist-title-2"),
                 None,
             ),
             Client::mock(),
-            ChConstraint {
+            ChItConstraint {
                 board: Artifact {
                     _id: String::from("fake-board-id-2"),
                     title: String::from("fake-board-title-2"),
                     r#type: AType::Board,
                 },
-                list: Artifact {
-                    _id: String::from("fake-list-id-2"),
-                    title: String::from("fake-card-title-2"),
-                    r#type: AType::List,
-                },
                 card: Artifact {
                     _id: String::from("fake-card-id-2"),
                     title: String::from("fake-card-title-2"),
                     r#type: AType::Card,
+                },
+                checklist: Artifact {
+                    _id: String::from("fake-list-id-2"),
+                    title: String::from("fake-card-title-2"),
+                    r#type: AType::Checklist,
                 },
             },
             String::from("long"),

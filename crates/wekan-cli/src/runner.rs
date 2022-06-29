@@ -7,8 +7,6 @@ use wekan_core::{
     http::preflight_request::HealthCheck,
 };
 
-#[cfg(feature = "store")]
-use crate::config::context::ReadContext;
 use crate::{
     board::{Args as BArgs, Runner as BRunner},
     card::{argument::Args as CArgs, runner::Runner as CRunner},
@@ -24,8 +22,14 @@ use crate::{
     result::WekanResult,
     subcommand::{Describe, Inspect, Table as TArgs},
 };
+#[cfg(feature = "store")]
+use crate::{config::context::ReadContext, workspace::Workspace};
+#[cfg(feature = "workspace")]
+use log::trace;
 #[cfg(not(test))]
 use log::Level;
+#[cfg(feature = "workspace")]
+use wekan_common::artifact::common::{Base, SortedArtifact};
 use wekan_common::{
     artifact::common::{AType, Artifact, IdReturner},
     artifact::{board::Details as BDetails, card::Details as CDetails, list::Details as LDetails},
@@ -51,6 +55,8 @@ pub struct Runner {
     pub display: CliDisplay,
     pub subcommands: Command,
     pub global_options: RArgs,
+    #[cfg(feature = "store")]
+    pub workspace: Vec<Artifact>,
 }
 
 impl<'a> Runner {
@@ -78,10 +84,32 @@ impl<'a> Runner {
             display: CliDisplay::new(vec),
             subcommands,
             global_options: r_args,
+            #[cfg(feature = "store")]
+            workspace: Vec::new(),
         }
     }
 
+    #[cfg(feature = "workspace")]
+    pub async fn setup_workspace(&mut self) -> Result<(), ()> {
+        self.workspace = self.setup().await.unwrap();
+        Ok(())
+    }
+
+    #[cfg(feature = "workspace")]
+    pub fn find_workspace_artifact(&mut self, given: &mut Artifact) -> Option<&Artifact> {
+        self.workspace.iter().find(|a| {
+            trace!("{:?} - {:?}", a, given);
+            if a.get_type() == given.get_type() && a.get_title() == given.get_title() {
+                given.set_id(&a.get_id());
+                true
+            } else {
+                false
+            }
+        })
+    }
     pub async fn run(&mut self) -> Result<WekanResult, Error> {
+        #[cfg(feature = "workspace")]
+        self.setup_workspace().await;
         match self.subcommands.to_owned() {
             Command::Config(c) => {
                 let mut config = ConfigRunner::new(c.clone(), self.client.clone());
@@ -131,7 +159,7 @@ impl<'a> Runner {
         );
         runner.run().await
     }
-    async fn run_list(&self, l_args: &LArgs) -> Result<WekanResult, Error> {
+    async fn run_list(&mut self, l_args: &LArgs) -> Result<WekanResult, Error> {
         if !l_args.board.is_empty() {
             let mut filter = String::new();
             match &self.global_options.filter {
@@ -149,14 +177,42 @@ impl<'a> Runner {
                 filter: &filter,
                 config: self.client.config.clone(),
             };
+            let mut b_constraint = Artifact {
+                _id: String::new(),
+                title: l_args.board.to_string(),
+                r#type: AType::Board,
+            };
+            let res;
+            #[cfg(not(feature = "workspace"))]
             match query.find_board_id(&l_args.board.to_string()).await {
                 Ok(id) => {
+                    b_constraint._id = id;
                     let constraint = LConstraint {
-                        board: Artifact {
-                            _id: id,
-                            title: l_args.board.to_string(),
-                            r#type: AType::Board,
-                        },
+                        board: b_constraint.to_owned(),
+                    };
+                    #[cfg(feature = "store")]
+                    self.write(vec![b_constraint]).await;
+                    let client =
+                        <Client as ListApi>::new(self.client.config.clone(), &constraint.board._id);
+                    let mut runner: LRunner = LRunner::new(
+                        l_args.clone(),
+                        client,
+                        constraint,
+                        self.format.to_owned(),
+                        self.display.to_owned(),
+                        &self.global_options,
+                    );
+                    res = runner.run().await;
+                }
+                Err(e) => res = Err(e),
+            };
+            #[cfg(feature = "workspace")]
+            match self.find_workspace_artifact(&mut b_constraint) {
+                Some(_a) => {
+                    trace!("Workspace found an artifact");
+                    trace!("Updated constraint: {:?}", b_constraint);
+                    let constraint = LConstraint {
+                        board: b_constraint,
                     };
                     let client =
                         <Client as ListApi>::new(self.client.config.clone(), &constraint.board._id);
@@ -168,10 +224,34 @@ impl<'a> Runner {
                         self.display.to_owned(),
                         &self.global_options,
                     );
-                    runner.run().await
+                    res = runner.run().await;
                 }
-                Err(e) => Err(e),
-            }
+                None => match query.find_board_id(&l_args.board.to_string()).await {
+                    Ok(id) => {
+                        b_constraint._id = id;
+                        let constraint = LConstraint {
+                            board: b_constraint.to_owned(),
+                        };
+                        #[cfg(feature = "store")]
+                        self.write(vec![b_constraint]).await;
+                        let client = <Client as ListApi>::new(
+                            self.client.config.clone(),
+                            &constraint.board._id,
+                        );
+                        let mut runner: LRunner = LRunner::new(
+                            l_args.clone(),
+                            client,
+                            constraint,
+                            self.format.to_owned(),
+                            self.display.to_owned(),
+                            &self.global_options,
+                        );
+                        res = runner.run().await;
+                    }
+                    Err(e) => res = Err(e),
+                },
+            };
+            res
         } else {
             WekanResult::new_exit("Board not found in cache or given as argument.", 2, None).ok()
         }
@@ -322,7 +402,7 @@ impl<'a> Runner {
         };
         match query.find_board_id(&table_args.name).await {
             Ok(board_id) => match query
-                .inquire(AType::List, Some(&board_id), None, true)
+                .inquire(AType::List, Some(&board_id), None, None, true)
                 .await
             {
                 Ok(lists) => {
@@ -331,7 +411,13 @@ impl<'a> Runner {
                     if !lists.is_empty() {
                         for r in iterator.by_ref() {
                             match query
-                                .inquire(AType::Card, Some(&board_id), Some(&r.get_id()), true)
+                                .inquire(
+                                    AType::Card,
+                                    Some(&board_id),
+                                    Some(&r.get_id()),
+                                    None,
+                                    true,
+                                )
                                 .await
                             {
                                 Ok(cards) => cards_of_lists.push(cards),

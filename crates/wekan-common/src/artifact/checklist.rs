@@ -14,9 +14,9 @@ pub struct Details {
     pub title: String,
     pub card_id: String,
     pub board_id: Option<String>,
-    created_at: String,
-    modified_at: String,
-    finished_at: String,
+    created_at: Option<String>,
+    modified_at: Option<String>,
+    finished_at: Option<String>,
     sort: Option<f32>,
     r#type: Option<String>,
 }
@@ -47,11 +47,17 @@ impl BaseDetails for Details {
     }
 
     fn get_modified_at(&self) -> String {
-        self.modified_at.to_owned()
+        match &self.modified_at {
+            Some(m) => m.to_owned(),
+            None => String::new(),
+        }
     }
 
     fn get_created_at(&self) -> String {
-        self.created_at.to_owned()
+        match &self.created_at {
+            Some(c) => c.to_owned(),
+            None => String::new(),
+        }
     }
 }
 
@@ -89,9 +95,9 @@ impl MockDetails for Details {
             title: title.to_string(),
             board_id: Some(String::from("my-fake-board-id")),
             card_id: String::from("my-fake-card-id"),
-            created_at: date.to_string(),
-            modified_at: date.to_string(),
-            finished_at: date.to_string(),
+            created_at: Some(date.to_string()),
+            modified_at: Some(date.to_string()),
+            finished_at: Some(date.to_string()),
             sort: None,
             r#type: Some(AType::Checklist.to_string()),
         }

@@ -45,6 +45,7 @@ pub enum AType {
     Card,
     Swimlane,
     Checklist,
+    ChecklistItem,
 }
 
 impl From<String> for AType {
@@ -58,6 +59,7 @@ impl From<String> for AType {
             "artifact" => AType::Empty,
             "template-container" => AType::Empty,
             "checklist" => AType::Checklist,
+            "checklist-item" => AType::ChecklistItem,
             _ => panic!("AType for {:?} not implemented.", fixed),
         }
     }
@@ -78,6 +80,7 @@ impl From<AType> for String {
             AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
             AType::Checklist => "checklist".to_string(),
+            AType::ChecklistItem => "checklist-item".to_string(),
         }
     }
 }
@@ -91,6 +94,7 @@ impl ToString for AType {
             AType::Swimlane => "swimlane".to_string(),
             AType::Empty => "artifact".to_string(),
             AType::Checklist => "checklist".to_string(),
+            AType::ChecklistItem => "checklist-item".to_string(),
         }
     }
 }
@@ -106,6 +110,7 @@ impl FromStr for AType {
             "swimlane" => Ok(AType::Swimlane),
             "template-container" => Ok(AType::Empty),
             "checklist" => Ok(AType::Checklist),
+            "checklist-item" => Ok(AType::ChecklistItem),
             _ => Err(ParseError::new("Not a Wekan kind")),
         }
     }

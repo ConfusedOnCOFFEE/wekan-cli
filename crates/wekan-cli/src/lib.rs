@@ -14,3 +14,5 @@ pub mod store;
 pub mod subcommand;
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "store")]
+pub mod workspace;

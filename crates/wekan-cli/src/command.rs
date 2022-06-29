@@ -56,7 +56,7 @@ pub enum Subcommand {
 }
 
 #[derive(CArgs, Debug)]
-#[clap(name = "wekan-cli", version = "0.1.0", about = "Common artifact args")]
+#[clap(name = "wekan-cli", about = "Global options")]
 pub struct Args {
     #[clap(
         short = 'r',
@@ -329,7 +329,7 @@ pub trait Operator<'a>: Fulfillment<'a> + std::marker::Send + std::marker::Sync 
         let childrens = match self.get_children_type() {
             AType::List => {
                 query
-                    .inquire(self.get_children_type(), Some(id), None, false)
+                    .inquire(self.get_children_type(), Some(id), None, None, false)
                     .await
             }
             AType::Card => {
@@ -338,6 +338,7 @@ pub trait Operator<'a>: Fulfillment<'a> + std::marker::Send + std::marker::Sync 
                         self.get_children_type(),
                         Some(&self.get_client().get_base_id()),
                         Some(id),
+                        None,
                         false,
                     )
                     .await

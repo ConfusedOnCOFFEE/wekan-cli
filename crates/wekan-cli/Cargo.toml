@@ -1,6 +1,6 @@
 [package]
 name = "wekan-cli"
-version = "0.1.1"
+version = "0.1.0"
 edition = "2021"
 description = "A Wekan CLI to view, edit and remote artifacts from a WEKAN board"
 repository = "https://github.com/ConfusedOnCOFFEE/wekan-cli"
@@ -28,6 +28,7 @@ path = "src/bin/wekan-cli.rs"
 [features]
 store = [ "wekan-core/store"]
 integration = [ "store"]
+workspace = ["store"]
 
 [dependencies]
 wekan-common = { path = "../wekan-common" }

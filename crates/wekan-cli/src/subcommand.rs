@@ -14,7 +14,10 @@ pub enum CommonCommand {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Get an artifact")]
+#[clap(
+    about = "Get an artifact",
+    long_about = "Get an artifact with an alternative format"
+)]
 pub struct Get {
     // Kind of artifact
     kind: AType,
@@ -25,17 +28,30 @@ pub struct Get {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "List all artifacts")]
+#[clap(
+    about = "List all artifacts",
+    long_about = "Shows all desired artifacts in a table view"
+)]
 pub struct List {}
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Show the details")]
+#[clap(
+    about = "Show the details",
+    long_about = "Show the details in a table view"
+)]
 pub struct Details {}
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove an artifact")]
+#[clap(
+    about = "Remove an artifact",
+    long_about = "Remove an artifact. This action can not be reverted"
+)]
 pub struct Remove {}
+
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Create an artifact")]
+#[clap(
+    about = "Create an artifact",
+    long_about = "Create an artifact with a simply title"
+)]
 pub struct Create {
     /// Artifact title
     pub title: String,
@@ -60,7 +76,10 @@ pub struct Delegate {
     pub card_id: Option<String>,
 }
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Describe artifact by id")]
+#[clap(
+    about = "Describe artifact by id",
+    long_about = "Use ID instead of a name. This is more peformant"
+)]
 pub struct Inspect {
     /// Artifact id
     pub id: String,
@@ -70,8 +89,8 @@ pub struct Inspect {
 
 #[derive(ClapArgs, Debug, Clone)]
 #[clap(
-    version = "0.1.0",
-    about = "Describe artfifact by k8 syntax (type/name)"
+    about = "Describe artfifact",
+    long_about = "Use the kubernetes syntax to get details of an artifact"
 )]
 pub struct Describe {
     /// Artifact type and name (format: type/name)
@@ -81,7 +100,10 @@ pub struct Describe {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Show a board table")]
+#[clap(
+    about = "Show a board table",
+    long_about = "Show the board with available lists and cards"
+)]
 pub struct Table {
     /// Board name
     pub name: String,
@@ -90,7 +112,10 @@ pub struct Table {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Apply a change to an artifact")]
+#[clap(
+    about = "Apply a change to an artifact",
+    long_about = "Use a file to update an artifact"
+)]
 pub struct Apply {
     /// Artifact file
     task_file: PathBuf,
@@ -98,8 +123,8 @@ pub struct Apply {
 
 #[derive(ClapArgs, Debug, Clone)]
 #[clap(
-    version = "0.1.0",
-    about = "Archive an artifact (API doesn't support it :( )"
+    about = "Archive an artifact but currently not available. See --help",
+    long_about = "Currently the API doesn't support this action. Maybe in the future :)"
 )]
 pub struct Archive {
     #[clap(

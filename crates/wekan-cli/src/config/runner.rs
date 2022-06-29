@@ -80,7 +80,10 @@ impl BaseCommand<Args, Client> for Runner {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove config or context")]
+#[clap(
+    about = "Remove config or context",
+    long_about = "Remove config or context with confirmation flags "
+)]
 pub struct RemoveConfig {
     #[clap(
         requires = "remove_complete",

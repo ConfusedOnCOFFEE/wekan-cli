@@ -130,3 +130,33 @@ impl ChecklistApi for Client {
         self.base.to_owned()
     }
 }
+
+pub trait ChecklistItemsApi {
+    fn new(config: UserConfig, board_id: &str, card_id: &str, checklist_id: &str) -> Self;
+    fn set_base(&mut self, card_id: &str, card_id: &str, checklist_id: &str) -> String;
+}
+impl ChecklistItemsApi for Client {
+    fn new(config: UserConfig, board_id: &str, card_id: &str, checklist_id: &str) -> Self {
+        Self {
+            config,
+            base: "boards/".to_owned()
+                + board_id
+                + "/cards/"
+                + card_id
+                + "/checklists/"
+                + checklist_id
+                + "/items/",
+            id: board_id.to_owned() + "_" + card_id,
+        }
+    }
+    fn set_base(&mut self, board_id: &str, card_id: &str, checklist_id: &str) -> String {
+        self.base = "boards/".to_owned()
+            + board_id
+            + "/cards/"
+            + card_id
+            + "/checklists/"
+            + checklist_id
+            + "/items/";
+        self.base.to_owned()
+    }
+}

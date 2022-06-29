@@ -21,7 +21,7 @@ use rpassword;
 use std::fs;
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Set credentials")]
+#[clap(about = "Set credentials", long_about = "Login to a Wekan board")]
 pub struct SetCredentials {
     /// User
     pub user: String,
@@ -38,7 +38,10 @@ pub struct SetCredentials {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Copy, Clone)]
-#[clap(version = "0.1.0", about = "Remove credentails")]
+#[clap(
+    about = "Remove credentails",
+    long_about = "Remove the login credentials from your machine"
+)]
 pub struct DeleteCredentials {}
 
 #[async_trait]

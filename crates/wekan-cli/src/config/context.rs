@@ -11,7 +11,10 @@ use crate::{
 };
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Set context")]
+#[clap(
+    about = "Set context",
+    long_about = "Set a context to isolate store and login"
+)]
 pub struct SetContext {
     /// Context
     pub name: String,
@@ -19,14 +22,17 @@ pub struct SetContext {
 
 #[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Remove context")]
+#[clap(
+    about = "Remove context",
+    long_about = "Remove a context. This clears store and login"
+)]
 pub struct DeleteContext {
     // Context
     pub name: String,
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Use context")]
+#[clap(about = "Use context", long_about = "Switch between contexts")]
 pub struct UseContext {
     /// Context
     pub name: String,

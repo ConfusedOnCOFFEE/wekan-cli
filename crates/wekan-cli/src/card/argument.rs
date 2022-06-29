@@ -12,7 +12,10 @@ use wekan_cli_derive::WekanArgs;
 use wekan_common::http::common::Create;
 
 #[derive(ClapArgs, Debug, Clone, WekanArgs)]
-#[clap(version = "0.1.0", about = "Manage tasks")]
+#[clap(
+    about = "Manage tasks",
+    long_about = "Create, remove and show details and children"
+)]
 pub struct Args {
     #[clap(short, long, help = "Card name")]
     pub name: Option<String>,
@@ -41,6 +44,7 @@ impl CommonCommandRequester<Command> for Args {
         }
     }
 }
+
 /// The following commands are available:
 #[derive(Subcommand, Debug, Clone)]
 pub enum Command {
@@ -58,7 +62,10 @@ pub enum Command {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Create card")]
+#[clap(
+    about = "Create card",
+    long_about = "Create a card with title and description"
+)]
 pub struct CardCreateArgs {
     /// Card name
     title: String,
@@ -78,13 +85,19 @@ impl Create for CardCreateArgs {
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Move card to the next board")]
+#[clap(
+    about = "Move card to the next list",
+    long_about = "Move a card between list of the same board"
+)]
 pub struct CardMoveArgs {
     pub list: String,
 }
 
 #[derive(ClapArgs, Debug, Clone)]
-#[clap(version = "0.1.0", about = "Update card")]
+#[clap(
+    about = "Update card",
+    long_about = "Update a card with additional informations"
+)]
 pub struct UpdateArgs {
     #[clap(short, long, help = "Card sort order")]
     pub sort: Option<f32>,

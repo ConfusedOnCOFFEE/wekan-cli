@@ -21,7 +21,10 @@ use wekan_core::client::{BoardApi, Client};
 
 /// Board commands
 #[derive(ClapArgs, Debug, Clone, WekanArgs, CommonSubcommands)]
-#[clap(version = "0.1.0", about = "Manage boards")]
+#[clap(
+    about = "Manage boards",
+    long_about = "Create, remove and show details and children"
+)]
 pub struct Args {
     #[clap(short, long, help = "Board name")]
     pub name: Option<String>,

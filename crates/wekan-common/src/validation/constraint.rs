@@ -43,3 +43,11 @@ pub struct ChecklistConstraint {
     pub list: Artifact,
     pub card: Artifact,
 }
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ChecklistItemConstraint {
+    pub board: Artifact,
+    pub card: Artifact,
+    pub checklist: Artifact,
+}

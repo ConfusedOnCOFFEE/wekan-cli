@@ -11,7 +11,10 @@ use super::credentials::SetCredentials;
 
 /// Config
 #[derive(ClapArgs, Clone, Debug)]
-#[clap(version = "0.1.0", about = "CLI configuration")]
+#[clap(
+    about = "CLI configuration",
+    long_about = "Set, use and remove context or configs "
+)]
 pub struct Args {
     #[clap(subcommand)]
     pub command: Command,

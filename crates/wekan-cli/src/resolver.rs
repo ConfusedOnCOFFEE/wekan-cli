@@ -36,7 +36,7 @@ impl<'a> Query<'a> {
     ) -> Result<String, Error> {
         info!("find_card_id");
         let cards = match self
-            .inquire(AType::Card, Some(board_id), Some(list_id), false)
+            .inquire(AType::Card, Some(board_id), Some(list_id), None, false)
             .await
         {
             Ok(o) => Ok(o),
@@ -52,7 +52,7 @@ impl<'a> Query<'a> {
     pub async fn find_swimlane_id(&mut self, board_id: &str) -> Result<String, Error> {
         info!("find_swimlane_id");
         let swimlane = match self
-            .inquire(AType::Swimlane, Some(board_id), None, false)
+            .inquire(AType::Swimlane, Some(board_id), None, None, false)
             .await
         {
             Ok(o) => Ok(o),
@@ -68,7 +68,10 @@ impl<'a> Query<'a> {
 
     pub async fn find_list_id(&mut self, board_id: &str, name: &str) -> Result<String, Error> {
         info!("find_list_id");
-        let boards = match self.inquire(AType::List, Some(board_id), None, false).await {
+        let boards = match self
+            .inquire(AType::List, Some(board_id), None, None, false)
+            .await
+        {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
@@ -81,7 +84,7 @@ impl<'a> Query<'a> {
 
     pub async fn find_board_id(&mut self, name: &str) -> Result<String, Error> {
         info!("find_board_id");
-        let boards = match self.inquire(AType::Board, None, None, false).await {
+        let boards = match self.inquire(AType::Board, None, None, None, false).await {
             Ok(o) => Ok(o),
             Err(e) => {
                 trace!("{:?}", e);
@@ -99,7 +102,7 @@ impl<'a> Query<'a> {
     ) -> Result<String, Error> {
         info!("find_board_id");
         let checklists = match self
-            .inquire(AType::Checklist, Some(board_id), Some(card_id), false)
+            .inquire(AType::Checklist, Some(board_id), Some(card_id), None, false)
             .await
         {
             Ok(o) => Ok(o),
@@ -112,12 +115,38 @@ impl<'a> Query<'a> {
         self.confirm_valid_name(checklists, name).await
     }
 
+    pub async fn find_checklist_item_id(
+        &mut self,
+        board_id: &str,
+        card_id: &str,
+        checklist_id: &str,
+        name: &str,
+    ) -> Result<String, Error> {
+        info!("find_board_id");
+        match self
+            .inquire(
+                AType::Checklist,
+                Some(board_id),
+                Some(card_id),
+                Some(checklist_id),
+                false,
+            )
+            .await
+        {
+            Ok(o) => self.confirm_valid_name(Ok(o), name).await,
+            Err(e) => {
+                trace!("{:?}", e);
+                Err(CliError::new_msg("Not available").as_enum())
+            }
+        }
+    }
     #[cfg(not(feature = "store"))]
     pub async fn inquire(
         &self,
         artifact_variant: AType,
         board_id: Option<&str>,
         list_id: Option<&str>,
+        _checklist_id: Option<&str>,
         _fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
         info!("inquire");
@@ -131,12 +160,18 @@ impl<'a> Query<'a> {
         artifact_variant: AType,
         board_id: Option<&str>,
         list_id: Option<&str>,
+        _checklist_id: Option<&str>,
         fresh_request: bool,
     ) -> Result<Vec<Artifact>, Error> {
         info!("inquire");
         if self.deny_store_usage || fresh_request {
-            self.fulfill_inquiry(artifact_variant, board_id, list_id)
-                .await
+            match artifact_variant {
+                AType::ChecklistItem => Err(CliError::new_msg("Not available").as_enum()),
+                _ => {
+                    self.fulfill_inquiry(artifact_variant, board_id, list_id)
+                        .await
+                }
+            }
         } else {
             match artifact_variant {
                 AType::Board => {
@@ -627,7 +662,7 @@ mod tests {
             deny_store_usage: false,
         };
         let mut res = query
-            .inquire(AType::Board, None, None, false)
+            .inquire(AType::Board, None, None, None, false)
             .await
             .unwrap();
         assert_eq!(res.get_title(), "s");
