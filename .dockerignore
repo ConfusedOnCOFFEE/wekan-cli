@@ -1,6 +1,6 @@
 .git
 .cargo
-
+.github
 
 ## Ignore target
 target/
