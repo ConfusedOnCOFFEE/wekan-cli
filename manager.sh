@@ -4,7 +4,7 @@ flow=$1
 selection=$2
 all_args="${@:2}"
 os_type=$(uname)
-
+cd $script_dir
 # Run tests with different crates including the available features.
 function test_crates() {
     echo "${1}"
