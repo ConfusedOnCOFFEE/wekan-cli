@@ -1,19 +1,17 @@
-use clap::{Args as ClapArgs, Subcommand};
-
 #[cfg(feature = "store")]
 use super::{
     context::{DeleteContext, SetContext, UseContext},
-    credentials::DeleteCredentials,
     runner::RemoveConfig,
 };
+use clap::{Args as ClapArgs, Subcommand};
 
-use super::credentials::SetCredentials;
+use super::credentials::{DeleteCredentials, SetCredentials};
 
 /// Config
 #[derive(ClapArgs, Clone, Debug)]
 #[clap(
     about = "CLI configuration",
-    long_about = "Set, use and remove context or configs "
+    long_about = "Set, use and remove context or configs"
 )]
 pub struct Args {
     #[clap(subcommand)]
@@ -25,7 +23,6 @@ pub struct Args {
 pub enum Command {
     #[clap(name = "set-credentials")]
     SetCredentials(SetCredentials),
-    #[cfg(feature = "store")]
     #[clap(name = "remove-credentials")]
     DeleteCredentials(DeleteCredentials),
     #[cfg(feature = "store")]

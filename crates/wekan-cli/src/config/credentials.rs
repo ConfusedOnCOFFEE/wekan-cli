@@ -4,8 +4,7 @@ use log::{debug, info, trace};
 use regex::Regex;
 use std::str::FromStr;
 use wekan_common::validation::authentication::Credentials;
-#[cfg(feature = "store")]
-use wekan_core::persistence::store::Butler;
+use wekan_core::persistence::config::Butler;
 use wekan_core::{
     client::LoginClient as Client, config::Setup, http::authentication::TokenManager,
 };
@@ -17,7 +16,6 @@ use crate::{
 #[cfg(feature = "store")]
 #[cfg(not(feature = "integration"))]
 use rpassword;
-#[cfg(feature = "store")]
 use std::fs;
 
 #[derive(ClapArgs, Debug, Clone)]
@@ -25,7 +23,7 @@ use std::fs;
 pub struct SetCredentials {
     /// User
     pub user: String,
-    #[clap(short = 'd', long, help = "Use only port if you are on localhost.")]
+    #[clap(short = 'd', long, help = "Use only port if you are on localhost")]
     pub host: String,
     #[clap(
         short = 'i',
@@ -36,7 +34,6 @@ pub struct SetCredentials {
     pub insecure: bool,
 }
 
-#[cfg(feature = "store")]
 #[derive(ClapArgs, Debug, Copy, Clone)]
 #[clap(
     about = "Remove credentails",
@@ -118,13 +115,11 @@ impl Authenticate for Client {
 }
 
 #[async_trait]
-#[cfg(feature = "store")]
 pub trait ClearConfig {
     async fn run_logout(&self) -> Result<WekanResult, Error>;
 }
 
 #[async_trait]
-#[cfg(feature = "store")]
 impl ClearConfig for Client {
     async fn run_logout(&self) -> Result<WekanResult, Error> {
         info!("run_logout_subcommand");

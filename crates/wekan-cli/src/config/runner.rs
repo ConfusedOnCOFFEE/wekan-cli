@@ -5,8 +5,8 @@ use super::{
     credentials::Authenticate,
 };
 #[cfg(feature = "store")]
-#[cfg(feature = "store")]
-use crate::config::{context::Context, credentials::ClearConfig};
+use crate::config::context::Context;
+use crate::config::credentials::ClearConfig;
 #[cfg(feature = "store")]
 use crate::error::{CliError, Transform};
 use async_trait::async_trait;
@@ -15,9 +15,8 @@ use clap::Args as ClapArgs;
 #[cfg(feature = "store")]
 use log::{info, trace};
 use wekan_core::client::LoginClient as Client;
-
 #[cfg(feature = "store")]
-use wekan_core::{config::UserConfig, persistence::store::Butler};
+use wekan_core::{config::UserConfig, persistence::config::Butler};
 
 #[derive(Debug, Clone)]
 pub struct Runner {
@@ -29,7 +28,6 @@ impl Runner {
     pub async fn use_subcommand(&mut self) -> Result<WekanResult, Error> {
         match self.args.command.to_owned() {
             ConfigCommand::SetCredentials(a) => self.client.run_login(&a).await,
-            #[cfg(feature = "store")]
             ConfigCommand::DeleteCredentials(_a) => self.client.run_logout().await,
             #[cfg(feature = "store")]
             ConfigCommand::SetContext(a) => self.client.set(&a).await,

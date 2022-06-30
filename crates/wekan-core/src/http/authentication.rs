@@ -25,7 +25,6 @@ use wekan_common::validation::authentication::StoreToken;
 pub trait Login: AddressConfig {
     async fn request_token(&mut self, credentials: Credentials) -> Result<Token, Error> {
         let params = [("username", credentials.user), ("password", credentials.pw)];
-        debug!("Login credentials={:?}", params);
         let url = self.get_address() + "/users/login";
         self.post_login_form(&url, params).await
     }
@@ -111,7 +110,6 @@ pub trait TokenManager: StoreToken + TokenHeader + Login {
             Ok(t) => {
                 debug!("Login Token received.");
                 trace!("{:?}", t);
-                #[cfg(feature = "store")]
                 self.store_token(t.clone()).await;
                 self.set_token(t);
                 Ok(CoreOk {
@@ -126,7 +124,7 @@ pub trait TokenManager: StoreToken + TokenHeader + Login {
         match credentials {
             Some(cr) => match self.request_token(cr).await {
                 Ok(t) => {
-                    #[cfg(feature = "store")]
+                    trace!("{:?}", t);
                     self.store_token(t.clone()).await;
                     Ok(t)
                 }

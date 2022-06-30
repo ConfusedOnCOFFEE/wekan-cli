@@ -12,7 +12,7 @@ use chrono::prelude::*;
 #[cfg(test)]
 use wekan_common::artifact::tests::MockDetails;
 #[cfg(not(test))]
-use wekan_core::persistence::store::Butler;
+use wekan_core::persistence::config::Butler;
 
 #[async_trait]
 pub trait Store {

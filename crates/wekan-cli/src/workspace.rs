@@ -3,7 +3,7 @@ use crate::runner::Runner;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use wekan_common::artifact::common::Artifact;
-use wekan_core::persistence::store::Butler;
+use wekan_core::persistence::config::Butler;
 
 #[cfg(test)]
 use chrono::prelude::*;

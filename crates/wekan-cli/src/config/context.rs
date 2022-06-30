@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use clap::Args as ClapArgs;
 use log::{debug, info, trace};
-#[cfg(feature = "store")]
-use wekan_core::persistence::store::Butler;
+use wekan_core::persistence::config::Butler;
 use wekan_core::{client::LoginClient as Client, config::UserConfig};
 
 use crate::{
@@ -97,9 +96,4 @@ impl Context for Client {
             Err(_e) => CliError::new_msg("New context doesn't exist").err(),
         }
     }
-}
-
-#[async_trait]
-pub trait ReadContext {
-    async fn read_context(&self) -> Result<UserConfig, Error>;
 }

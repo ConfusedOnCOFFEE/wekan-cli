@@ -1,5 +1,4 @@
 extern crate log;
-#[cfg(feature = "store")]
 use async_trait::async_trait;
 use wekan_core::{
     client::{BoardApi, CardApi, ChecklistApi, Client, ListApi, LoginClient},
@@ -7,6 +6,8 @@ use wekan_core::{
     http::preflight_request::HealthCheck,
 };
 
+#[cfg(feature = "workspace")]
+use crate::workspace::Workspace;
 use crate::{
     board::{Args as BArgs, Runner as BRunner},
     card::{argument::Args as CArgs, runner::Runner as CRunner},
@@ -22,8 +23,6 @@ use crate::{
     result::WekanResult,
     subcommand::{Describe, Inspect, Table as TArgs},
 };
-#[cfg(feature = "store")]
-use crate::{config::context::ReadContext, workspace::Workspace};
 #[cfg(feature = "workspace")]
 use log::trace;
 #[cfg(not(test))]
@@ -41,8 +40,7 @@ use wekan_common::{
         user::User,
     },
 };
-#[cfg(feature = "store")]
-use wekan_core::persistence::store::Butler;
+use wekan_core::persistence::config::Butler;
 #[cfg(not(test))]
 use wekan_core::{http::operation::Artifacts, log::Logger};
 
@@ -67,9 +65,8 @@ impl<'a> Runner {
             Some(_) => Logger::init(true).unwrap(),
             None => Logger::init(true).unwrap(),
         };
-        let user_config: UserConfig = UserConfig::new();
-        #[cfg(feature = "store")]
-        let user_config: UserConfig = match user_config.read_context().await {
+        let user_config = UserConfig::new();
+        let user_config = match user_config.read_config_context().await {
             Ok(c) => c,
             Err(_e) => UserConfig::new(),
         };
@@ -190,7 +187,7 @@ impl<'a> Runner {
                     let constraint = LConstraint {
                         board: b_constraint.to_owned(),
                     };
-                    #[cfg(feature = "store")]
+                    #[cfg(feature = "workspace")]
                     self.write(vec![b_constraint]).await;
                     let client =
                         <Client as ListApi>::new(self.client.config.clone(), &constraint.board._id);
@@ -587,10 +584,14 @@ impl<'a> Runner {
     }
 }
 
-#[cfg(feature = "store")]
+#[async_trait]
+pub trait ReadContext {
+    async fn read_config_context(&self) -> Result<UserConfig, Error>;
+}
+
 #[async_trait]
 impl ReadContext for UserConfig {
-    async fn read_context(&self) -> Result<UserConfig, Error> {
+    async fn read_config_context(&self) -> Result<UserConfig, Error> {
         match tokio::fs::read(self.get_path() + "/config").await {
             Ok(v) => match serde_yaml::from_slice::<UserConfig>(&v) {
                 Ok(c) => Ok(c),

@@ -1,5 +1,7 @@
-use super::store::Butler;
-use crate::{config::UserConfig, error::Error};
+use crate::{
+    config::{ConfigRequester, UserConfig},
+    error::Error,
+};
 use async_trait::async_trait;
 #[cfg(not(test))]
 use log::{info, trace};
@@ -52,6 +54,26 @@ impl PersistenceConfig for UserConfig {
                 Err(e) => Err(Error::Yaml(e)),
             },
             Err(e) => Err(Error::Io(e)),
+        }
+    }
+}
+
+#[async_trait]
+pub trait Butler: ConfigRequester<UserConfig> {
+    fn get_path(&self) -> String {
+        match self.get_config().context {
+            Some(p) => Self::get_default_path() + &p + "/",
+            None => Self::get_default_path(),
+        }
+    }
+
+    fn get_default_path() -> String {
+        match std::env::var("WEKAN_CLI_CONFIG_PATH") {
+            Ok(config_path_env) => config_path_env,
+            Err(_e) => {
+                let home = std::env::var("HOME").unwrap();
+                home + "/.config/wekan-cli/"
+            }
         }
     }
 }

@@ -1,4 +1,3 @@
-#[cfg(feature = "store")]
 use crate::persistence::config::PersistenceConfig as PConfig;
 use async_trait::async_trait;
 use log::debug;
@@ -42,9 +41,8 @@ pub trait OptionalConfig {
 #[async_trait]
 impl OptionalConfig for UserConfig {
     async fn store_token(&mut self, t: Token) -> Token {
-        debug!("set_token");
+        debug!("store_token");
         self.usertoken = Some(t);
-        #[cfg(feature = "store")]
         self.write_config({
             UserConfig {
                 address: self.address.clone(),
