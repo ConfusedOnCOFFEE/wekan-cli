@@ -216,18 +216,21 @@ impl CliDisplay {
     >(
         &mut self,
         lists: Vec<T>,
-        cards: Vec<Vec<T>>,
+        mut cards: Vec<Vec<T>>,
     ) -> Result<WekanResult, Error> {
         info!("format_to_table_layout");
         let mut output = String::new();
         let mut longest_card_name = String::new();
-        cards.iter().for_each(|x| {
-            longest_card_name.push_str(
-                &x.iter()
-                    .max_by(|p, n| cmp_by_length(&p.get_title(), &n.get_title()))
-                    .unwrap()
-                    .get_title(),
-            );
+        cards.iter_mut().for_each(|x| {
+            x.reverse();
+            let r: String = match &x.iter()
+                .max_by(|p, n| cmp_by_length(&p.get_title(), &n.get_title())) {
+                    Some(a) => a.get_title(),
+                    None => String::new()
+                };
+            if r.len() > 0 {
+                longest_card_name.push_str(&r);
+            }
         });
         let longest_cards: &Vec<T> = cards
             .iter()
