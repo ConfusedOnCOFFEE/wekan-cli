@@ -35,21 +35,21 @@ execute_test() {
 }
 
 board() {
-    for cmd_to_run in 'wekan-cli board --help' 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
+    for cmd_to_run in 'wekan-cli board create Test' 'wekan-cli board ls' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
     do
         execute_test "$cmd_to_run"
     done
 }
 
 list() {
-    for cmd_to_run in 'wekan-cli list --help' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test -n Test details' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
+    for cmd_to_run in 'wekan-cli list -b Test ls' 'wekan-cli list -b Test create Test' 'wekan-cli list -b Test ls' 'wekan-cli list -b Test -n Test details' 'wekan-cli board -n Test' 'wekan-cli board -n Test details'
     do
         execute_test "$cmd_to_run"
     done
 }
 
 card() {
-    for cmd_to_run in 'wekan-cli card --help' 'wekan-cli -d card -b Test -l Test create -d description test-card' 'wekan-cli -d card -b Test -l Test -n test-card' 'wekan-cli -d list -b Test -n Test details' 'wekan-cli -d card -b Test -l Test -n test-card details'
+    for cmd_to_run in 'wekan-cli -d card -b Test -l Test create -d description test-card' 'wekan-cli -d card -b Test -l Test -n test-card' 'wekan-cli -d list -b Test -n Test details' 'wekan-cli -d card -b Test -l Test -n test-card details'
     do
         execute_test "$cmd_to_run"
     done
@@ -70,7 +70,7 @@ describe() {
 }
 
 context() {
-    for cmd_to_run in 'wekan-cli config --help' 'wekan-cli config set-context local' 'wekan-cli config use-context local'
+    for cmd_to_run in 'wekan-cli config set-context local' 'wekan-cli config use-context local'
     do
         execute_test "$cmd_to_run"
     done

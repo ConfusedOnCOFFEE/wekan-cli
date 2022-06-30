@@ -1,25 +1,3 @@
--------------------    wekan-cli list --help    -------------------
-wekan-cli-list 0.1.0
-Manage lists
-
-USAGE:
-    wekan-cli list [OPTIONS] --board <BOARD> [SUBCOMMAND]
-
-OPTIONS:
-    -b, --board <BOARD>    Board name
-    -h, --help             Print help information
-    -n, --name <NAME>      List name
-    -q, --quiet            Less output per occurrence
-    -v, --verbose          More output per occurrence
-    -V, --version          Print version information
-
-SUBCOMMANDS:
-    create     Create an artifact
-    details    Show the details
-    help       Print this message or the help of the given subcommand(s)
-    inspect    Describe artifact by id
-    ls         List all artifacts
-    rm         Remove an artifact
 -------------------    wekan-cli list -b Test ls    -------------------
 ID    TITLE
 

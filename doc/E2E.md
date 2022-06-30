@@ -21,7 +21,7 @@ Run `./manager.sh e2e c` to start WEKAN containers, build the wekan-cli containe
 Inside the container, the `entrypoint.sh` script will run the test cases and compare them.
 A test run without errors should look like this:
 
-```sh
+```bash
 SUCCESS STDOUT - LOGIN
 SUCCESS STDERR - LOGIN
 SUCCESS STDOUT - BOARD
@@ -36,6 +36,6 @@ SUCCESS STDOUT - CONTEXT
 SUCCESS STDERR - CONTEXT
 SUCCESS STDOUT - DELETE
 SUCCESS STDERR - DELETE
-SUCCESS STDOUT - LOGIN
-SUCCESS STDERR - LOGIN
+SUCCESS STDOUT - CONFIG
+SUCCESS STDERR - CONFIG
 ```
