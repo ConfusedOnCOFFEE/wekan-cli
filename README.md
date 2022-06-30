@@ -1,8 +1,9 @@
 # OBVIOUSLY DISCLAIMER
 
-- PRIVATE PROJECT BUT OPEN TO USE IT
-- BUILD AT YOUR OWN RISK, I try to assist. The CLI was tested on x86_64_linux, x86_64_MacOs and Apple ARM. With each new RC, I try to provide binaries.
-- Message me if you found anything, which is criticial or against the rules.
+- PRIVATE PROJECT BUT READY TO BE USED AND ADAPTED
+- BUILD AT YOUR OWN RISK, I try to assist. The CLI was tested on x86_64_linux, x86_64_MacOs and Apple ARM. 
+- Message me if you find anything, which is criticial or against the rules.
+- I don't provide releases, maybe some tags if a new feature was added but HEAD will always be stable.
 
 
 # Wekan CLI
@@ -12,57 +13,55 @@ This projects aims to provide a CLI to view, create and update a WEKAN board, li
 Also I try to learn RUST with this, so if you have tips or isuses, please create one.
 
 
-```sh
+```bash
 OPTIONS:
-    -d, --no-store              Disable store for your wekan artifacts
-    -f, --filter <FILTER>       Filter out available artifacts by id in format: b:..,l:..,c:.. Be
-                                aware that this has a higher order then the name
-    -h, --help                  Print help information
-    -o, --format <FORMAT>       Output format: rust, elisp, long
-    -q, --quiet                 Less output per occurrence
-    -r, --no-recommendations    Disable next recommended workflow
-    -v, --verbose               More output per occurrence
-    -V, --version               Print version information
+    -d, --no-store                         Disable store for your wekan artifacts
+    -f, --filter <FILTER>                  Filter out artifacts by id
+    -h, --help                             Print help information
+    -o, --output-format <OUTPUT_FORMAT>    Output format: rust, elisp, long, extended
+    -q, --quiet                            Less output per occurrence
+    -r, --no-recommendations               Disable next recommended workflow
+    -v, --verbose                          More output per occurrence
+    -V, --version                          Print version information
 
 SUBCOMMANDS:
-    board       Manage boards
-    card        Manage tasks
-    config      CLI configuration.
-    describe    Describe artfifact by k8 syntax (type/name)
-    get         List artifacts
-    help        Print this message or the help of the given subcommand(s)
-    inspect     Describe artifact by id
-    list        Manage lists
-    ps          Manage lists
-    table       Show a board tree.
-    
+    apply        Apply a change to an artifact
+    board        Manage boards
+    card         Manage tasks
+    checklist    Manage checklists
+    config       CLI configuration
+    describe     Describe artfifact
+    get          Get an artifact
+    help         Print this message or the help of the given subcommand(s)
+    inspect      Describe artifact by id
+    list         Manage lists
+    table        Show a board table
 ```
 
 
 # Features
 
-- Login via prompt, can be insecure as well or localhost.
-- Set context to have multiple WEKAN hosts.
-- Logout user, delete context.
-- Show board, lists and cards.
-- Remove board, list and cards.
-- Update cards properties or move them to another list on the same board.
-  - Move between lists.
-  - Update due_at and end_at properties.
-  - Change title, description and sort.
-- Recommend your next workflow, after one command has been run.
+- Login via prompt, can be insecure as well or localhost
+- Set context to have multiple WEKAN hosts
+- Logout user and remove contexts
+- Show board, lists, cards and checklists
+- Remove board, list, cards and checklists
+- Update cards properties:
+  - Move between lists of the same board
+  - Update title, description, due_at, end_at and sort properties
+- Recommend your next workflow, after one command has been run
 - Store: Requests artifacts will be writen into the store locally. At the moment, this data can also be corrupted by the user.
-  If the CLI doesn't find anything, it will NOT do a new REQUEST. In the future, it should do so. It can also be disabled with `-d`.
-- `get` subcommand tries to parse your input type/name, like kubectl.
-- `inspect` subcommand takes the original id. You can get the Id in the URL if you have a session open or if you use `-o long`.
-- `table` subcommand tires to build a table, but it doesn't work yet.
+  If the CLI doesn't find anything, it will do a new request. Using of local store can also be disabled with `-d`.
+- `get` subcommand tries to parse your input type/name, like kubectl
+- `inspect` subcommand takes the original id. You can get the Id in the URL if you have a session open or if you use `-o ext`.
+- `table` build are table of one board, where all lists and cards are arrange in the same order as on the webpage
 
 
 # View
 
-By default, we will show table style, highly inspired by Docker. The detail view also has date information.
+By default, we will show table style, highly inspired by Docker. The detail view also has date information and more.
 
-```sh
+```bash
 ID    TITLE
 1234  my_title
 ```
