@@ -1,8 +1,9 @@
 use crate::{error::Error, result::WekanResult};
 use log::info;
 use std::cmp::Ordering;
-use wekan_common::artifact::common::{
-    Base, BaseDetails, IdReturner, MostDetails, SortedArtifact, WekanDisplay,
+use wekan_common::artifact::{
+    card::Details as CardDetails,
+    common::{Base, BaseDetails, IdReturner, MostDetails, SortedArtifact, WekanDisplay},
 };
 
 #[cfg(test)]
@@ -99,6 +100,65 @@ impl CliDisplay {
             .iter()
             .for_each(|x| output.push_str(&self.format(x, max_string.len())));
         output = output.trim().to_string();
+        WekanResult::new_workflow(
+            &output.finish_up(),
+            "Update the specified artifact with the subcommand 'update'",
+        )
+        .ok()
+    }
+    pub fn format_card_details(&mut self, details: CardDetails) -> Result<WekanResult, Error> {
+        info!("format_card_details");
+        let mut properties_to_show = vec![
+            details.get_id(),
+            details.get_title(),
+            details
+                .get_modified_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+            details
+                .get_created_at()
+                .split_once('T')
+                .unwrap()
+                .0
+                .to_string(),
+        ];
+        properties_to_show.push(safely_unwrap_date(&details.get_end_at()));
+        properties_to_show.push(safely_unwrap_date(&details.get_due_at()));
+        let properties_iter = properties_to_show.iter();
+        let max_string = properties_iter.max_by(|x, y| cmp_by_length(x, y)).unwrap();
+        let mut output = String::new();
+        let mut headlines_to_show = vec![
+            String::from("ID"),
+            String::from("TITLE"),
+            String::from("MODIFIED_AT"),
+            String::from("CREATED_AT"),
+        ];
+        headlines_to_show.push(if_field_available(
+            &String::from("DUE_AT"),
+            &details.get_due_at(),
+        ));
+        headlines_to_show.push(if_field_available(
+            &String::from("END_AT"),
+            &details.get_end_at(),
+        ));
+        headlines_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output = output.trim().to_string();
+        output.push('\n');
+        #[cfg(feature = "integration")]
+        output.push_str(&self.format("AAAA", max_string.len()));
+        #[cfg(feature = "integration")]
+        output.push_str(&self.format(&details.get_title(), max_string.len()));
+        #[cfg(not(feature = "integration"))]
+        properties_to_show
+            .iter()
+            .for_each(|x| output.push_str(&self.format(x, max_string.len())));
+        output = output.trim().to_string();
+        output.push('\n');
+        output.push_str(&("DESCRIPTION:\n".to_owned() + &details.get_description()));
         WekanResult::new_workflow(
             &output.finish_up(),
             "Update the specified artifact with the subcommand 'update'",

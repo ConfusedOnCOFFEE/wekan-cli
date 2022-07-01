@@ -14,7 +14,10 @@ use async_trait::async_trait;
 use chrono::{SecondsFormat, Utc};
 use log::{info, trace};
 use wekan_common::{
-    artifact::{card::Details, common::AType},
+    artifact::{
+        card::Details,
+        common::{AType, MostDetails},
+    },
     http::{
         artifact::ResponseOk,
         card::{ArchiveCard, CreateCard, MoveCard, UpdateCard},
@@ -46,6 +49,7 @@ impl<'a> RootCommandRunner<'a, Details, Command> for Runner<'a> {
         info!("use_specific_command");
         match self.args.command.to_owned() {
             Some(c) => match c {
+                Command::Details(_d) => self.run_details().await,
                 Command::Update(u) => self.run_update(&u).await,
                 Command::Move(m) => self.run_move(&m).await,
                 Command::Create(c) => self.use_create(&c).await,
@@ -143,6 +147,18 @@ impl<'a> Runner<'a> {
             global_options,
         }
     }
+
+    async fn run_details(&mut self) -> Result<WekanResult, Error> {
+        info!("run_details");
+        let id = self.unwrap_and_find_id(self.args.name.to_owned()).await?;
+        match self.get_client().get_one::<Details>(&id).await {
+            Ok(d) => self.get_display().format_card_details(d),
+            Err(e) => {
+                trace!("{:?}", e);
+                CliError::new_msg("Failed to request details").err()
+            }
+        }
+    }
     async fn run_move(&mut self, move_args: &Move) -> Result<WekanResult, Error> {
         info!("run_move");
         match self
@@ -176,10 +192,30 @@ impl<'a> Runner<'a> {
         let name = self.args.get_name()?;
         match self.find_details_id(&name).await {
             Ok(id) => {
+                let mut description = String::new();
+                match &update_args.description {
+                    Some(d) => {
+                        if d.starts_with("k+|") {
+                            let details = self.client.get_one::<Details>(&id).await.unwrap();
+                            description.push_str(&details.get_description());
+                            description.push('\n');
+                            description.push_str(d.trim_start_matches("k+|"));
+                        } else {
+                            description.push_str(d);
+                        }
+                    }
+                    None => {}
+                };
                 let update_card = UpdateCard {
                     _id: id.to_owned(),
                     title: update_args.title.to_owned(),
-                    description: update_args.description.to_owned(),
+                    description: {
+                        if description.is_empty() {
+                            None
+                        } else {
+                            Some(description)
+                        }
+                    },
                     due_at: update_args.due_at.as_ref().map(|d| d.to_string()),
                     end_at: update_args.end_at.as_ref().map(|d| d.to_string()),
                     labels: match &update_args.labels {
@@ -193,6 +229,7 @@ impl<'a> Runner<'a> {
                     },
                     sort: update_args.sort,
                 };
+                trace!("{:?}", update_card);
                 match self
                     .client
                     .put::<UpdateCard, ResponseOk>(&update_card)
@@ -200,7 +237,7 @@ impl<'a> Runner<'a> {
                 {
                     Ok(_o) => {
                         let card = self.client.get_one::<Details>(&id).await.unwrap();
-                        self.display.format_most_details(card)
+                        self.display.format_card_details(card)
                     }
                     Err(_e) => CliError::new_msg("Failed to update").err(),
                 }

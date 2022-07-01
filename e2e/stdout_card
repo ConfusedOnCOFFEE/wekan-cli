@@ -18,8 +18,9 @@ AAAA  test-card
 ----
 Recommended workflow: Get or update details of an artifact
 -------------------    wekan-cli -d card -b Test -l Test -n test-card details    -------------------
-ID           TITLE        MODIFIED_AT  CREATED_AT
-AAAA         test-card
+ID                  TITLE               MODIFIED_AT         CREATED_AT
+AAAA                test-card
+DESCRIPTION:
+description
 ----
-This artifact contains no children
-Recommended workflow: Create a children using the subcommand
+Recommended workflow: Update the specified artifact with the subcommand 'update'

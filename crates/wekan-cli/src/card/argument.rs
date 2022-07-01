@@ -37,7 +37,6 @@ impl CommonCommandRequester<Command> for Args {
                 Command::Ls(ls) => Some(CommonCommand::Ls(ls.to_owned())),
                 Command::Remove(r) => Some(CommonCommand::Remove(r.to_owned())),
                 Command::Inspect(i) => Some(CommonCommand::Inspect(i.to_owned())),
-                Command::Details(d) => Some(CommonCommand::Details(d.to_owned())),
                 _ => None,
             },
             None => None,
@@ -103,7 +102,7 @@ pub struct UpdateArgs {
     pub sort: Option<f32>,
     #[clap(short = 't', long, help = "Card title")]
     pub title: Option<String>,
-    #[clap(short = 'd', long, help = "Card description")]
+    #[clap(short = 'd', long, help = "Card description, extend with prefix: 'k+|")]
     pub description: Option<String>,
     #[clap(short = 'l', long, help = "Supply labels to your card")]
     pub labels: Option<String>,
