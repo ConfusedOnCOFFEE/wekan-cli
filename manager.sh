@@ -159,12 +159,11 @@ function mozilla_gcov() {
         echo "Install grcov first with 'cargo install grcov'"
         exit 1
     fi
-    cd crates/wekan-cli
     case "$1" in
         "gen")
             grcov . -s .  --binary-path ./target/debug/ -t html \
                   --branch --ignore-not-existing -o ./target/debug/coverage/
-            delete_llvm_profile
+            rm_llvm_profiles
             if [ "$?" == "0" ]; then
                 case "$os_type" in
                     "Darwin")
@@ -181,15 +180,11 @@ function mozilla_gcov() {
             rm_llvm_profiles
             ;;
         *)
-            echo "Make sure, to clean the ENV variables after the run, so you don't have sidefects."
-            echo "Please run these commands in the root directory:"
-            export_flag_cargo_build='echo "Set RUSTFLAGS" && export RUSTFLAGS="-Cinstrument-coverage"'
-            change_directory='cd crates/wekan-cli'
-            cargo_build='cargo build --features store'
-            export_flag_llvm_profile='echo "Set LLVM_PROFILE_FILE" && export LLVM_PROFILE_FILE="llvm-profile-%p-%m.profraw"'
-            cargo_test='cargo test --features store'
-            export_clear='export RUSTFLAGS= && export LLVM_PROFILE_FILE='
-            echo -e "$export_flag_cargo_build && \n $change_directory && \n $cargo_build && \n $export_flag_llvm_profile && \n $cargo_test && \n cd ../../ && ./manager.sh cov gen && \n echo 'Clear ENV variables' && \n $export_clear"
+            export RUSTFLAGS=-Cinstrument-coverage
+            cargo build --features store
+            export LLVM_PROFILE_FILE=llvm-profile-%p-%m.profraw
+            cargo test --features store
+            mozilla_gcov gen
             ;;
     esac
 }
