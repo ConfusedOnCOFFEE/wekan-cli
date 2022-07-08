@@ -17,7 +17,9 @@ crates/wekan-core-derive/target/
 .emacs.desktop
 .emacs.desktop.lock
 .dir-locals.el
+emacs/
 
-
+## Ignore doc
+doc/
 ## Ignore coverage profiles
 *.profraw
