@@ -1,3 +1,6 @@
+# This is read only. Updates provided on a isolated, non-changeable, diverged history.
+- [Wekan CLI](https://git.confusedoncoffee.com/rust/wekan-cli)
+
 # OBVIOUSLY DISCLAIMER
 
 - PRIVATE PROJECT BUT READY TO BE USED AND ADAPTED
