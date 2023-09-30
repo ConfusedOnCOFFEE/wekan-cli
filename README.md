@@ -1,5 +1,6 @@
-# This is read only. Updates provided on a isolated, non-changeable, diverged history.
-- [Wekan CLI](https://git.confusedoncoffee.com/rust/wekan-cli)
+# This is read only. Active work is done here:
+
+[Click here to Forgejo Git self-hosting](https://git.confusedoncoffee.com/confusedoncoffee/wekan-cli)
 
 # OBVIOUSLY DISCLAIMER
 
